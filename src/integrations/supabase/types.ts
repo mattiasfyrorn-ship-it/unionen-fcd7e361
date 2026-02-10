@@ -14,7 +14,182 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      couples: {
+        Row: {
+          created_at: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      evaluations: {
+        Row: {
+          area: string
+          comment: string | null
+          couple_id: string
+          created_at: string
+          id: string
+          score: number
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          area: string
+          comment?: string | null
+          couple_id: string
+          created_at?: string
+          id?: string
+          score: number
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          area?: string
+          comment?: string | null
+          couple_id?: string
+          created_at?: string
+          id?: string
+          score?: number
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluations_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      priorities: {
+        Row: {
+          area: string
+          completed: boolean
+          couple_id: string
+          created_at: string
+          id: string
+          month: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          area: string
+          completed?: boolean
+          couple_id: string
+          created_at?: string
+          id?: string
+          month: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          area?: string
+          completed?: boolean
+          couple_id?: string
+          created_at?: string
+          id?: string
+          month?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "priorities_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          couple_id: string | null
+          created_at: string
+          display_name: string
+          id: string
+          pairing_code: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          couple_id?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          pairing_code?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          couple_id?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          pairing_code?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_couple"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompts: {
+        Row: {
+          couple_id: string
+          created_at: string
+          id: string
+          message: string
+          read: boolean
+          sender_id: string
+          type: string
+        }
+        Insert: {
+          couple_id: string
+          created_at?: string
+          id?: string
+          message: string
+          read?: boolean
+          sender_id: string
+          type: string
+        }
+        Update: {
+          couple_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          sender_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompts_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
