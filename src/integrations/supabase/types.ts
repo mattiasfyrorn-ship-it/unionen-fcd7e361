@@ -29,6 +29,68 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_checks: {
+        Row: {
+          adjusted: boolean | null
+          adjusted_note: string | null
+          appreciation_note: string | null
+          check_date: string
+          couple_id: string
+          created_at: string
+          gave_appreciation: boolean | null
+          id: string
+          love_map_answer: string | null
+          love_map_completed: boolean | null
+          love_map_question: string | null
+          turn_toward: string | null
+          turn_toward_example: string | null
+          user_id: string
+          was_present: boolean | null
+        }
+        Insert: {
+          adjusted?: boolean | null
+          adjusted_note?: string | null
+          appreciation_note?: string | null
+          check_date?: string
+          couple_id: string
+          created_at?: string
+          gave_appreciation?: boolean | null
+          id?: string
+          love_map_answer?: string | null
+          love_map_completed?: boolean | null
+          love_map_question?: string | null
+          turn_toward?: string | null
+          turn_toward_example?: string | null
+          user_id: string
+          was_present?: boolean | null
+        }
+        Update: {
+          adjusted?: boolean | null
+          adjusted_note?: string | null
+          appreciation_note?: string | null
+          check_date?: string
+          couple_id?: string
+          created_at?: string
+          gave_appreciation?: boolean | null
+          id?: string
+          love_map_answer?: string | null
+          love_map_completed?: boolean | null
+          love_map_question?: string | null
+          turn_toward?: string | null
+          turn_toward_example?: string | null
+          user_id?: string
+          was_present?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_checks_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evaluations: {
         Row: {
           area: string
@@ -63,6 +125,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "evaluations_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      love_map_questions: {
+        Row: {
+          category: string | null
+          id: string
+          question: string
+        }
+        Insert: {
+          category?: string | null
+          id?: string
+          question: string
+        }
+        Update: {
+          category?: string | null
+          id?: string
+          question?: string
+        }
+        Relationships: []
+      }
+      partner_invitations: {
+        Row: {
+          couple_id: string
+          created_at: string
+          id: string
+          invitee_email: string
+          inviter_id: string
+          status: string
+        }
+        Insert: {
+          couple_id: string
+          created_at?: string
+          id?: string
+          invitee_email: string
+          inviter_id: string
+          status?: string
+        }
+        Update: {
+          couple_id?: string
+          created_at?: string
+          id?: string
+          invitee_email?: string
+          inviter_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_invitations_couple_id_fkey"
             columns: ["couple_id"]
             isOneToOne: false
             referencedRelation: "couples"
@@ -186,6 +301,82 @@ export type Database = {
             columns: ["couple_id"]
             isOneToOne: false
             referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      weekly_conversations: {
+        Row: {
+          couple_id: string
+          created_at: string
+          id: string
+          status: string
+          week_start: string
+        }
+        Insert: {
+          couple_id: string
+          created_at?: string
+          id?: string
+          status?: string
+          week_start: string
+        }
+        Update: {
+          couple_id?: string
+          created_at?: string
+          id?: string
+          status?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_conversations_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      weekly_entries: {
+        Row: {
+          appreciations: string[] | null
+          conversation_id: string
+          created_at: string
+          id: string
+          issues: Json | null
+          ready: boolean | null
+          takeaway: string | null
+          user_id: string
+          wins: string[] | null
+        }
+        Insert: {
+          appreciations?: string[] | null
+          conversation_id: string
+          created_at?: string
+          id?: string
+          issues?: Json | null
+          ready?: boolean | null
+          takeaway?: string | null
+          user_id: string
+          wins?: string[] | null
+        }
+        Update: {
+          appreciations?: string[] | null
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          issues?: Json | null
+          ready?: boolean | null
+          takeaway?: string | null
+          user_id?: string
+          wins?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_entries_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_conversations"
             referencedColumns: ["id"]
           },
         ]

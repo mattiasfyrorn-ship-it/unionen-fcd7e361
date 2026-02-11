@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, Briefcase, DollarSign, Users, CheckCircle } from "lucide-react";
+import { Heart, Briefcase, DollarSign, Users, CheckCircle, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const AREAS = [
@@ -85,8 +85,14 @@ export default function Evaluate() {
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <div>
-        <h1 className="text-3xl text-primary">Veckoutvärdering</h1>
-        <p className="text-muted-foreground">Hur lever du enligt dina standards just nu?</p>
+        <div className="flex items-center gap-2 mb-1">
+          <Sparkles className="w-6 h-6 text-primary" />
+          <h1 className="text-3xl text-primary">Närd</h1>
+        </div>
+        <p className="text-muted-foreground text-sm max-w-lg">
+          För en djup meningsfull relation behöver du leva närd. Annars blir du inte relaterbar. 
+          Här följer du kort och enkelt upp dina prioriteringar för att vara den bästa versionen av dig själv.
+        </p>
       </div>
 
       {AREAS.map((area) => {
