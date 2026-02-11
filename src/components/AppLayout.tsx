@@ -2,14 +2,14 @@ import { ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Heart, BarChart3, Target, MessageCircle, Link2, LogOut, User } from "lucide-react";
+import { Heart, BarChart3, Sparkles, MessageCircle, Link2, LogOut, User, CalendarCheck, Sun } from "lucide-react";
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", icon: BarChart3 },
-  { to: "/evaluate", label: "Utvärdering", icon: Heart },
-  { to: "/priorities", label: "Prioriteter", icon: Target },
-  { to: "/prompts", label: "Meddelanden", icon: MessageCircle },
-  { to: "/pairing", label: "Parkoppling", icon: Link2 },
+  { to: "/daily", label: "Daglig check", icon: Sun },
+  { to: "/evaluate", label: "Närd", icon: Sparkles },
+  { to: "/weekly", label: "Veckosamtal", icon: CalendarCheck },
+  { to: "/pairing", label: "Partner", icon: Link2 },
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {

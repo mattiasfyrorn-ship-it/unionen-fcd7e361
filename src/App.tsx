@@ -7,8 +7,8 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Evaluate from "./pages/Evaluate";
-import Priorities from "./pages/Priorities";
-import Prompts from "./pages/Prompts";
+import DailyCheck from "./pages/DailyCheck";
+import WeeklyConversation from "./pages/WeeklyConversation";
 import Pairing from "./pages/Pairing";
 import AppLayout from "./components/AppLayout";
 import NotFound from "./pages/NotFound";
@@ -45,9 +45,9 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<AuthRoute />} />
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/daily" element={<ProtectedRoute><DailyCheck /></ProtectedRoute>} />
             <Route path="/evaluate" element={<ProtectedRoute><Evaluate /></ProtectedRoute>} />
-            <Route path="/priorities" element={<ProtectedRoute><Priorities /></ProtectedRoute>} />
-            <Route path="/prompts" element={<ProtectedRoute><Prompts /></ProtectedRoute>} />
+            <Route path="/weekly" element={<ProtectedRoute><WeeklyConversation /></ProtectedRoute>} />
             <Route path="/pairing" element={<ProtectedRoute><Pairing /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
