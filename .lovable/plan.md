@@ -1,50 +1,65 @@
 
+# Fix Pairing + Add Email Invitation System
 
-# 💫 Integritetsguiden – Relationsappen för gemensam utveckling
+## Problem Analysis
+The database logs confirm repeated "new row violates row-level security policy for table couples" errors. While the latest migration appears to have corrected the policy to PERMISSIVE, the pairing and email invitation flows need additional work:
 
-## Koncept
-En vacker, mörk app i guld, teal och mörkgrått där du och din partner loggar in separat och tillsammans utvärderar hur väl ni lever enligt era standards – veckovis och månadsvis. Ni kan skicka prompts, uttrycka behov och följa er långsiktiga utveckling.
+1. **Pairing via code** -- may now work after the RLS fix but needs error handling improvements
+2. **Email invitation** -- saves a record but never sends an actual email
+3. **Auto-pairing on signup** -- no mechanism exists to link a new user to an existing couple via invitation
 
----
+## Plan
 
-## 🔐 1. Autentisering & Profiler
-- Registrering och inloggning med e-post
-- Varje partner har en egen profil med namn och avatar
-- Parkoppling: Länka ihop era konton genom en unik parningskod
+### Step 1: Database Migration
+- Create a database function `accept_invitation` (SECURITY DEFINER) that:
+  - Takes an invitation token
+  - Looks up the invitation, gets the couple_id
+  - Updates the new user's profile with that couple_id
+  - Marks the invitation as accepted
+- Add a `token` column to `partner_invitations` (unique, auto-generated) for secure invitation links
+- Create a trigger `on_signup_check_invitation` that runs after a new profile is created -- checks if the user's email matches any pending invitation and auto-pairs them
 
-## 📊 2. Veckovis utvärdering (Poängskala 1-10)
-- Fyra livsområden: **Hälsa, Karriär, Ekonomi, Relationer**
-- Varje vecka betygsätter båda partners varje område
-- Valfri kommentar per område
-- Se varandras poäng efter att båda har svarat
+### Step 2: Edge Function `send-invitation`
+- Create `supabase/functions/send-invitation/index.ts`
+- Receives `{ email, inviterName, coupleId }` from the frontend
+- Generates an invitation token, stores it in `partner_invitations`
+- Sends an email using Supabase's built-in `auth.admin` (via Resend/SMTP configured in Lovable Cloud) with a signup link like: `https://unionen.lovable.app/auth?invite=TOKEN`
+- Falls back to storing the invitation if email sending is not available
 
-## 📅 3. Månadsprioritering
-- Sätt 1-3 prioriteringar per månad inom valfritt livsområde
-- Bocka av eller utvärdera i slutet av månaden
-- Se partnerns prioriteringar
+### Step 3: Update `Pairing.tsx`
+- Better error logging: log the actual error to console for debugging
+- For code pairing: add a retry with more descriptive error messages
+- For email invites: call the `send-invitation` edge function instead of just inserting a row
+- Show the invitation link so the user can manually share it if email doesn't arrive
 
-## 💬 4. Prompts & Behov
-- Skicka korta meddelanden till din partner med:
-  - **Längtan** – saker ni längtar efter
-  - **Behov** – saker ni behöver från varandra
-- Notifikation i appen när ett nytt meddelande kommer
-- Historik över skickade prompts
+### Step 4: Update `Auth.tsx`
+- Read `?invite=TOKEN` from the URL on the signup page
+- After successful signup, call the `accept_invitation` function to auto-pair
+- Show a message like "Du har blivit inbjuden av [name]!" when an invite token is present
 
-## 📈 5. Långsiktig utveckling (Dashboard)
-- Linjediagram som visar poäng per livsområde över tid (veckor/månader)
-- Jämför din och din partners kurvor
-- Genomsnittspoäng per månad
-- Trendpil som visar om ni går uppåt eller nedåt
+### Step 5: Auto-pair on signup (database trigger)
+- A trigger on `profiles` INSERT checks `partner_invitations` for matching email
+- If found, sets the new user's `couple_id` and marks invitation as accepted
+- This handles the case where the user signs up normally (not via the link)
 
-## 🎨 6. Design & Tema
-- **Mörkt tema** med djupt mörkgrå bakgrund
-- **Guld** för accenter, knappar och viktiga element
-- **Teal** för grafer, badges och sekundära detaljer
-- Elegant, lugn och romantisk känsla
-- Mjuka animationer och övergångar
+## Technical Details
 
-## ⚙️ Backend (Lovable Cloud)
-- Supabase-databas för all data (profiler, utvärderingar, meddelanden, prioriteringar)
-- Autentisering via Supabase Auth
-- Row Level Security så varje par bara ser sin egen data
+### New edge function: `send-invitation`
+- Uses CORS headers for browser access
+- Validates the user is authenticated
+- Constructs an invitation URL with a unique token
+- Stores invitation in the database
+- Uses Lovable AI or Resend for email delivery (with fallback)
 
+### Database changes
+- `partner_invitations`: add `token TEXT UNIQUE DEFAULT substr(md5(random()::text), 1, 16)`
+- New function `handle_invitation_on_signup()` as trigger on profiles table
+- RLS adjustments: allow reading invitations by token (for accepting)
+
+### Files modified
+- `supabase/functions/send-invitation/index.ts` (new)
+- `supabase/config.toml` (add function config)
+- `src/pages/Pairing.tsx` (update email flow)
+- `src/pages/Auth.tsx` (handle invite token)
+- `src/hooks/useAuth.tsx` (pass invitation acceptance after signup)
+- Database migration for trigger + token column
