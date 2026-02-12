@@ -24,7 +24,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <Link to="/" className="flex items-center gap-2">
             <Heart className="w-5 h-5 text-primary" />
             <span className="text-primary font-semibold text-lg" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-              Integritetsguiden
+              Unionen
             </span>
           </Link>
           <div className="flex items-center gap-3">

@@ -6,49 +6,49 @@
 
 @layer base {
   :root {
-    --background: 220 15% 10%;
-    --foreground: 45 20% 90%;
+    --background: 35 40% 95%;
+    --foreground: 25 30% 20%;
 
-    --card: 220 15% 13%;
-    --card-foreground: 45 20% 90%;
+    --card: 30 35% 92%;
+    --card-foreground: 25 30% 20%;
 
-    --popover: 220 15% 13%;
-    --popover-foreground: 45 20% 90%;
+    --popover: 30 35% 92%;
+    --popover-foreground: 25 30% 20%;
 
-    --primary: 43 72% 55%;
-    --primary-foreground: 220 15% 10%;
+    --primary: 30 50% 45%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 174 50% 40%;
-    --secondary-foreground: 45 20% 95%;
+    --secondary: 174 40% 38%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 12% 18%;
-    --muted-foreground: 220 10% 55%;
+    --muted: 30 25% 88%;
+    --muted-foreground: 25 15% 45%;
 
-    --accent: 174 50% 40%;
-    --accent-foreground: 45 20% 95%;
+    --accent: 174 40% 38%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 50%;
-    --destructive-foreground: 45 20% 95%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 220 12% 20%;
-    --input: 220 12% 20%;
-    --ring: 43 72% 55%;
+    --border: 30 20% 82%;
+    --input: 30 20% 82%;
+    --ring: 30 50% 45%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 220 15% 8%;
-    --sidebar-foreground: 45 20% 90%;
-    --sidebar-primary: 43 72% 55%;
-    --sidebar-primary-foreground: 220 15% 10%;
-    --sidebar-accent: 220 12% 18%;
-    --sidebar-accent-foreground: 45 20% 90%;
-    --sidebar-border: 220 12% 20%;
-    --sidebar-ring: 43 72% 55%;
+    --sidebar-background: 35 35% 93%;
+    --sidebar-foreground: 25 30% 20%;
+    --sidebar-primary: 30 50% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 30 25% 88%;
+    --sidebar-accent-foreground: 25 30% 20%;
+    --sidebar-border: 30 20% 82%;
+    --sidebar-ring: 30 50% 45%;
 
-    --gold: 43 72% 55%;
-    --gold-foreground: 220 15% 10%;
-    --teal: 174 50% 40%;
-    --teal-foreground: 45 20% 95%;
+    --gold: 43 60% 55%;
+    --gold-foreground: 25 30% 15%;
+    --teal: 174 40% 38%;
+    --teal-foreground: 0 0% 100%;
   }
 }
 

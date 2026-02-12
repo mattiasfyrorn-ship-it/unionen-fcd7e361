@@ -56,7 +56,7 @@ export default function Auth() {
             fontFamily: "'Cormorant Garamond', serif",
             color: "hsl(25, 30%, 25%)"
           }}>
-            Integritetsguiden
+            Unionen
           </h1>
           <p className="mt-2 text-sm" style={{ color: "hsl(25, 15%, 50%)" }}>
             {isLogin ? "Välkommen tillbaka" : "Skapa ditt konto"}
