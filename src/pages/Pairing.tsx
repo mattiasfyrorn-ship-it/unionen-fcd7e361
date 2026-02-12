@@ -16,26 +16,15 @@ export default function Pairing() {
   const [partnerEmail, setPartnerEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
-  const [pairingCode, setPairingCode] = useState(profile?.pairing_code || "");
+  const [pairingCode, setPairingCode] = useState("");
 
-  // Ensure pairing code exists
+  // Load pairing code from profile
   useEffect(() => {
-    if (!user || !profile) return;
+    if (!profile) return;
     if (profile.pairing_code) {
       setPairingCode(profile.pairing_code);
-      return;
     }
-    // Generate one if missing
-    const code = Math.random().toString(36).substring(2, 10).toUpperCase();
-    supabase
-      .from("profiles")
-      .update({ pairing_code: code })
-      .eq("user_id", user.id)
-      .then(() => {
-        setPairingCode(code);
-        refreshProfile();
-      });
-  }, [user, profile]);
+  }, [profile]);
 
   const copyCode = () => {
     if (pairingCode) {
