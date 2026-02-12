@@ -56,7 +56,8 @@ export default function Auth() {
               p_token: inviteToken,
               p_user_id: data.user.id,
             });
-            if (result?.success) {
+            const resultObj = result as Record<string, unknown> | null;
+            if (resultObj?.success) {
               toast({ title: "Välkommen! 💕", description: "Du är nu ihopkopplad med din partner." });
             }
           } catch (err) {
