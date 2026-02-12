@@ -158,6 +158,7 @@ export type Database = {
           invitee_email: string
           inviter_id: string
           status: string
+          token: string | null
         }
         Insert: {
           couple_id: string
@@ -166,6 +167,7 @@ export type Database = {
           invitee_email: string
           inviter_id: string
           status?: string
+          token?: string | null
         }
         Update: {
           couple_id?: string
@@ -174,6 +176,7 @@ export type Database = {
           invitee_email?: string
           inviter_id?: string
           status?: string
+          token?: string | null
         }
         Relationships: [
           {
@@ -386,7 +389,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      accept_invitation: {
+        Args: { p_token: string; p_user_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Link2, Copy, CheckCircle, Mail, Loader2 } from "lucide-react";
+import { Link2, Copy, CheckCircle, Mail, Loader2, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function Pairing() {
@@ -17,11 +17,10 @@ export default function Pairing() {
   const [loading, setLoading] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
   const [pairingCode, setPairingCode] = useState("");
+  const [inviteLink, setInviteLink] = useState("");
 
-  // Load pairing code from profile
   useEffect(() => {
-    if (!profile) return;
-    if (profile.pairing_code) {
+    if (profile?.pairing_code) {
       setPairingCode(profile.pairing_code);
     }
   }, [profile]);
@@ -33,61 +32,80 @@ export default function Pairing() {
     }
   };
 
+  const copyLink = () => {
+    if (inviteLink) {
+      navigator.clipboard.writeText(inviteLink);
+      toast({ title: "Kopierad!", description: "Inbjudningslänken är kopierad." });
+    }
+  };
+
   const pairWithPartner = async () => {
     if (!partnerCode.trim() || !user) return;
     setLoading(true);
 
-    const { data: partnerProfile, error: findError } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("pairing_code", partnerCode.trim())
-      .single();
-
-    if (findError || !partnerProfile) {
-      toast({ title: "Hittade ingen", description: "Kontrollera koden och försök igen.", variant: "destructive" });
-      setLoading(false);
-      return;
-    }
-
-    if (partnerProfile.user_id === user.id) {
-      toast({ title: "Det där är din egen kod!", variant: "destructive" });
-      setLoading(false);
-      return;
-    }
-
-    let coupleId = partnerProfile.couple_id;
-
-    if (!coupleId) {
-      const { data: couple, error: coupleError } = await supabase
-        .from("couples")
-        .insert({})
-        .select()
+    try {
+      const { data: partnerProfile, error: findError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("pairing_code", partnerCode.trim())
         .single();
 
-      if (coupleError || !couple) {
-        toast({ title: "Fel", description: "Kunde inte skapa par.", variant: "destructive" });
+      if (findError || !partnerProfile) {
+        console.error("Find partner error:", findError);
+        toast({ title: "Hittade ingen", description: "Kontrollera koden och försök igen.", variant: "destructive" });
         setLoading(false);
         return;
       }
-      coupleId = couple.id;
 
-      await supabase
+      if (partnerProfile.user_id === user.id) {
+        toast({ title: "Det där är din egen kod!", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+
+      let coupleId = partnerProfile.couple_id;
+
+      if (!coupleId) {
+        const { data: couple, error: coupleError } = await supabase
+          .from("couples")
+          .insert({})
+          .select()
+          .single();
+
+        if (coupleError || !couple) {
+          console.error("Create couple error:", coupleError);
+          toast({ title: "Fel", description: "Kunde inte skapa par. Försök igen.", variant: "destructive" });
+          setLoading(false);
+          return;
+        }
+        coupleId = couple.id;
+
+        const { error: updatePartnerErr } = await supabase
+          .from("profiles")
+          .update({ couple_id: coupleId })
+          .eq("user_id", partnerProfile.user_id);
+
+        if (updatePartnerErr) {
+          console.error("Update partner profile error:", updatePartnerErr);
+        }
+      }
+
+      const { error: updateError } = await supabase
         .from("profiles")
         .update({ couple_id: coupleId })
-        .eq("user_id", partnerProfile.user_id);
-    }
+        .eq("user_id", user.id);
 
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update({ couple_id: coupleId })
-      .eq("user_id", user.id);
-
-    if (updateError) {
-      toast({ title: "Fel", description: updateError.message, variant: "destructive" });
-    } else {
-      await refreshProfile();
-      toast({ title: "Ihopkopplade! 💕" });
-      navigate("/");
+      if (updateError) {
+        console.error("Update own profile error:", updateError);
+        toast({ title: "Fel", description: updateError.message, variant: "destructive" });
+      } else {
+        await refreshProfile();
+        toast({ title: "Ihopkopplade! 💕" });
+        navigate("/");
+      }
+    } catch (err) {
+      console.error("Pairing error:", err);
+      toast({ title: "Fel", description: "Något gick fel. Försök igen.", variant: "destructive" });
     }
     setLoading(false);
   };
@@ -96,45 +114,32 @@ export default function Pairing() {
     if (!partnerEmail.trim() || !user) return;
     setEmailLoading(true);
 
-    // Create couple first if needed
-    let coupleId = profile?.couple_id;
-    if (!coupleId) {
-      const { data: couple, error } = await supabase
-        .from("couples")
-        .insert({})
-        .select()
-        .single();
-      if (error || !couple) {
-        toast({ title: "Fel", description: "Kunde inte skapa par.", variant: "destructive" });
-        setEmailLoading(false);
-        return;
-      }
-      coupleId = couple.id;
-      await supabase.from("profiles").update({ couple_id: coupleId }).eq("user_id", user.id);
-      await refreshProfile();
-    }
-
-    // Check if partner already exists
-    const { data: existingPartner } = await supabase
-      .from("profiles")
-      .select("user_id, couple_id")
-      .eq("pairing_code", partnerEmail.trim());
-
-    // Save invitation
-    const { error } = await supabase.from("partner_invitations").insert({
-      inviter_id: user.id,
-      invitee_email: partnerEmail.trim(),
-      couple_id: coupleId,
-    });
-
-    if (error) {
-      toast({ title: "Fel", description: error.message, variant: "destructive" });
-    } else {
-      toast({
-        title: "Inbjudan sparad!",
-        description: "När din partner registrerar sig med denna e-post kopplas ni ihop automatiskt.",
+    try {
+      const { data, error } = await supabase.functions.invoke("send-invitation", {
+        body: {
+          email: partnerEmail.trim(),
+          inviterName: profile?.display_name || "Din partner",
+        },
       });
-      setPartnerEmail("");
+
+      if (error) {
+        console.error("Invite error:", error);
+        toast({ title: "Fel", description: "Kunde inte skicka inbjudan.", variant: "destructive" });
+      } else if (data?.error) {
+        console.error("Invite response error:", data.error);
+        toast({ title: "Fel", description: data.error, variant: "destructive" });
+      } else {
+        setInviteLink(data.inviteUrl);
+        await refreshProfile();
+        toast({
+          title: "Inbjudan skickad! 💌",
+          description: "Ett mail har skickats. Du kan också dela länken nedan.",
+        });
+        setPartnerEmail("");
+      }
+    } catch (err) {
+      console.error("Invite error:", err);
+      toast({ title: "Fel", description: "Något gick fel.", variant: "destructive" });
     }
     setEmailLoading(false);
   };
@@ -142,7 +147,7 @@ export default function Pairing() {
   if (profile?.couple_id) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <CheckCircle className="w-16 h-16 text-teal" />
+        <CheckCircle className="w-16 h-16 text-primary" />
         <h2 className="text-2xl text-primary">Ni är ihopkopplade!</h2>
         <Button onClick={() => navigate("/")}>Gå till dashboard</Button>
       </div>
@@ -223,6 +228,20 @@ export default function Pairing() {
               Skicka inbjudan
             </Button>
           </div>
+
+          {/* Show invite link after sending */}
+          {inviteLink && (
+            <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border/50">
+              <p className="text-sm font-medium text-foreground">Inbjudningslänk:</p>
+              <p className="text-xs text-muted-foreground">Om mailet inte kommer fram kan du dela denna länk:</p>
+              <div className="flex gap-2">
+                <Input value={inviteLink} readOnly className="bg-muted/50 text-xs" />
+                <Button variant="outline" size="icon" onClick={copyLink}>
+                  <Copy className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
