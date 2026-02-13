@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Link2, Copy, CheckCircle, Mail, Loader2, ExternalLink } from "lucide-react";
+import { Link2, Copy, CheckCircle, Loader2, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function Pairing() {
@@ -18,12 +18,34 @@ export default function Pairing() {
   const [emailLoading, setEmailLoading] = useState(false);
   const [pairingCode, setPairingCode] = useState("");
   const [inviteLink, setInviteLink] = useState("");
+  const [hasPartner, setHasPartner] = useState<boolean | null>(null);
+  const [checkingPartner, setCheckingPartner] = useState(false);
 
   useEffect(() => {
     if (profile?.pairing_code) {
       setPairingCode(profile.pairing_code);
     }
   }, [profile]);
+
+  // Check if there's actually a partner in the same couple
+  useEffect(() => {
+    const checkPartner = async () => {
+      if (!profile?.couple_id || !user) {
+        setHasPartner(false);
+        return;
+      }
+      setCheckingPartner(true);
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("couple_id", profile.couple_id)
+        .neq("user_id", user.id)
+        .limit(1);
+      setHasPartner(data && data.length > 0);
+      setCheckingPartner(false);
+    };
+    checkPartner();
+  }, [profile?.couple_id, user]);
 
   const copyCode = () => {
     if (pairingCode) {
@@ -51,7 +73,6 @@ export default function Pairing() {
         .single();
 
       if (findError || !partnerProfile) {
-        console.error("Find partner error:", findError);
         toast({ title: "Hittade ingen", description: "Kontrollera koden och försök igen.", variant: "destructive" });
         setLoading(false);
         return;
@@ -73,21 +94,16 @@ export default function Pairing() {
           .single();
 
         if (coupleError || !couple) {
-          console.error("Create couple error:", coupleError);
           toast({ title: "Fel", description: "Kunde inte skapa par. Försök igen.", variant: "destructive" });
           setLoading(false);
           return;
         }
         coupleId = couple.id;
 
-        const { error: updatePartnerErr } = await supabase
+        await supabase
           .from("profiles")
           .update({ couple_id: coupleId })
           .eq("user_id", partnerProfile.user_id);
-
-        if (updatePartnerErr) {
-          console.error("Update partner profile error:", updatePartnerErr);
-        }
       }
 
       const { error: updateError } = await supabase
@@ -96,7 +112,6 @@ export default function Pairing() {
         .eq("user_id", user.id);
 
       if (updateError) {
-        console.error("Update own profile error:", updateError);
         toast({ title: "Fel", description: updateError.message, variant: "destructive" });
       } else {
         await refreshProfile();
@@ -104,7 +119,6 @@ export default function Pairing() {
         navigate("/");
       }
     } catch (err) {
-      console.error("Pairing error:", err);
       toast({ title: "Fel", description: "Något gick fel. Försök igen.", variant: "destructive" });
     }
     setLoading(false);
@@ -123,28 +137,33 @@ export default function Pairing() {
       });
 
       if (error) {
-        console.error("Invite error:", error);
-        toast({ title: "Fel", description: "Kunde inte skicka inbjudan.", variant: "destructive" });
+        toast({ title: "Fel", description: "Kunde inte skapa inbjudan.", variant: "destructive" });
       } else if (data?.error) {
-        console.error("Invite response error:", data.error);
         toast({ title: "Fel", description: data.error, variant: "destructive" });
       } else {
         setInviteLink(data.inviteUrl);
-        await refreshProfile();
         toast({
-          title: "Inbjudan skickad! 💌",
-          description: "Ett mail har skickats. Du kan också dela länken nedan.",
+          title: "Inbjudningslänk skapad! 🔗",
+          description: "Dela länken nedan med din partner.",
         });
         setPartnerEmail("");
       }
     } catch (err) {
-      console.error("Invite error:", err);
       toast({ title: "Fel", description: "Något gick fel.", variant: "destructive" });
     }
     setEmailLoading(false);
   };
 
-  if (profile?.couple_id) {
+  if (checkingPartner) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Only show paired state when a partner actually exists
+  if (hasPartner) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <CheckCircle className="w-16 h-16 text-primary" />
@@ -165,6 +184,16 @@ export default function Pairing() {
           <CardDescription>Koppla ihop med din partner</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Pending invitation notice */}
+          {profile?.couple_id && !hasPartner && (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 border border-border/50">
+              <Clock className="w-5 h-5 text-muted-foreground shrink-0" />
+              <p className="text-sm text-muted-foreground">
+                Väntar på att din partner ska acceptera inbjudan. Du kan fortfarande använda alternativen nedan.
+              </p>
+            </div>
+          )}
+
           {/* Your code */}
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">Din parningskod:</p>
@@ -209,13 +238,13 @@ export default function Pairing() {
               <span className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">eller bjud in via e-post</span>
+              <span className="bg-card px-2 text-muted-foreground">eller skapa inbjudningslänk</span>
             </div>
           </div>
 
           {/* Email invite */}
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">Bjud in din partner via e-post:</p>
+            <p className="text-sm text-muted-foreground">Ange din partners e-post för att skapa en inbjudningslänk:</p>
             <Input
               type="email"
               placeholder="partner@email.se"
@@ -224,16 +253,16 @@ export default function Pairing() {
               className="bg-muted/50"
             />
             <Button onClick={inviteByEmail} disabled={emailLoading || !partnerEmail.trim()} variant="secondary" className="w-full">
-              {emailLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
-              Skicka inbjudan
+              {emailLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Link2 className="w-4 h-4 mr-2" />}
+              Skapa inbjudningslänk
             </Button>
           </div>
 
-          {/* Show invite link after sending */}
+          {/* Show invite link after creating */}
           {inviteLink && (
             <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border/50">
               <p className="text-sm font-medium text-foreground">Inbjudningslänk:</p>
-              <p className="text-xs text-muted-foreground">Om mailet inte kommer fram kan du dela denna länk:</p>
+              <p className="text-xs text-muted-foreground">Dela denna länk med din partner:</p>
               <div className="flex gap-2">
                 <Input value={inviteLink} readOnly className="bg-muted/50 text-xs" />
                 <Button variant="outline" size="icon" onClick={copyLink}>
