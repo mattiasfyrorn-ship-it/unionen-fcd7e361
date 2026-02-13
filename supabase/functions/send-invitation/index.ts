@@ -24,7 +24,6 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Verify the calling user
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -46,31 +45,20 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get or create couple for the inviter
-    const { data: profile } = await adminClient
-      .from("profiles")
-      .select("couple_id")
-      .eq("user_id", user.id)
+    // Create a placeholder couple (needed for NOT NULL constraint)
+    // but do NOT link the inviter's profile yet
+    const { data: couple, error: coupleErr } = await adminClient
+      .from("couples")
+      .insert({})
+      .select()
       .single();
 
-    let coupleId = profile?.couple_id;
-    if (!coupleId) {
-      const { data: couple, error: coupleErr } = await adminClient
-        .from("couples")
-        .insert({})
-        .select()
-        .single();
-      if (coupleErr || !couple) {
-        return new Response(JSON.stringify({ error: "Could not create couple" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      coupleId = couple.id;
-      await adminClient
-        .from("profiles")
-        .update({ couple_id: coupleId })
-        .eq("user_id", user.id);
+    if (coupleErr || !couple) {
+      console.error("Create couple error:", coupleErr);
+      return new Response(JSON.stringify({ error: "Could not create invitation" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Generate token and create invitation
@@ -79,7 +67,7 @@ Deno.serve(async (req) => {
     const { error: invErr } = await adminClient.from("partner_invitations").insert({
       inviter_id: user.id,
       invitee_email: email,
-      couple_id: coupleId,
+      couple_id: couple.id,
       token,
       status: "pending",
     });
@@ -93,19 +81,6 @@ Deno.serve(async (req) => {
     }
 
     const inviteUrl = `https://unionen.lovable.app/auth?invite=${token}`;
-
-    // Send invitation email via Supabase Auth admin
-    try {
-      const { error: emailErr } = await adminClient.auth.admin.inviteUserByEmail(email, {
-        redirectTo: inviteUrl,
-        data: { invited_by: inviterName || "Din partner", invite_token: token },
-      });
-      if (emailErr) {
-        console.log("Email invite failed, falling back to link-only:", emailErr.message);
-      }
-    } catch (e) {
-      console.log("Email sending not available:", e);
-    }
 
     return new Response(
       JSON.stringify({ success: true, inviteUrl, token }),
