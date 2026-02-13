@@ -1,65 +1,66 @@
 
-# Fix Pairing + Add Email Invitation System
+# Fix: Email Invitation and Premature Pairing
 
-## Problem Analysis
-The database logs confirm repeated "new row violates row-level security policy for table couples" errors. While the latest migration appears to have corrected the policy to PERMISSIVE, the pairing and email invitation flows need additional work:
+## Problem 1: Emails don't actually send
+The current approach uses `auth.admin.inviteUserByEmail` which fails for already-registered users ("A user with this email address has already been registered"). Even for new users, delivery is unreliable. The UI says "mail skickats" regardless.
 
-1. **Pairing via code** -- may now work after the RLS fix but needs error handling improvements
-2. **Email invitation** -- saves a record but never sends an actual email
-3. **Auto-pairing on signup** -- no mechanism exists to link a new user to an existing couple via invitation
+**Solution:** Stop claiming emails were sent. Instead, generate the invite link and clearly present it as the primary sharing method. Update the toast message to say "Inbjudningslank skapad" instead of "mail skickats". The link is the reliable mechanism.
 
-## Plan
+## Problem 2: Premature "Ni ar ihopkopplade!"
+When sending an email invite, the edge function creates a `couple` record and sets the inviter's `couple_id` immediately -- before the partner has even signed up. Then `Pairing.tsx` checks `profile?.couple_id` and shows the "paired" screen, hiding all pairing options.
 
-### Step 1: Database Migration
-- Create a database function `accept_invitation` (SECURITY DEFINER) that:
-  - Takes an invitation token
-  - Looks up the invitation, gets the couple_id
-  - Updates the new user's profile with that couple_id
-  - Marks the invitation as accepted
-- Add a `token` column to `partner_invitations` (unique, auto-generated) for secure invitation links
-- Create a trigger `on_signup_check_invitation` that runs after a new profile is created -- checks if the user's email matches any pending invitation and auto-pairs them
+**Solution:** Don't set the inviter's `couple_id` until the partner actually accepts. The edge function should only create the invitation record with a `couple_id` placeholder (create the couple but don't link the inviter yet). Or better: don't create the couple at all until the partner accepts -- store only the inviter_id in the invitation and create the couple + link both users when the invitation is accepted.
 
-### Step 2: Edge Function `send-invitation`
-- Create `supabase/functions/send-invitation/index.ts`
-- Receives `{ email, inviterName, coupleId }` from the frontend
-- Generates an invitation token, stores it in `partner_invitations`
-- Sends an email using Supabase's built-in `auth.admin` (via Resend/SMTP configured in Lovable Cloud) with a signup link like: `https://unionen.lovable.app/auth?invite=TOKEN`
-- Falls back to storing the invitation if email sending is not available
+## Changes
 
-### Step 3: Update `Pairing.tsx`
-- Better error logging: log the actual error to console for debugging
-- For code pairing: add a retry with more descriptive error messages
-- For email invites: call the `send-invitation` edge function instead of just inserting a row
-- Show the invitation link so the user can manually share it if email doesn't arrive
+### 1. Edge function `send-invitation/index.ts`
+- Remove the "create couple and set inviter's couple_id" logic
+- Only store the invitation with `inviter_id`, `invitee_email`, and `token`
+- Remove `auth.admin.inviteUserByEmail` (unreliable)
+- Return the invite link URL
+- The couple will be created when the partner accepts
 
-### Step 4: Update `Auth.tsx`
-- Read `?invite=TOKEN` from the URL on the signup page
-- After successful signup, call the `accept_invitation` function to auto-pair
-- Show a message like "Du har blivit inbjuden av [name]!" when an invite token is present
+### 2. Database function `accept_invitation`
+- Update to create the couple at acceptance time
+- Set `couple_id` on BOTH the inviter and the accepter profiles
+- Mark invitation as accepted
 
-### Step 5: Auto-pair on signup (database trigger)
-- A trigger on `profiles` INSERT checks `partner_invitations` for matching email
-- If found, sets the new user's `couple_id` and marks invitation as accepted
-- This handles the case where the user signs up normally (not via the link)
+### 3. `Pairing.tsx`
+- Remove the early return when `profile?.couple_id` is set (the "Ni ar ihopkopplade" blocker)
+- Instead show a status indicator at the top if paired, but still allow the user to see the page
+- Actually, keep the paired state but only show it when BOTH partners have `couple_id` set -- check if partner exists in the couple
+- Change toast text from "Ett mail har skickats" to "Inbjudningslank skapad! Dela lanken med din partner."
+- Always show the invite link prominently after creating an invitation
+
+### 4. `Pairing.tsx` - verify pairing is real
+- After `refreshProfile()`, check if there's actually another user in the same couple before showing "ihopkopplade"
+- Query profiles table for another user with same `couple_id`
+- Only show paired state when both users exist
 
 ## Technical Details
 
-### New edge function: `send-invitation`
-- Uses CORS headers for browser access
-- Validates the user is authenticated
-- Constructs an invitation URL with a unique token
-- Stores invitation in the database
-- Uses Lovable AI or Resend for email delivery (with fallback)
+### Edge function changes (send-invitation/index.ts)
+- Remove lines 49-74 (couple creation + profile update)
+- Store invitation with just `inviter_id`, `invitee_email`, `token` (no `couple_id` needed yet)
+- Update the `partner_invitations` table: make `couple_id` nullable or create couple later
+- Since `couple_id` is NOT NULL in the table, we need a migration to make it nullable OR we create the couple but don't link the inviter
 
-### Database changes
-- `partner_invitations`: add `token TEXT UNIQUE DEFAULT substr(md5(random()::text), 1, 16)`
-- New function `handle_invitation_on_signup()` as trigger on profiles table
-- RLS adjustments: allow reading invitations by token (for accepting)
+Better approach: keep creating the couple (to satisfy NOT NULL), but do NOT update the inviter's profile. The couple record exists as a placeholder. When partner accepts, link both profiles.
+
+### Database migration
+- Update `accept_invitation` function to also set the inviter's `couple_id`:
+  ```sql
+  -- Set couple_id on BOTH inviter and accepter
+  UPDATE profiles SET couple_id = v_couple_id WHERE user_id = v_inviter_id;
+  UPDATE profiles SET couple_id = v_couple_id WHERE user_id = p_user_id;
+  ```
+
+### Pairing.tsx verification
+- Add a check: query for partner profile with same `couple_id` and different `user_id`
+- Only show "ihopkopplade" if a partner is found
+- Otherwise show all pairing options with a note "Vantar pa att din partner ska acceptera"
 
 ### Files modified
-- `supabase/functions/send-invitation/index.ts` (new)
-- `supabase/config.toml` (add function config)
-- `src/pages/Pairing.tsx` (update email flow)
-- `src/pages/Auth.tsx` (handle invite token)
-- `src/hooks/useAuth.tsx` (pass invitation acceptance after signup)
-- Database migration for trigger + token column
+- `supabase/functions/send-invitation/index.ts` -- stop linking inviter's profile
+- `src/pages/Pairing.tsx` -- verify partner exists before showing paired state, fix toast messages
+- Database migration -- update `accept_invitation` to link both users
