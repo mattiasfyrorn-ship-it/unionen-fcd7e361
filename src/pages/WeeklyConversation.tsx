@@ -55,6 +55,7 @@ export default function WeeklyConversation() {
   const [logistics, setLogistics] = useState<Logistics>({});
   const [intention, setIntention] = useState("");
   const [checkoutFeeling, setCheckoutFeeling] = useState("");
+  const [partnerLearning, setPartnerLearning] = useState("");
 
   // Partner data
   const [partnerEntry, setPartnerEntry] = useState<any>(null);
@@ -107,6 +108,7 @@ export default function WeeklyConversation() {
         setLogistics(((myEntry as any).logistics as Logistics) || {});
         setIntention((myEntry as any).intention || "");
         setCheckoutFeeling((myEntry as any).checkout_feeling || "");
+        setPartnerLearning((myEntry as any).partner_learning || "");
       }
 
       // Check partner
@@ -181,6 +183,7 @@ export default function WeeklyConversation() {
       logistics: logistics as any,
       intention: intention || null,
       checkout_feeling: checkoutFeeling || null,
+      partner_learning: partnerLearning || null,
     };
 
     let error;
@@ -488,6 +491,13 @@ export default function WeeklyConversation() {
               onChange={(e) => setMeetingNotes(prev => ({ ...prev, general: e.target.value }))}
               className="bg-muted/50 border-border resize-none text-sm"
               rows={2}
+            />
+            <Input
+              placeholder="Vad lärde jag mig om min partner idag? (max 120 tecken)"
+              maxLength={120}
+              value={partnerLearning}
+              onChange={(e) => setPartnerLearning(e.target.value)}
+              className="bg-muted/50 border-border text-sm"
             />
           </CardContent>
         </Card>
