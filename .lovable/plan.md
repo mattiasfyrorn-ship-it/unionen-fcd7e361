@@ -1,79 +1,118 @@
 
 
-# Daglig Check och Veckosamtal -- Uppgraderingar
+# Reparation och Selvreglering -- Nytt floede
 
-## 1. Daglig Check: Turn Toward -- flerval med checkboxar
+## Oeverblick
 
-Nuvarande implementation anvander RadioGroup (bara ett val). Andras till checkboxar sa att anvandaren kan valja flera alternativ samtidigt (t.ex. bade "Tog initiativ" OCH "Tog emot positivt" = 2 poang).
+Ett stegvis reparationsverktyg med 7 steg som guidar anvandaren fran kansloreglering till ateranslutning. Floedet tar 3-6 minuter och ar designat med mycket luft, lugn och minimal text.
 
-**Databasandring:** Kolumnen `turn_toward` (text) behover stodja flera varden. Laggs till en ny kolumn `turn_toward_options` (text array) i `daily_checks`-tabellen. Den gamla kolumnen behalls for bakatkompabilitet.
+## Databasaendringar
 
-**UI-andring:** Byt fran RadioGroup till tre Checkbox-komponenter. Visa poangraknarare (0-2 poang baserat pa antal valda "initiated"/"received_positively", "missed" ger 0).
+### Ny tabell: `repairs`
 
-## 2. Veckosamtal: Las upp-funktion
+Lagrar varje reparationsfoersoek. Privat data (steg 1-6) sparas haer men delas aldrig. Det genererade meddelandet (steg 7) skickas via `prompts`-tabellen.
 
-Lagga till en "Las upp"-knapp som visas nar `ready === true`, sa att anvandaren kan redigera sin agenda igen.
+Kolumner:
+- `id` (uuid, PK)
+- `user_id` (uuid, NOT NULL)
+- `couple_id` (uuid, NOT NULL)
+- `status` (text, default 'in_progress') -- in_progress / ready_to_share / needs_time / shared / completed
+- `feeling_body` (text) -- Steg 1: kansla och kropp (max 150)
+- `story` (text) -- Steg 2: historien (max 200)
+- `needs` (text[]) -- Steg 3: valda behov
+- `needs_other` (text) -- Steg 3: fri text om "Annat"
+- `ideal_outcome` (text) -- Steg 3: "hur hade det sett ut" (max 200)
+- `observable_fact` (text) -- Steg 5: fakta (max 150)
+- `interpretation` (text) -- Steg 5: tolkning (max 150)
+- `self_responsibility` (text) -- Steg 6: vad kan jag goera annorlunda (max 200)
+- `request` (text) -- Steg 6: vad vill jag be om (max 150)
+- `needs_time_reason` (text) -- Om "behover mer tid" (steg 7)
+- `learning` (text) -- Efter reparation: "vad larde jag mig" (max 120)
+- `created_at` (timestamptz)
+- `completed_at` (timestamptz)
 
-## 3. Veckosamtal: Motesvy nar bada last
+RLS-policies:
+- INSERT: `auth.uid() = user_id`
+- SELECT: `auth.uid() = user_id` (privat -- bara egna reparationer)
+- UPDATE: `auth.uid() = user_id`
 
-Nar bada partners har last sin agenda:
-- Visa badas agendor sida vid sida (eller i flikar)
-- Varje sektion (Uppskattningar, Vad gick bra, Fragor) far ett extra textfalt for motesanteckningar/reflektioner
-- Dessa anteckningar sparas i `weekly_entries` i ett nytt `meeting_notes`-falt (jsonb)
+### Ny tabell: `repair_responses`
 
-## 4. Veckosamtal: Nya falt
+Partnerns svar pa ett delat reparationsmeddelande.
 
-Tre nya sektioner laggs till:
+Kolumner:
+- `id` (uuid, PK)
+- `repair_id` (uuid, FK -> repairs)
+- `prompt_id` (uuid, FK -> prompts) -- referens till meddelandet
+- `responder_id` (uuid, NOT NULL)
+- `response` (text) -- 'receive' / 'need_time' / 'talk'
+- `time_needed` (text) -- '20min' / '1h' / 'tonight'
+- `learning` (text) -- "vad larde jag mig" (max 120)
+- `created_at` (timestamptz)
 
-**a) Praktiskt kommande vecka**
-- Textfalt: "Nar ses vi?"
-- Textfalt: "Vem tar hand om vad?"
-- Textfalt: "Speciella behov att ta hansyn till"
-- Sparas i `weekly_entries` i nytt `logistics`-falt (jsonb)
+RLS-policies:
+- INSERT: `auth.uid() = responder_id`
+- SELECT: kopplad till couple_id via repair
+- UPDATE: `auth.uid() = responder_id`
 
-**b) Positiv intention**
-- Textfalt: "Min positiva intention for veckan"
-- Sparas i `weekly_entries` i nytt `intention`-falt (text)
+## Nya filer
 
-**c) Utcheckning**
-- Textfalt: "En kansla som lever i mig just nu"
-- Sparas i `weekly_entries` i nytt `checkout_feeling`-falt (text)
+### `src/pages/Repair.tsx`
 
-## 5. Veckosamtal: Arkiv
+Huvudkomponenten. Hanterar ett flerstegsflode med lokal state. Sparar till databasen vid steg 7 (dela/behover tid).
 
-En ny sektion langst upp pa sidan som visar tidigare veckors samtal. Klickbara for att se agendor och motesanteckningar fran tidigare veckor (read-only).
+**Stegstruktur:**
 
----
+- **Steg 0: Start** -- Kort intro + "Borja"-knapp
+- **Steg 1: Kansla och Kropp** -- Andningsanimation (30 sek, CSS pulsanimation, skip-knapp), sedan textfalt (max 150 tecken). Data sparas lokalt i state.
+- **Steg 2: Historien** -- Textfalt (max 200 tecken)
+- **Steg 3: Behovet** -- Multi-select checkboxar (6 foerdefinierade + "Annat" med fri text), sedan "Om jag hade fatt..." textfalt (max 200)
+- **Steg 4: Hedrande och Reglering** -- Lugn text (ingen input), 4 val som visas som text (inte knappar), 45 sek tyst timer (cirkulaer progress), sedan 3 djupa andetag (animation)
+- **Steg 5: Historia vs Fakta** -- Tva kolumner: "Observerbar fakta" och "Min tolkning", vardera max 150 tecken
+- **Steg 6: Sjaelvansvar** -- Tva textfalt: "annorlunda naesta gang" (max 200) och "be min partner om" (max 150)
+- **Steg 7: Ar du redo?** -- Tva stora knappar. Om "redo": generera strukturerat meddelande fran mall, redigerbart textfalt, skicka via `prompts`-tabellen (type: 'repair'). Om "behover tid": visa trygghetsval, skicka kort notis till partner.
 
-## Tekniska detaljer
+### `src/components/BreathingAnimation.tsx`
 
-### Databasmigrering
+Ateranvaendbar komponent: en cirkel som expanderar/kontraherar med CSS animation. Props: `duration` (sekunder), `onComplete`, `skippable`.
 
-```sql
--- daily_checks: stodja flerval for turn_toward
-ALTER TABLE daily_checks ADD COLUMN turn_toward_options text[] DEFAULT '{}';
+### `src/components/TimerCircle.tsx`
 
--- weekly_entries: nya falt
-ALTER TABLE weekly_entries ADD COLUMN meeting_notes jsonb DEFAULT '{}';
-ALTER TABLE weekly_entries ADD COLUMN logistics jsonb DEFAULT '{}';
-ALTER TABLE weekly_entries ADD COLUMN intention text;
-ALTER TABLE weekly_entries ADD COLUMN checkout_feeling text;
-```
+Cirkulaer nedrakning (45 sek) med SVG stroke-dashoffset animation.
 
-### Filandringar
+## Aendringar i befintliga filer
 
-**`src/pages/DailyCheck.tsx`**
-- Byt `turnToward` (string) till `turnTowardOptions` (string array)
-- Byt RadioGroup till tre Checkbox-komponenter
-- Visa poang: "initiated" + "received_positively" = 1 poang vardera, "missed" = 0
-- Uppdatera save-payload att inkludera `turn_toward_options`
-- Behall bakatkompabilitet med gamla `turn_toward`-kolumnen vid laddning
+### `src/App.tsx`
+- Importera `Repair` page
+- Lagg till route: `/repair`
 
-**`src/pages/WeeklyConversation.tsx`**
-- Lagga till "Las upp"-knapp bredvid "Last"-knappen
-- Nar bada last: visa partners agenda (ladda fran `weekly_entries` med `neq user_id`)
-- Lagga till motesantecknings-falt under varje sektion i motesvyn
-- Lagga till tre nya kort: Praktiskt kommande vecka, Positiv intention, Utcheckning
-- Lagga till arkiv-sektion: lista tidigare `weekly_conversations` med klickbar expandering
-- Uppdatera save-payload med nya falt
+### `src/components/AppLayout.tsx`
+- Lagg till navigeringsobjekt: `{ to: "/repair", label: "Reparera", icon: Heart }` (med Heart-ikon i roed/primary)
+
+### `src/pages/Dashboard.tsx`
+- Lagg till quick-action-knapp: "Reparera"
+- Lagg till statistikkort: Antal reparationsfoersoek, andel genomfoerda, snittid till aterkoppling
+- Aldrig visa innehallet i svaren
+
+### `src/pages/Prompts.tsx`
+- Hantera `type: 'repair'` -- visa reparationsmeddelanden med tre svarsalternativ (ta emot / behover tid / prata)
+- Lagg till svarsknappar for reparationsmeddelanden
+
+## Designprinciper i implementation
+
+- Varje steg anvander `animate-fade-in` for mjuk oevergang
+- Steg 4 har extra padding, stoerre radhoejd, och langsammare transitions
+- Alla textfalt har synlig `maxLength`-raknare
+- Tva-kolumnslayout i steg 5 anvander `grid grid-cols-2 gap-4`
+- Stora knappar i steg 7 anvander `size="lg"` och `w-full`
+- Andningsanimation: CSS keyframes med scale(1) -> scale(1.3) -> scale(1) oever 4 sekunder, upprepas
+
+## Floede foer data
+
+1. Steg 1-6: all data lagras i React state (privat)
+2. Steg 7 "Redo": Spara till `repairs`-tabellen, skicka genererat meddelande till `prompts` (type: 'repair')
+3. Steg 7 "Behover tid": Spara till `repairs` med status 'needs_time', skicka kort notis via `prompts`
+4. Partnerns svar: Sparas i `repair_responses`, uppdaterar `repairs.status`
+5. Efter reparation: Bada far fragan "vad larde jag mig", sparas i respektive tabell
+6. Dashboard: Raeknar bara antal reparationer och status, visar aldrig innehall
 
