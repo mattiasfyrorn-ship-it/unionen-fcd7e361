@@ -52,6 +52,17 @@ export default function Prompts() {
     return () => { supabase.removeChannel(channel); };
   }, [profile?.couple_id]);
 
+  const handleRepairResponse = async (promptId: string, response: string) => {
+    if (!user) return;
+    await supabase.from("repair_responses" as any).insert({
+      repair_id: promptId,
+      prompt_id: promptId,
+      responder_id: user.id,
+      response,
+    } as any);
+    toast({ title: "Svar skickat", description: response === "receive" ? "❤️" : response === "talk" ? "💬" : "🕊" });
+  };
+
   const sendPrompt = async () => {
     if (!message.trim() || !user || !profile?.couple_id) return;
     setLoading(true);
@@ -122,20 +133,38 @@ export default function Prompts() {
       <div className="space-y-3">
         {prompts.map((p) => {
           const isMine = p.sender_id === user?.id;
+          const isRepair = p.type === "repair";
           return (
             <Card key={p.id} className={`border-border/50 ${isMine ? "bg-card/80" : "bg-muted/30"}`}>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  {p.type === "longing" ? (
+                  {isRepair ? (
+                    <Heart className="w-4 h-4 text-destructive" />
+                  ) : p.type === "longing" ? (
                     <Heart className="w-4 h-4 text-primary" />
                   ) : (
                     <HandHeart className="w-4 h-4 text-teal" />
                   )}
                   <span className="text-xs text-muted-foreground">
                     {isMine ? "Du" : "Partner"} · {format(new Date(p.created_at), "d MMM HH:mm", { locale: sv })}
+                    {isRepair && " · Reparation"}
                   </span>
                 </div>
-                <p className="text-foreground">{p.message}</p>
+                <p className="text-foreground whitespace-pre-line">{p.message}</p>
+                {/* Repair response buttons for partner */}
+                {isRepair && !isMine && (
+                  <div className="flex gap-2 mt-3">
+                    <Button size="sm" variant="default" onClick={() => handleRepairResponse(p.id, "receive")}>
+                      ❤️ Jag tar emot
+                    </Button>
+                    <Button size="sm" variant="secondary" onClick={() => handleRepairResponse(p.id, "need_time")}>
+                      🕊 Behöver tid
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => handleRepairResponse(p.id, "talk")}>
+                      💬 Låt oss prata
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           );
