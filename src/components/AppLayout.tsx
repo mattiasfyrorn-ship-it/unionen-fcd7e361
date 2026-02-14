@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { to: "/daily", label: "Daglig check", icon: Sun },
   { to: "/evaluate", label: "Närd", icon: Sparkles },
   { to: "/weekly", label: "Veckosamtal", icon: CalendarCheck },
+  { to: "/repair", label: "Reparera", icon: Heart },
   { to: "/pairing", label: "Partner", icon: Link2 },
 ];
 

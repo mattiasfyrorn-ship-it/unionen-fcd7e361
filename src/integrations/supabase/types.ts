@@ -311,6 +311,122 @@ export type Database = {
           },
         ]
       }
+      repair_responses: {
+        Row: {
+          created_at: string
+          id: string
+          learning: string | null
+          prompt_id: string
+          repair_id: string
+          responder_id: string
+          response: string
+          time_needed: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          learning?: string | null
+          prompt_id: string
+          repair_id: string
+          responder_id: string
+          response: string
+          time_needed?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          learning?: string | null
+          prompt_id?: string
+          repair_id?: string
+          responder_id?: string
+          response?: string
+          time_needed?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "repair_responses_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "prompts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repair_responses_repair_id_fkey"
+            columns: ["repair_id"]
+            isOneToOne: false
+            referencedRelation: "repairs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      repairs: {
+        Row: {
+          completed_at: string | null
+          couple_id: string
+          created_at: string
+          feeling_body: string | null
+          id: string
+          ideal_outcome: string | null
+          interpretation: string | null
+          learning: string | null
+          needs: string[] | null
+          needs_other: string | null
+          needs_time_reason: string | null
+          observable_fact: string | null
+          request: string | null
+          self_responsibility: string | null
+          status: string
+          story: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          couple_id: string
+          created_at?: string
+          feeling_body?: string | null
+          id?: string
+          ideal_outcome?: string | null
+          interpretation?: string | null
+          learning?: string | null
+          needs?: string[] | null
+          needs_other?: string | null
+          needs_time_reason?: string | null
+          observable_fact?: string | null
+          request?: string | null
+          self_responsibility?: string | null
+          status?: string
+          story?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          couple_id?: string
+          created_at?: string
+          feeling_body?: string | null
+          id?: string
+          ideal_outcome?: string | null
+          interpretation?: string | null
+          learning?: string | null
+          needs?: string[] | null
+          needs_other?: string | null
+          needs_time_reason?: string | null
+          observable_fact?: string | null
+          request?: string | null
+          self_responsibility?: string | null
+          status?: string
+          story?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "repairs_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       weekly_conversations: {
         Row: {
           couple_id: string

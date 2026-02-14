@@ -152,6 +152,11 @@ export default function Dashboard() {
         <Link to="/weekly">
           <Button variant="outline">Veckosamtal</Button>
         </Link>
+        <Link to="/repair">
+          <Button variant="outline" className="border-primary text-primary">
+            <Heart className="w-4 h-4 mr-2" /> Reparera
+          </Button>
+        </Link>
       </div>
     </div>
   );
