@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { Heart, ArrowRight, Check, Clock, MessageCircle } from "lucide-react";
+import { Heart, ArrowRight, Check, Clock, MessageCircle, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import BreathingAnimation from "@/components/BreathingAnimation";
 import TimerCircle from "@/components/TimerCircle";
 
@@ -25,6 +27,13 @@ const NEEDS_TIME_OPTIONS = [
   { label: "Ensam tid", value: "alone" },
   { label: "Paus 20 min", value: "pause_20" },
 ];
+
+function getWeekStart() {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.setDate(diff)).toISOString().split("T")[0];
+}
 
 export default function Repair() {
   const { user, profile } = useAuth();
@@ -50,6 +59,21 @@ export default function Repair() {
   const [needsTimeChoice, setNeedsTimeChoice] = useState("");
   const [readyChoice, setReadyChoice] = useState<"ready" | "needs_time" | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pastRepairs, setPastRepairs] = useState<any[]>([]);
+  const [expandedRepair, setExpandedRepair] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("repairs")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(20)
+      .then(({ data }) => {
+        if (data) setPastRepairs(data);
+      });
+  }, [user?.id]);
 
   const toggleNeed = (need: string) => {
     setNeeds((prev) => prev.includes(need) ? prev.filter((n) => n !== need) : [...prev, need]);
@@ -65,9 +89,8 @@ export default function Repair() {
     if (!user || !profile?.couple_id) return;
     setLoading(true);
 
-    // Save repair
     const { data: repair, error: repairErr } = await supabase
-      .from("repairs" as any)
+      .from("repairs")
       .insert({
         user_id: user.id,
         couple_id: profile.couple_id,
@@ -81,7 +104,7 @@ export default function Repair() {
         interpretation,
         self_responsibility: selfResponsibility,
         request,
-      } as any)
+      })
       .select()
       .single();
 
@@ -99,16 +122,72 @@ export default function Repair() {
       message: generatedMessage,
     });
 
+    // Auto-add to weekly conversation issues
+    await addRepairToWeeklyIssues();
+
     toast({ title: "Skickat", description: "Ditt reparationsmeddelande har skickats." });
     setLoading(false);
     navigate("/");
+  };
+
+  const addRepairToWeeklyIssues = async () => {
+    if (!user || !profile?.couple_id) return;
+    const weekStart = getWeekStart();
+
+    // Find or create weekly conversation
+    let { data: conv } = await supabase
+      .from("weekly_conversations")
+      .select("id")
+      .eq("couple_id", profile.couple_id!)
+      .eq("week_start", weekStart)
+      .maybeSingle();
+
+    if (!conv) {
+      const { data: newConv } = await supabase
+        .from("weekly_conversations")
+        .insert({ couple_id: profile.couple_id!, week_start: weekStart })
+        .select()
+        .single();
+      conv = newConv;
+    }
+    if (!conv) return;
+
+    // Find or create my weekly entry
+    let { data: entry } = await supabase
+      .from("weekly_entries")
+      .select("id, issues")
+      .eq("conversation_id", conv.id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const newIssues: { text: string; tag: string }[] = [];
+    if (selfResponsibility?.trim()) {
+      newIssues.push({ text: `[Reparation] Jag vill göra annorlunda: ${selfResponsibility}`, tag: "emotionellt" });
+    }
+    if (request?.trim()) {
+      newIssues.push({ text: `[Reparation] Jag vill be om: ${request}`, tag: "emotionellt" });
+    }
+    if (newIssues.length === 0) return;
+
+    if (entry) {
+      const existing = Array.isArray(entry.issues) ? (entry.issues as unknown as { text: string; tag: string }[]) : [];
+      await supabase.from("weekly_entries").update({
+        issues: [...existing, ...newIssues] as any,
+      }).eq("id", entry.id);
+    } else {
+      await supabase.from("weekly_entries").insert({
+        conversation_id: conv.id,
+        user_id: user.id,
+        issues: newIssues as any,
+      });
+    }
   };
 
   const handleNeedsTime = async () => {
     if (!user || !profile?.couple_id) return;
     setLoading(true);
 
-    await supabase.from("repairs" as any).insert({
+    await supabase.from("repairs").insert({
       user_id: user.id,
       couple_id: profile.couple_id,
       status: "needs_time",
@@ -122,7 +201,7 @@ export default function Repair() {
       self_responsibility: selfResponsibility,
       request,
       needs_time_reason: needsTimeChoice,
-    } as any);
+    });
 
     if (needsTimeChoice === "pause_20") {
       await supabase.from("prompts").insert({
@@ -417,9 +496,17 @@ export default function Repair() {
 
           {readyChoice === "needs_time" && (
             <div className="space-y-6 text-center">
-              <p className="text-foreground text-lg">Bra. Du hedrar att du inte är helt reglerad än.</p>
-              <p className="text-muted-foreground">Vad behöver du just nu?</p>
-              <div className="space-y-2">
+              <p className="text-foreground text-lg leading-relaxed">
+                Bra att du hedrar dina behov och tar hand om dig.
+              </p>
+              <p className="text-muted-foreground leading-relaxed">
+                Det är ett viktigt sätt att ta hand om relationen.
+              </p>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Kanske vill du skicka ett kort meddelande till din partner – att du tar hand om dig och vill återknyta om 20 minuter, eller att du säger till när du är redo. Det hjälper din partner att slappna av.
+              </p>
+              <div className="space-y-2 pt-2">
+                <p className="text-xs text-muted-foreground">Vad behöver du just nu?</p>
                 {NEEDS_TIME_OPTIONS.map((opt) => (
                   <Button
                     key={opt.value}
@@ -438,6 +525,52 @@ export default function Repair() {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Repair Archive */}
+      {step === 0 && pastRepairs.length > 0 && (
+        <div className="pt-8">
+          <Collapsible>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1 w-full justify-start">
+                <Clock className="w-4 h-4" /> Tidigare reparationer ({pastRepairs.length})
+                <ChevronDown className="w-3 h-3" />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-2 mt-2">
+              {pastRepairs.map((r) => (
+                <Card key={r.id} className="bg-muted/30 border-border/30">
+                  <CardHeader
+                    className="pb-1 pt-3 px-4 cursor-pointer"
+                    onClick={() => setExpandedRepair(expandedRepair === r.id ? null : r.id)}
+                  >
+                    <CardTitle className="text-sm flex items-center justify-between">
+                      <span>{new Date(r.created_at).toLocaleDateString("sv-SE")} – {r.status === "shared" ? "Delad" : r.status === "needs_time" ? "Behövde tid" : r.status}</span>
+                      <ChevronDown className={`w-4 h-4 transition-transform ${expandedRepair === r.id ? "rotate-180" : ""}`} />
+                    </CardTitle>
+                  </CardHeader>
+                  {expandedRepair === r.id && (
+                    <CardContent className="space-y-2 text-sm text-muted-foreground">
+                      {r.feeling_body && <p><strong className="text-foreground">Känsla & kropp:</strong> {r.feeling_body}</p>}
+                      {r.story && <p><strong className="text-foreground">Historien:</strong> {r.story}</p>}
+                      {r.needs?.length > 0 && <p><strong className="text-foreground">Behov:</strong> {[...r.needs, ...(r.needs_other ? [r.needs_other] : [])].join(", ")}</p>}
+                      {r.ideal_outcome && <p><strong className="text-foreground">Idealt utfall:</strong> {r.ideal_outcome}</p>}
+                      {r.observable_fact && <p><strong className="text-foreground">Fakta:</strong> {r.observable_fact}</p>}
+                      {r.interpretation && <p><strong className="text-foreground">Tolkning:</strong> {r.interpretation}</p>}
+                      {r.self_responsibility && (
+                        <p><strong className="text-foreground">Göra annorlunda:</strong> {r.self_responsibility}</p>
+                      )}
+                      {r.request && (
+                        <p><strong className="text-foreground">Be partner om:</strong> {r.request}</p>
+                      )}
+                      {r.learning && <p><strong className="text-foreground">Lärdom:</strong> {r.learning}</p>}
+                    </CardContent>
+                  )}
+                </Card>
+              ))}
+            </CollapsibleContent>
+          </Collapsible>
         </div>
       )}
     </div>
