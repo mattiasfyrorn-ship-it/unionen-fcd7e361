@@ -1,66 +1,79 @@
 
-# Fix: Email Invitation and Premature Pairing
 
-## Problem 1: Emails don't actually send
-The current approach uses `auth.admin.inviteUserByEmail` which fails for already-registered users ("A user with this email address has already been registered"). Even for new users, delivery is unreliable. The UI says "mail skickats" regardless.
+# Daglig Check och Veckosamtal -- Uppgraderingar
 
-**Solution:** Stop claiming emails were sent. Instead, generate the invite link and clearly present it as the primary sharing method. Update the toast message to say "Inbjudningslank skapad" instead of "mail skickats". The link is the reliable mechanism.
+## 1. Daglig Check: Turn Toward -- flerval med checkboxar
 
-## Problem 2: Premature "Ni ar ihopkopplade!"
-When sending an email invite, the edge function creates a `couple` record and sets the inviter's `couple_id` immediately -- before the partner has even signed up. Then `Pairing.tsx` checks `profile?.couple_id` and shows the "paired" screen, hiding all pairing options.
+Nuvarande implementation anvander RadioGroup (bara ett val). Andras till checkboxar sa att anvandaren kan valja flera alternativ samtidigt (t.ex. bade "Tog initiativ" OCH "Tog emot positivt" = 2 poang).
 
-**Solution:** Don't set the inviter's `couple_id` until the partner actually accepts. The edge function should only create the invitation record with a `couple_id` placeholder (create the couple but don't link the inviter yet). Or better: don't create the couple at all until the partner accepts -- store only the inviter_id in the invitation and create the couple + link both users when the invitation is accepted.
+**Databasandring:** Kolumnen `turn_toward` (text) behover stodja flera varden. Laggs till en ny kolumn `turn_toward_options` (text array) i `daily_checks`-tabellen. Den gamla kolumnen behalls for bakatkompabilitet.
 
-## Changes
+**UI-andring:** Byt fran RadioGroup till tre Checkbox-komponenter. Visa poangraknarare (0-2 poang baserat pa antal valda "initiated"/"received_positively", "missed" ger 0).
 
-### 1. Edge function `send-invitation/index.ts`
-- Remove the "create couple and set inviter's couple_id" logic
-- Only store the invitation with `inviter_id`, `invitee_email`, and `token`
-- Remove `auth.admin.inviteUserByEmail` (unreliable)
-- Return the invite link URL
-- The couple will be created when the partner accepts
+## 2. Veckosamtal: Las upp-funktion
 
-### 2. Database function `accept_invitation`
-- Update to create the couple at acceptance time
-- Set `couple_id` on BOTH the inviter and the accepter profiles
-- Mark invitation as accepted
+Lagga till en "Las upp"-knapp som visas nar `ready === true`, sa att anvandaren kan redigera sin agenda igen.
 
-### 3. `Pairing.tsx`
-- Remove the early return when `profile?.couple_id` is set (the "Ni ar ihopkopplade" blocker)
-- Instead show a status indicator at the top if paired, but still allow the user to see the page
-- Actually, keep the paired state but only show it when BOTH partners have `couple_id` set -- check if partner exists in the couple
-- Change toast text from "Ett mail har skickats" to "Inbjudningslank skapad! Dela lanken med din partner."
-- Always show the invite link prominently after creating an invitation
+## 3. Veckosamtal: Motesvy nar bada last
 
-### 4. `Pairing.tsx` - verify pairing is real
-- After `refreshProfile()`, check if there's actually another user in the same couple before showing "ihopkopplade"
-- Query profiles table for another user with same `couple_id`
-- Only show paired state when both users exist
+Nar bada partners har last sin agenda:
+- Visa badas agendor sida vid sida (eller i flikar)
+- Varje sektion (Uppskattningar, Vad gick bra, Fragor) far ett extra textfalt for motesanteckningar/reflektioner
+- Dessa anteckningar sparas i `weekly_entries` i ett nytt `meeting_notes`-falt (jsonb)
 
-## Technical Details
+## 4. Veckosamtal: Nya falt
 
-### Edge function changes (send-invitation/index.ts)
-- Remove lines 49-74 (couple creation + profile update)
-- Store invitation with just `inviter_id`, `invitee_email`, `token` (no `couple_id` needed yet)
-- Update the `partner_invitations` table: make `couple_id` nullable or create couple later
-- Since `couple_id` is NOT NULL in the table, we need a migration to make it nullable OR we create the couple but don't link the inviter
+Tre nya sektioner laggs till:
 
-Better approach: keep creating the couple (to satisfy NOT NULL), but do NOT update the inviter's profile. The couple record exists as a placeholder. When partner accepts, link both profiles.
+**a) Praktiskt kommande vecka**
+- Textfalt: "Nar ses vi?"
+- Textfalt: "Vem tar hand om vad?"
+- Textfalt: "Speciella behov att ta hansyn till"
+- Sparas i `weekly_entries` i nytt `logistics`-falt (jsonb)
 
-### Database migration
-- Update `accept_invitation` function to also set the inviter's `couple_id`:
-  ```sql
-  -- Set couple_id on BOTH inviter and accepter
-  UPDATE profiles SET couple_id = v_couple_id WHERE user_id = v_inviter_id;
-  UPDATE profiles SET couple_id = v_couple_id WHERE user_id = p_user_id;
-  ```
+**b) Positiv intention**
+- Textfalt: "Min positiva intention for veckan"
+- Sparas i `weekly_entries` i nytt `intention`-falt (text)
 
-### Pairing.tsx verification
-- Add a check: query for partner profile with same `couple_id` and different `user_id`
-- Only show "ihopkopplade" if a partner is found
-- Otherwise show all pairing options with a note "Vantar pa att din partner ska acceptera"
+**c) Utcheckning**
+- Textfalt: "En kansla som lever i mig just nu"
+- Sparas i `weekly_entries` i nytt `checkout_feeling`-falt (text)
 
-### Files modified
-- `supabase/functions/send-invitation/index.ts` -- stop linking inviter's profile
-- `src/pages/Pairing.tsx` -- verify partner exists before showing paired state, fix toast messages
-- Database migration -- update `accept_invitation` to link both users
+## 5. Veckosamtal: Arkiv
+
+En ny sektion langst upp pa sidan som visar tidigare veckors samtal. Klickbara for att se agendor och motesanteckningar fran tidigare veckor (read-only).
+
+---
+
+## Tekniska detaljer
+
+### Databasmigrering
+
+```sql
+-- daily_checks: stodja flerval for turn_toward
+ALTER TABLE daily_checks ADD COLUMN turn_toward_options text[] DEFAULT '{}';
+
+-- weekly_entries: nya falt
+ALTER TABLE weekly_entries ADD COLUMN meeting_notes jsonb DEFAULT '{}';
+ALTER TABLE weekly_entries ADD COLUMN logistics jsonb DEFAULT '{}';
+ALTER TABLE weekly_entries ADD COLUMN intention text;
+ALTER TABLE weekly_entries ADD COLUMN checkout_feeling text;
+```
+
+### Filandringar
+
+**`src/pages/DailyCheck.tsx`**
+- Byt `turnToward` (string) till `turnTowardOptions` (string array)
+- Byt RadioGroup till tre Checkbox-komponenter
+- Visa poang: "initiated" + "received_positively" = 1 poang vardera, "missed" = 0
+- Uppdatera save-payload att inkludera `turn_toward_options`
+- Behall bakatkompabilitet med gamla `turn_toward`-kolumnen vid laddning
+
+**`src/pages/WeeklyConversation.tsx`**
+- Lagga till "Las upp"-knapp bredvid "Last"-knappen
+- Nar bada last: visa partners agenda (ladda fran `weekly_entries` med `neq user_id`)
+- Lagga till motesantecknings-falt under varje sektion i motesvyn
+- Lagga till tre nya kort: Praktiskt kommande vecka, Positiv intention, Utcheckning
+- Lagga till arkiv-sektion: lista tidigare `weekly_conversations` med klickbar expandering
+- Uppdatera save-payload med nya falt
+
