@@ -35,6 +35,7 @@ export type Database = {
           adjusted_note: string | null
           appreciation_note: string | null
           check_date: string
+          climate: number | null
           couple_id: string
           created_at: string
           gave_appreciation: boolean | null
@@ -53,6 +54,7 @@ export type Database = {
           adjusted_note?: string | null
           appreciation_note?: string | null
           check_date?: string
+          climate?: number | null
           couple_id: string
           created_at?: string
           gave_appreciation?: boolean | null
@@ -71,6 +73,7 @@ export type Database = {
           adjusted_note?: string | null
           appreciation_note?: string | null
           check_date?: string
+          climate?: number | null
           couple_id?: string
           created_at?: string
           gave_appreciation?: boolean | null
@@ -101,8 +104,10 @@ export type Database = {
           couple_id: string
           created_at: string
           id: string
+          need_today: string | null
           score: number
           user_id: string
+          want_today: string | null
           week_start: string
         }
         Insert: {
@@ -111,8 +116,10 @@ export type Database = {
           couple_id: string
           created_at?: string
           id?: string
+          need_today?: string | null
           score: number
           user_id: string
+          want_today?: string | null
           week_start: string
         }
         Update: {
@@ -121,8 +128,10 @@ export type Database = {
           couple_id?: string
           created_at?: string
           id?: string
+          need_today?: string | null
           score?: number
           user_id?: string
+          want_today?: string | null
           week_start?: string
         }
         Relationships: [
@@ -240,6 +249,7 @@ export type Database = {
           display_name: string
           id: string
           pairing_code: string | null
+          share_development: boolean | null
           updated_at: string
           user_id: string
         }
@@ -250,6 +260,7 @@ export type Database = {
           display_name?: string
           id?: string
           pairing_code?: string | null
+          share_development?: boolean | null
           updated_at?: string
           user_id: string
         }
@@ -260,6 +271,7 @@ export type Database = {
           display_name?: string
           id?: string
           pairing_code?: string | null
+          share_development?: boolean | null
           updated_at?: string
           user_id?: string
         }
@@ -310,6 +322,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      quarterly_goals: {
+        Row: {
+          couple_id: string
+          created_at: string | null
+          experience_done: boolean | null
+          experience_goal: string | null
+          id: string
+          practical_done: boolean | null
+          practical_goal: string | null
+          quarter_start: string
+          relationship_done: boolean | null
+          relationship_goal: string | null
+          user_id: string
+        }
+        Insert: {
+          couple_id: string
+          created_at?: string | null
+          experience_done?: boolean | null
+          experience_goal?: string | null
+          id?: string
+          practical_done?: boolean | null
+          practical_goal?: string | null
+          quarter_start: string
+          relationship_done?: boolean | null
+          relationship_goal?: string | null
+          user_id: string
+        }
+        Update: {
+          couple_id?: string
+          created_at?: string | null
+          experience_done?: boolean | null
+          experience_goal?: string | null
+          id?: string
+          practical_done?: boolean | null
+          practical_goal?: string | null
+          quarter_start?: string
+          relationship_done?: boolean | null
+          relationship_goal?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       repair_responses: {
         Row: {
@@ -470,6 +524,7 @@ export type Database = {
           issues: Json | null
           logistics: Json | null
           meeting_notes: Json | null
+          partner_learning: string | null
           ready: boolean | null
           takeaway: string | null
           user_id: string
@@ -485,6 +540,7 @@ export type Database = {
           issues?: Json | null
           logistics?: Json | null
           meeting_notes?: Json | null
+          partner_learning?: string | null
           ready?: boolean | null
           takeaway?: string | null
           user_id: string
@@ -500,6 +556,7 @@ export type Database = {
           issues?: Json | null
           logistics?: Json | null
           meeting_notes?: Json | null
+          partner_learning?: string | null
           ready?: boolean | null
           takeaway?: string | null
           user_id?: string

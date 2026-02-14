@@ -1,13 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { Heart, Briefcase, DollarSign, Users, CheckCircle, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 const AREAS = [
   { key: "health", label: "Hälsa", icon: Heart, description: "Fysisk och mental hälsa" },
@@ -33,8 +36,45 @@ export default function Evaluate() {
   const [comments, setComments] = useState<Record<string, string>>({
     health: "", career: "", economy: "", relationships: "",
   });
+  const [needToday, setNeedToday] = useState("");
+  const [wantToday, setWantToday] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  // Graph state
+  const [graphRange, setGraphRange] = useState("week");
+  const [graphData, setGraphData] = useState<{ week: string; total: number }[]>([]);
+
+  // Fetch graph data
+  useEffect(() => {
+    if (!user) return;
+    const fetchGraph = async () => {
+      const weeksMap: Record<string, number> = { week: 7, month: 12, year: 52 };
+      const numWeeks = weeksMap[graphRange] || 7;
+
+      const { data } = await supabase
+        .from("evaluations")
+        .select("week_start, score")
+        .eq("user_id", user.id)
+        .order("week_start", { ascending: false })
+        .limit(numWeeks * 4);
+
+      if (!data) return;
+
+      const grouped: Record<string, number> = {};
+      data.forEach((row) => {
+        grouped[row.week_start] = (grouped[row.week_start] || 0) + row.score;
+      });
+
+      const sorted = Object.entries(grouped)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .slice(-numWeeks)
+        .map(([week, total]) => ({ week: week.slice(5), total }));
+
+      setGraphData(sorted);
+    };
+    fetchGraph();
+  }, [user, graphRange]);
 
   const handleSubmit = async () => {
     if (!user || !profile?.couple_id) return;
@@ -48,9 +88,10 @@ export default function Evaluate() {
       area: area.key,
       score: scores[area.key],
       comment: comments[area.key] || null,
+      ...(area.key === "health" ? { need_today: needToday || null, want_today: wantToday || null } : {}),
     }));
 
-    const { error } = await supabase.from("evaluations").upsert(inserts, {
+    const { error } = await supabase.from("evaluations").upsert(inserts as any, {
       onConflict: "user_id,week_start,area",
     });
 
@@ -132,9 +173,59 @@ export default function Evaluate() {
         );
       })}
 
+      {/* Need & Want */}
+      <Card className="bg-card/80 border-border/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Idag</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Input
+            placeholder="Vad behöver jag idag? (max 120 tecken)"
+            maxLength={120}
+            value={needToday}
+            onChange={(e) => setNeedToday(e.target.value)}
+            className="bg-muted/50 border-border text-sm"
+          />
+          <Input
+            placeholder="Vad vill jag idag? (max 120 tecken)"
+            maxLength={120}
+            value={wantToday}
+            onChange={(e) => setWantToday(e.target.value)}
+            className="bg-muted/50 border-border text-sm"
+          />
+        </CardContent>
+      </Card>
+
       <Button onClick={handleSubmit} disabled={loading} className="w-full" size="lg">
         {loading ? "Sparar..." : "Spara utvärdering"}
       </Button>
+
+      {/* Graph */}
+      <Card className="bg-card/80 border-border/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Total näring över tid</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ToggleGroup type="single" value={graphRange} onValueChange={(v) => v && setGraphRange(v)} className="mb-4">
+            <ToggleGroupItem value="week" className="text-xs">Vecka</ToggleGroupItem>
+            <ToggleGroupItem value="month" className="text-xs">Månad</ToggleGroupItem>
+            <ToggleGroupItem value="year" className="text-xs">År</ToggleGroupItem>
+          </ToggleGroup>
+          {graphData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={graphData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(30 20% 82%)" />
+                <XAxis dataKey="week" tick={{ fontSize: 11 }} stroke="hsl(25 15% 45%)" />
+                <YAxis domain={[0, 40]} tick={{ fontSize: 11 }} stroke="hsl(25 15% 45%)" />
+                <Tooltip />
+                <Line type="monotone" dataKey="total" stroke="hsl(174 40% 38%)" strokeWidth={2} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-8">Ingen data ännu</p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

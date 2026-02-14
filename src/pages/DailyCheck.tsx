@@ -6,9 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { Map, Heart, ArrowRightLeft, Handshake, RefreshCw, CheckCircle, Loader2 } from "lucide-react";
+import { Map, Heart, ArrowRightLeft, Handshake, RefreshCw, CheckCircle, Loader2, CloudSun } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 
 export default function DailyCheck() {
   const { user, profile } = useAuth();
@@ -18,36 +21,34 @@ export default function DailyCheck() {
   const [question, setQuestion] = useState("");
   const [loveMapAnswer, setLoveMapAnswer] = useState("");
   const [loveMapCompleted, setLoveMapCompleted] = useState(false);
-
   const [gaveAppreciation, setGaveAppreciation] = useState(false);
   const [wasPresent, setWasPresent] = useState(false);
   const [appreciationNote, setAppreciationNote] = useState("");
-
   const [turnTowardOptions, setTurnTowardOptions] = useState<string[]>([]);
   const [turnTowardExample, setTurnTowardExample] = useState("");
-
   const [adjusted, setAdjusted] = useState(false);
   const [adjustedNote, setAdjustedNote] = useState("");
-
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [existingId, setExistingId] = useState<string | null>(null);
 
+  // New: climate
+  const [climate, setClimate] = useState(3);
+
+  // Graph state
+  const [graphRange, setGraphRange] = useState("week");
+  const [graphData, setGraphData] = useState<any[]>([]);
+
   const today = new Date().toISOString().split("T")[0];
 
-  // Load random question
   const loadQuestion = async () => {
-    const { data } = await supabase
-      .from("love_map_questions")
-      .select("question")
-      .limit(50);
+    const { data } = await supabase.from("love_map_questions").select("question").limit(50);
     if (data && data.length > 0) {
       const random = data[Math.floor(Math.random() * data.length)];
       setQuestion(random.question);
     }
   };
 
-  // Load existing check for today
   useEffect(() => {
     if (!user) return;
     const loadExisting = async () => {
@@ -74,12 +75,48 @@ export default function DailyCheck() {
         setTurnTowardExample(data.turn_toward_example || "");
         setAdjusted(data.adjusted || false);
         setAdjustedNote(data.adjusted_note || "");
+        setClimate((data as any).climate ?? 3);
       } else {
         loadQuestion();
       }
     };
     loadExisting();
   }, [user]);
+
+  // Fetch graph data
+  useEffect(() => {
+    if (!user) return;
+    const fetchGraph = async () => {
+      const daysMap: Record<string, number> = { week: 7, month: 30, year: 365 };
+      const numDays = daysMap[graphRange] || 7;
+      const since = new Date();
+      since.setDate(since.getDate() - numDays);
+
+      const { data } = await supabase
+        .from("daily_checks")
+        .select("check_date, turn_toward, turn_toward_options, gave_appreciation, adjusted, climate")
+        .eq("user_id", user.id)
+        .gte("check_date", since.toISOString().split("T")[0])
+        .order("check_date", { ascending: true });
+
+      if (!data) return;
+
+      const mapped = data.map((d: any) => {
+        const opts: string[] = d.turn_toward_options || [];
+        const positive = opts.filter((v: string) => v === "initiated" || v === "received_positively").length;
+        const ttPct = opts.length > 0 ? Math.round((positive / Math.max(opts.length, 1)) * 100) : null;
+        return {
+          date: d.check_date.slice(5),
+          "Turn Toward %": ttPct,
+          Uppskattning: d.gave_appreciation ? 1 : 0,
+          Påverkan: d.adjusted ? 1 : 0,
+          Klimat: d.climate ?? null,
+        };
+      });
+      setGraphData(mapped);
+    };
+    fetchGraph();
+  }, [user, graphRange]);
 
   const handleSave = async () => {
     if (!user || !profile?.couple_id) return;
@@ -100,6 +137,7 @@ export default function DailyCheck() {
       turn_toward_example: turnTowardExample || null,
       adjusted,
       adjusted_note: adjustedNote || null,
+      climate,
     };
 
     let error;
@@ -267,9 +305,64 @@ export default function DailyCheck() {
         </CardContent>
       </Card>
 
+      {/* Card 5: Climate */}
+      <Card className="bg-card/80 border-border/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <CloudSun className="w-5 h-5 text-primary" />
+            Klimat
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">Hur var klimatet mellan oss idag?</p>
+          <div className="flex items-center gap-4">
+            <Slider
+              value={[climate]}
+              onValueChange={([v]) => setClimate(v)}
+              min={1}
+              max={5}
+              step={1}
+              className="flex-1"
+            />
+            <span className="text-2xl font-bold text-primary w-10 text-center">{climate}</span>
+          </div>
+        </CardContent>
+      </Card>
+
       <Button onClick={handleSave} disabled={loading} className="w-full" size="lg">
         {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sparar...</> : "Spara dagens check"}
       </Button>
+
+      {/* Graph */}
+      <Card className="bg-card/80 border-border/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Utveckling</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ToggleGroup type="single" value={graphRange} onValueChange={(v) => v && setGraphRange(v)} className="mb-4">
+            <ToggleGroupItem value="week" className="text-xs">Vecka</ToggleGroupItem>
+            <ToggleGroupItem value="month" className="text-xs">Månad</ToggleGroupItem>
+            <ToggleGroupItem value="year" className="text-xs">År</ToggleGroupItem>
+          </ToggleGroup>
+          {graphData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={graphData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(30 20% 82%)" />
+                <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(25 15% 45%)" />
+                <YAxis tick={{ fontSize: 10 }} stroke="hsl(25 15% 45%)" />
+                <Tooltip />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Line type="monotone" dataKey="Turn Toward %" stroke="hsl(174 40% 38%)" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                <Line type="monotone" dataKey="Uppskattning" stroke="hsl(43 60% 55%)" strokeWidth={2} dot={{ r: 2 }} />
+                <Line type="monotone" dataKey="Påverkan" stroke="hsl(30 50% 45%)" strokeWidth={2} dot={{ r: 2 }} />
+                <Line type="monotone" dataKey="Klimat" stroke="hsl(174 60% 30%)" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-8">Ingen data ännu</p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
