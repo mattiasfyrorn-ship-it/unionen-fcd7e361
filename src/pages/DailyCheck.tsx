@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -24,7 +23,7 @@ export default function DailyCheck() {
   const [wasPresent, setWasPresent] = useState(false);
   const [appreciationNote, setAppreciationNote] = useState("");
 
-  const [turnToward, setTurnToward] = useState<string>("");
+  const [turnTowardOptions, setTurnTowardOptions] = useState<string[]>([]);
   const [turnTowardExample, setTurnTowardExample] = useState("");
 
   const [adjusted, setAdjusted] = useState(false);
@@ -67,7 +66,11 @@ export default function DailyCheck() {
         setGaveAppreciation(data.gave_appreciation || false);
         setWasPresent(data.was_present || false);
         setAppreciationNote(data.appreciation_note || "");
-        setTurnToward(data.turn_toward || "");
+        setTurnTowardOptions(
+          (data as any).turn_toward_options?.length
+            ? (data as any).turn_toward_options
+            : data.turn_toward ? [data.turn_toward] : []
+        );
         setTurnTowardExample(data.turn_toward_example || "");
         setAdjusted(data.adjusted || false);
         setAdjustedNote(data.adjusted_note || "");
@@ -82,7 +85,7 @@ export default function DailyCheck() {
     if (!user || !profile?.couple_id) return;
     setLoading(true);
 
-    const payload = {
+    const payload: any = {
       user_id: user.id,
       couple_id: profile.couple_id,
       check_date: today,
@@ -92,7 +95,8 @@ export default function DailyCheck() {
       gave_appreciation: gaveAppreciation,
       was_present: wasPresent,
       appreciation_note: appreciationNote || null,
-      turn_toward: turnToward || null,
+      turn_toward: turnTowardOptions.length ? turnTowardOptions[0] : null,
+      turn_toward_options: turnTowardOptions,
       turn_toward_example: turnTowardExample || null,
       adjusted,
       adjusted_note: adjustedNote || null,
@@ -205,20 +209,33 @@ export default function DailyCheck() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <RadioGroup value={turnToward} onValueChange={setTurnToward} className="space-y-2">
-            <div className="flex items-center gap-2">
-              <RadioGroupItem value="initiated" id="tt-init" />
-              <Label htmlFor="tt-init" className="text-sm">Tog initiativ</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <RadioGroupItem value="received_positively" id="tt-recv" />
-              <Label htmlFor="tt-recv" className="text-sm">Tog emot initiativ positivt</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <RadioGroupItem value="missed" id="tt-miss" />
-              <Label htmlFor="tt-miss" className="text-sm">Missade möjlighet</Label>
-            </div>
-          </RadioGroup>
+          {(() => {
+            const toggleOption = (val: string) => {
+              setTurnTowardOptions(prev =>
+                prev.includes(val) ? prev.filter(v => v !== val) : [...prev, val]
+              );
+            };
+            const score = turnTowardOptions.filter(v => v === "initiated" || v === "received_positively").length;
+            return (
+              <>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox checked={turnTowardOptions.includes("initiated")} onCheckedChange={() => toggleOption("initiated")} id="tt-init" />
+                    <Label htmlFor="tt-init" className="text-sm">Tog initiativ</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox checked={turnTowardOptions.includes("received_positively")} onCheckedChange={() => toggleOption("received_positively")} id="tt-recv" />
+                    <Label htmlFor="tt-recv" className="text-sm">Tog emot initiativ positivt</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox checked={turnTowardOptions.includes("missed")} onCheckedChange={() => toggleOption("missed")} id="tt-miss" />
+                    <Label htmlFor="tt-miss" className="text-sm">Missade möjlighet</Label>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">Poäng: {score}/2</p>
+              </>
+            );
+          })()}
           <Input
             placeholder="Exempel (1 mening)"
             value={turnTowardExample}

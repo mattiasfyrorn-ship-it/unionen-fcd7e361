@@ -44,6 +44,7 @@ export type Database = {
           love_map_question: string | null
           turn_toward: string | null
           turn_toward_example: string | null
+          turn_toward_options: string[] | null
           user_id: string
           was_present: boolean | null
         }
@@ -61,6 +62,7 @@ export type Database = {
           love_map_question?: string | null
           turn_toward?: string | null
           turn_toward_example?: string | null
+          turn_toward_options?: string[] | null
           user_id: string
           was_present?: boolean | null
         }
@@ -78,6 +80,7 @@ export type Database = {
           love_map_question?: string | null
           turn_toward?: string | null
           turn_toward_example?: string | null
+          turn_toward_options?: string[] | null
           user_id?: string
           was_present?: boolean | null
         }
@@ -343,10 +346,14 @@ export type Database = {
       weekly_entries: {
         Row: {
           appreciations: string[] | null
+          checkout_feeling: string | null
           conversation_id: string
           created_at: string
           id: string
+          intention: string | null
           issues: Json | null
+          logistics: Json | null
+          meeting_notes: Json | null
           ready: boolean | null
           takeaway: string | null
           user_id: string
@@ -354,10 +361,14 @@ export type Database = {
         }
         Insert: {
           appreciations?: string[] | null
+          checkout_feeling?: string | null
           conversation_id: string
           created_at?: string
           id?: string
+          intention?: string | null
           issues?: Json | null
+          logistics?: Json | null
+          meeting_notes?: Json | null
           ready?: boolean | null
           takeaway?: string | null
           user_id: string
@@ -365,10 +376,14 @@ export type Database = {
         }
         Update: {
           appreciations?: string[] | null
+          checkout_feeling?: string | null
           conversation_id?: string
           created_at?: string
           id?: string
+          intention?: string | null
           issues?: Json | null
+          logistics?: Json | null
+          meeting_notes?: Json | null
           ready?: boolean | null
           takeaway?: string | null
           user_id?: string

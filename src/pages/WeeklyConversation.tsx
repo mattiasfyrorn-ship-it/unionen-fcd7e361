@@ -7,13 +7,30 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { MessageCircle, Plus, Trash2, CheckCircle, Loader2, Lock } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  MessageCircle, Plus, Trash2, CheckCircle, Loader2, Lock, Unlock,
+  ChevronDown, CalendarDays, Sparkles, Heart, ClipboardList, SmilePlus
+} from "lucide-react";
 
 function getWeekStart() {
   const d = new Date();
   const day = d.getDay();
   const diff = d.getDate() - day + (day === 0 ? -6 : 1);
   return new Date(d.setDate(diff)).toISOString().split("T")[0];
+}
+
+interface Issue { text: string; tag: string }
+interface MeetingNotes {
+  appreciations?: string;
+  wins?: string;
+  issues?: string;
+  general?: string;
+}
+interface Logistics {
+  when?: string;
+  who?: string;
+  needs?: string;
 }
 
 export default function WeeklyConversation() {
@@ -25,13 +42,27 @@ export default function WeeklyConversation() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [appreciations, setAppreciations] = useState<string[]>(["", "", "", "", ""]);
   const [wins, setWins] = useState<string[]>(["", "", ""]);
-  const [issues, setIssues] = useState<{ text: string; tag: string }[]>([]);
+  const [issues, setIssues] = useState<Issue[]>([]);
   const [takeaway, setTakeaway] = useState("");
   const [ready, setReady] = useState(false);
   const [partnerReady, setPartnerReady] = useState(false);
   const [status, setStatus] = useState("preparing");
   const [loading, setLoading] = useState(false);
   const [entryId, setEntryId] = useState<string | null>(null);
+
+  // New fields
+  const [meetingNotes, setMeetingNotes] = useState<MeetingNotes>({});
+  const [logistics, setLogistics] = useState<Logistics>({});
+  const [intention, setIntention] = useState("");
+  const [checkoutFeeling, setCheckoutFeeling] = useState("");
+
+  // Partner data
+  const [partnerEntry, setPartnerEntry] = useState<any>(null);
+
+  // Archive
+  const [archive, setArchive] = useState<any[]>([]);
+  const [expandedArchive, setExpandedArchive] = useState<string | null>(null);
+  const [archiveEntries, setArchiveEntries] = useState<Record<string, any[]>>({});
 
   useEffect(() => {
     if (!profile?.couple_id) return;
@@ -69,23 +100,56 @@ export default function WeeklyConversation() {
         setEntryId(myEntry.id);
         setAppreciations(myEntry.appreciations?.length ? myEntry.appreciations : ["", "", "", "", ""]);
         setWins(myEntry.wins?.length ? myEntry.wins : ["", "", ""]);
-        setIssues(Array.isArray(myEntry.issues) ? myEntry.issues as { text: string; tag: string }[] : []);
+        setIssues(Array.isArray(myEntry.issues) ? (myEntry.issues as unknown as Issue[]) : []);
         setTakeaway(myEntry.takeaway || "");
         setReady(myEntry.ready || false);
+        setMeetingNotes(((myEntry as any).meeting_notes as MeetingNotes) || {});
+        setLogistics(((myEntry as any).logistics as Logistics) || {});
+        setIntention((myEntry as any).intention || "");
+        setCheckoutFeeling((myEntry as any).checkout_feeling || "");
       }
 
       // Check partner
-      const { data: partnerEntry } = await supabase
+      const { data: pEntry } = await supabase
         .from("weekly_entries")
-        .select("ready")
+        .select("*")
         .eq("conversation_id", conv.id)
         .neq("user_id", user!.id)
         .maybeSingle();
 
-      if (partnerEntry) setPartnerReady(partnerEntry.ready || false);
+      if (pEntry) {
+        setPartnerReady(pEntry.ready || false);
+        setPartnerEntry(pEntry);
+      }
+
+      // Load archive
+      const { data: pastConvs } = await supabase
+        .from("weekly_conversations")
+        .select("*")
+        .eq("couple_id", profile.couple_id!)
+        .neq("week_start", weekStart)
+        .order("week_start", { ascending: false })
+        .limit(20);
+
+      if (pastConvs) setArchive(pastConvs);
     };
     load();
   }, [profile?.couple_id, user?.id]);
+
+  const loadArchiveEntries = async (convId: string) => {
+    if (archiveEntries[convId]) {
+      setExpandedArchive(expandedArchive === convId ? null : convId);
+      return;
+    }
+    const { data } = await supabase
+      .from("weekly_entries")
+      .select("*")
+      .eq("conversation_id", convId);
+    if (data) {
+      setArchiveEntries(prev => ({ ...prev, [convId]: data }));
+      setExpandedArchive(convId);
+    }
+  };
 
   const updateField = (arr: string[], idx: number, val: string, setter: (v: string[]) => void) => {
     const copy = [...arr];
@@ -101,18 +165,22 @@ export default function WeeklyConversation() {
     setIssues(copy);
   };
 
-  const handleSave = async (markReady = false) => {
+  const handleSave = async (markReady?: boolean) => {
     if (!user || !conversationId) return;
     setLoading(true);
 
-    const payload = {
+    const payload: any = {
       conversation_id: conversationId,
       user_id: user.id,
       appreciations: appreciations.filter(Boolean),
       wins: wins.filter(Boolean),
-      issues: issues.filter((i) => i.text.trim()),
+      issues: issues.filter((i) => i.text.trim()) as any,
       takeaway: takeaway || null,
-      ready: markReady,
+      ready: markReady !== undefined ? markReady : ready,
+      meeting_notes: meetingNotes as any,
+      logistics: logistics as any,
+      intention: intention || null,
+      checkout_feeling: checkoutFeeling || null,
     };
 
     let error;
@@ -127,11 +195,13 @@ export default function WeeklyConversation() {
     if (error) {
       toast({ title: "Fel", description: error.message, variant: "destructive" });
     } else {
-      if (markReady) setReady(true);
-      toast({ title: markReady ? "Klar för samtal! ✨" : "Sparat!" });
+      if (markReady !== undefined) setReady(markReady);
+      toast({ title: markReady === true ? "Klar för samtal! ✨" : markReady === false ? "Upplåst!" : "Sparat!" });
     }
     setLoading(false);
   };
+
+  const bothReady = ready && partnerReady;
 
   if (!profile?.couple_id) {
     return (
@@ -149,6 +219,44 @@ export default function WeeklyConversation() {
         <p className="text-muted-foreground text-sm">State of the Union – förbered och genomför ert veckosamtal</p>
       </div>
 
+      {/* Archive */}
+      {archive.length > 0 && (
+        <Collapsible>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1">
+              <CalendarDays className="w-4 h-4" /> Tidigare veckosamtal ({archive.length})
+              <ChevronDown className="w-3 h-3" />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-2 mt-2">
+            {archive.map((conv) => (
+              <Card key={conv.id} className="bg-muted/30 border-border/30">
+                <CardHeader className="pb-1 pt-3 px-4 cursor-pointer" onClick={() => loadArchiveEntries(conv.id)}>
+                  <CardTitle className="text-sm flex items-center justify-between">
+                    <span>Vecka {conv.week_start}</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${expandedArchive === conv.id ? "rotate-180" : ""}`} />
+                  </CardTitle>
+                </CardHeader>
+                {expandedArchive === conv.id && archiveEntries[conv.id] && (
+                  <CardContent className="space-y-2 text-xs text-muted-foreground">
+                    {archiveEntries[conv.id].map((entry, i) => (
+                      <div key={entry.id} className="space-y-1 border-t border-border/30 pt-2">
+                        <p className="font-medium text-foreground">{entry.user_id === user?.id ? "Du" : "Partner"}</p>
+                        {entry.appreciations?.length > 0 && <p><strong>Uppskattningar:</strong> {entry.appreciations.join(", ")}</p>}
+                        {entry.wins?.length > 0 && <p><strong>Bra:</strong> {entry.wins.join(", ")}</p>}
+                        {entry.takeaway && <p><strong>Takeaway:</strong> {entry.takeaway}</p>}
+                        {(entry as any).intention && <p><strong>Intention:</strong> {(entry as any).intention}</p>}
+                        {(entry as any).checkout_feeling && <p><strong>Känsla:</strong> {(entry as any).checkout_feeling}</p>}
+                      </div>
+                    ))}
+                  </CardContent>
+                )}
+              </Card>
+            ))}
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+
       {/* Status */}
       <div className="flex items-center gap-3 text-sm">
         <span className={`flex items-center gap-1 ${ready ? "text-teal" : "text-muted-foreground"}`}>
@@ -158,6 +266,46 @@ export default function WeeklyConversation() {
           <CheckCircle className="w-4 h-4" /> Partner: {partnerReady ? "Klar" : "Förbereder"}
         </span>
       </div>
+
+      {/* Partner agenda visible when both ready */}
+      {bothReady && partnerEntry && (
+        <Card className="bg-primary/5 border-primary/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Heart className="w-5 h-5 text-primary" />
+              Partners agenda
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            {partnerEntry.appreciations?.length > 0 && (
+              <div>
+                <p className="font-medium text-muted-foreground text-xs mb-1">Uppskattningar</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  {partnerEntry.appreciations.map((a: string, i: number) => <li key={i}>{a}</li>)}
+                </ul>
+              </div>
+            )}
+            {partnerEntry.wins?.length > 0 && (
+              <div>
+                <p className="font-medium text-muted-foreground text-xs mb-1">Vad gick bra</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  {partnerEntry.wins.map((w: string, i: number) => <li key={i}>{w}</li>)}
+                </ul>
+              </div>
+            )}
+            {Array.isArray(partnerEntry.issues) && partnerEntry.issues.length > 0 && (
+              <div>
+                <p className="font-medium text-muted-foreground text-xs mb-1">Frågor/Problem</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  {(partnerEntry.issues as Issue[]).map((issue, i) => (
+                    <li key={i}>{issue.text} <span className="text-xs text-muted-foreground">({issue.tag})</span></li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Appreciations */}
       <Card className="bg-card/80 border-border/50">
@@ -179,6 +327,15 @@ export default function WeeklyConversation() {
               disabled={ready}
             />
           ))}
+          {bothReady && (
+            <Textarea
+              placeholder="Mötesanteckningar om uppskattningar..."
+              value={meetingNotes.appreciations || ""}
+              onChange={(e) => setMeetingNotes(prev => ({ ...prev, appreciations: e.target.value }))}
+              className="bg-muted/50 border-border resize-none text-sm mt-2"
+              rows={2}
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -198,6 +355,15 @@ export default function WeeklyConversation() {
               disabled={ready}
             />
           ))}
+          {bothReady && (
+            <Textarea
+              placeholder="Mötesanteckningar om vinster..."
+              value={meetingNotes.wins || ""}
+              onChange={(e) => setMeetingNotes(prev => ({ ...prev, wins: e.target.value }))}
+              className="bg-muted/50 border-border resize-none text-sm mt-2"
+              rows={2}
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -238,16 +404,77 @@ export default function WeeklyConversation() {
               <Plus className="w-3 h-3 mr-1" /> Lägg till
             </Button>
           )}
+          {bothReady && (
+            <Textarea
+              placeholder="Mötesanteckningar om frågor..."
+              value={meetingNotes.issues || ""}
+              onChange={(e) => setMeetingNotes(prev => ({ ...prev, issues: e.target.value }))}
+              className="bg-muted/50 border-border resize-none text-sm mt-2"
+              rows={2}
+            />
+          )}
         </CardContent>
       </Card>
 
-      {/* Post-conversation */}
-      {ready && partnerReady && (
+      {/* Logistics */}
+      <Card className="bg-card/80 border-border/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <ClipboardList className="w-5 h-5 text-primary" />
+            Praktiskt kommande vecka
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Input
+            placeholder="När ses vi?"
+            value={logistics.when || ""}
+            onChange={(e) => setLogistics(prev => ({ ...prev, when: e.target.value }))}
+            className="bg-muted/50 border-border text-sm"
+            disabled={ready}
+          />
+          <Input
+            placeholder="Vem tar hand om vad?"
+            value={logistics.who || ""}
+            onChange={(e) => setLogistics(prev => ({ ...prev, who: e.target.value }))}
+            className="bg-muted/50 border-border text-sm"
+            disabled={ready}
+          />
+          <Input
+            placeholder="Speciella behov att ta hänsyn till"
+            value={logistics.needs || ""}
+            onChange={(e) => setLogistics(prev => ({ ...prev, needs: e.target.value }))}
+            className="bg-muted/50 border-border text-sm"
+            disabled={ready}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Positive intention */}
+      <Card className="bg-card/80 border-border/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" />
+            Positiv intention
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Input
+            placeholder="Min positiva intention för veckan..."
+            value={intention}
+            onChange={(e) => setIntention(e.target.value)}
+            className="bg-muted/50 border-border text-sm"
+            disabled={ready}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Post-conversation takeaway */}
+      {bothReady && (
         <Card className="bg-card/80 border-border/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Efter samtalet</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
             <Textarea
               placeholder="Vad fick jag ut av detta samtal? (1 mening)"
               value={takeaway}
@@ -255,25 +482,49 @@ export default function WeeklyConversation() {
               className="bg-muted/50 border-border resize-none text-sm"
               rows={2}
             />
-            <Button onClick={() => handleSave()} disabled={loading} className="w-full mt-3" size="sm">
-              Spara reflektion
-            </Button>
+            <Textarea
+              placeholder="Generella mötesanteckningar..."
+              value={meetingNotes.general || ""}
+              onChange={(e) => setMeetingNotes(prev => ({ ...prev, general: e.target.value }))}
+              className="bg-muted/50 border-border resize-none text-sm"
+              rows={2}
+            />
           </CardContent>
         </Card>
       )}
 
+      {/* Checkout feeling */}
+      <Card className="bg-card/80 border-border/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <SmilePlus className="w-5 h-5 text-primary" />
+            Utcheckning
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Input
+            placeholder="En känsla som lever i mig just nu..."
+            value={checkoutFeeling}
+            onChange={(e) => setCheckoutFeeling(e.target.value)}
+            className="bg-muted/50 border-border text-sm"
+          />
+        </CardContent>
+      </Card>
+
       {/* Actions */}
       <div className="flex gap-3">
-        <Button onClick={() => handleSave(false)} disabled={loading || ready} variant="outline" className="flex-1">
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Spara utkast"}
+        <Button onClick={() => handleSave()} disabled={loading} variant="outline" className="flex-1">
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Spara"}
         </Button>
-        <Button onClick={() => handleSave(true)} disabled={loading || ready} className="flex-1">
-          {ready ? (
-            <><Lock className="w-4 h-4 mr-1" /> Låst</>
-          ) : (
-            "✔ Klar för samtal"
-          )}
-        </Button>
+        {ready ? (
+          <Button onClick={() => handleSave(false)} disabled={loading} variant="outline" className="flex-1">
+            <Unlock className="w-4 h-4 mr-1" /> Lås upp
+          </Button>
+        ) : (
+          <Button onClick={() => handleSave(true)} disabled={loading} className="flex-1">
+            ✔ Klar för samtal
+          </Button>
+        )}
       </div>
     </div>
   );
