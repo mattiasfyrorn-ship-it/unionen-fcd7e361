@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { useEffect } from "react";
+import { subscribeToPush, isPushSupported } from "@/lib/pushNotifications";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Evaluate from "./pages/Evaluate";
@@ -14,9 +16,24 @@ import AppLayout from "./components/AppLayout";
 import Repair from "./pages/Repair";
 import Account from "./pages/Account";
 import Messages from "./pages/Messages";
+import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+function PushInitializer() {
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user) return;
+    // Register custom service worker for push
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(console.error);
+    }
+  }, [user?.id]);
+
+  return null;
+}
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -45,6 +62,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <PushInitializer />
           <Routes>
             <Route path="/auth" element={<AuthRoute />} />
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -55,6 +73,7 @@ const App = () => (
             <Route path="/repair" element={<ProtectedRoute><Repair /></ProtectedRoute>} />
             <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
             <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+            <Route path="/install" element={<ProtectedRoute><Install /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
