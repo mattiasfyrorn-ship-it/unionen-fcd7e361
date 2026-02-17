@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,10 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, Briefcase, DollarSign, Users, CheckCircle, Sparkles } from "lucide-react";
+import { Heart, Briefcase, DollarSign, Users, Sparkles, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import WeekDayPicker from "@/components/WeekDayPicker";
+import { format, startOfWeek } from "date-fns";
 
 const AREAS = [
   { key: "health", label: "Hälsa", icon: Heart, description: "Fysisk och mental hälsa" },
@@ -19,17 +21,16 @@ const AREAS = [
   { key: "relationships", label: "Relationer", icon: Users, description: "Kärlek, familj och vänner" },
 ];
 
-function getWeekStart() {
-  const d = new Date();
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  return new Date(d.setDate(diff)).toISOString().split("T")[0];
+function getWeekStartFromDate(date: Date): string {
+  return format(startOfWeek(date, { weekStartsOn: 1 }), "yyyy-MM-dd");
 }
 
 export default function Evaluate() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [scores, setScores] = useState<Record<string, number>>({
     health: 5, career: 5, economy: 5, relationships: 5,
   });
@@ -39,11 +40,73 @@ export default function Evaluate() {
   const [needToday, setNeedToday] = useState("");
   const [wantToday, setWantToday] = useState("");
   const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [hasExisting, setHasExisting] = useState(false);
+  const [markedDates, setMarkedDates] = useState<string[]>([]);
 
   // Graph state
   const [graphRange, setGraphRange] = useState("week");
   const [graphData, setGraphData] = useState<{ week: string; total: number }[]>([]);
+
+  const weekStart = getWeekStartFromDate(selectedDate);
+
+  const resetForm = () => {
+    setScores({ health: 5, career: 5, economy: 5, relationships: 5 });
+    setComments({ health: "", career: "", economy: "", relationships: "" });
+    setNeedToday("");
+    setWantToday("");
+    setHasExisting(false);
+  };
+
+  // Load marked weeks (show all days of weeks that have data)
+  const loadMarkedDates = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("evaluations")
+      .select("week_start")
+      .eq("user_id", user.id);
+    if (data) {
+      const uniqueWeeks = [...new Set(data.map((d) => d.week_start))];
+      // Mark all 7 days of each week that has data
+      const allDates: string[] = [];
+      uniqueWeeks.forEach((ws) => {
+        const d = new Date(ws + "T00:00:00");
+        for (let i = 0; i < 7; i++) {
+          const day = new Date(d);
+          day.setDate(d.getDate() + i);
+          allDates.push(format(day, "yyyy-MM-dd"));
+        }
+      });
+      setMarkedDates(allDates);
+    }
+  }, [user]);
+
+  // Load data for selected week
+  const loadForWeek = useCallback(async () => {
+    if (!user) return;
+    resetForm();
+    const { data } = await supabase
+      .from("evaluations")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("week_start", weekStart);
+
+    if (data && data.length > 0) {
+      setHasExisting(true);
+      const newScores: Record<string, number> = { health: 5, career: 5, economy: 5, relationships: 5 };
+      const newComments: Record<string, string> = { health: "", career: "", economy: "", relationships: "" };
+      data.forEach((row) => {
+        newScores[row.area] = row.score;
+        newComments[row.area] = row.comment || "";
+        if (row.need_today) setNeedToday(row.need_today);
+        if (row.want_today) setWantToday(row.want_today);
+      });
+      setScores(newScores);
+      setComments(newComments);
+    }
+  }, [user, weekStart]);
+
+  useEffect(() => { loadForWeek(); }, [loadForWeek]);
+  useEffect(() => { loadMarkedDates(); }, [loadMarkedDates]);
 
   // Fetch graph data
   useEffect(() => {
@@ -79,7 +142,6 @@ export default function Evaluate() {
   const handleSubmit = async () => {
     if (!user || !profile?.couple_id) return;
     setLoading(true);
-    const weekStart = getWeekStart();
 
     const inserts = AREAS.map((area) => ({
       user_id: user.id,
@@ -98,8 +160,9 @@ export default function Evaluate() {
     if (error) {
       toast({ title: "Fel", description: error.message, variant: "destructive" });
     } else {
-      setSubmitted(true);
       toast({ title: "Sparat!", description: "Din veckoutvärdering är registrerad." });
+      setHasExisting(true);
+      loadMarkedDates();
     }
     setLoading(false);
   };
@@ -109,16 +172,6 @@ export default function Evaluate() {
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <p className="text-muted-foreground">Du måste koppla ihop med din partner först.</p>
         <Button onClick={() => navigate("/pairing")}>Gå till parkoppling</Button>
-      </div>
-    );
-  }
-
-  if (submitted) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <CheckCircle className="w-16 h-16 text-teal" />
-        <h2 className="text-2xl text-primary">Utvärdering sparad!</h2>
-        <Button onClick={() => navigate("/")}>Tillbaka till dashboard</Button>
       </div>
     );
   }
@@ -135,6 +188,13 @@ export default function Evaluate() {
           Här följer du kort och enkelt upp dina prioriteringar för att vara den bästa versionen av dig själv.
         </p>
       </div>
+
+      <WeekDayPicker
+        selectedDate={selectedDate}
+        onDateChange={setSelectedDate}
+        markedDates={markedDates}
+        weekMode
+      />
 
       {AREAS.map((area) => {
         const Icon = area.icon;
@@ -197,7 +257,7 @@ export default function Evaluate() {
       </Card>
 
       <Button onClick={handleSubmit} disabled={loading} className="w-full" size="lg">
-        {loading ? "Sparar..." : "Spara utvärdering"}
+        {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sparar...</> : hasExisting ? "Uppdatera utvärdering" : "Spara utvärdering"}
       </Button>
 
       {/* Graph */}
