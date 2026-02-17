@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
       .limit(1);
 
     if (existing && existing.length > 0) {
-      return new Response(JSON.stringify({ error: "You already have a pending invitation" }), {
+      return new Response(JSON.stringify({ error: "Du har redan en väntande inbjudan. Be din partner att använda länken du redan skickat." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
