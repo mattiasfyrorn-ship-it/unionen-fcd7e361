@@ -6,6 +6,56 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+async function sendInviteEmail(to: string, inviterName: string, inviteUrl: string) {
+  const resendKey = Deno.env.get("RESEND_API_KEY");
+  if (!resendKey) {
+    console.error("RESEND_API_KEY not configured");
+    return false;
+  }
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${resendKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: "Unionen <onboarding@resend.dev>",
+      to: [to],
+      subject: `${inviterName} vill koppla ihop med dig på Unionen 💕`,
+      html: `
+        <div style="font-family: 'Georgia', serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
+          <div style="text-align: center; margin-bottom: 32px;">
+            <h1 style="color: hsl(25, 30%, 25%); font-size: 28px; font-weight: 300;">Unionen</h1>
+          </div>
+          <p style="color: hsl(25, 20%, 35%); font-size: 16px; line-height: 1.6;">
+            Hej! 👋
+          </p>
+          <p style="color: hsl(25, 20%, 35%); font-size: 16px; line-height: 1.6;">
+            <strong>${inviterName}</strong> har bjudit in dig att koppla ihop på Unionen – en app för att stärka er relation.
+          </p>
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${inviteUrl}" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, hsl(43, 60%, 55%), hsl(30, 50%, 48%)); color: white; text-decoration: none; border-radius: 12px; font-size: 16px; font-weight: 500;">
+              Acceptera inbjudan
+            </a>
+          </div>
+          <p style="color: hsl(25, 15%, 55%); font-size: 13px; line-height: 1.5;">
+            Eller kopiera länken: <br/>
+            <a href="${inviteUrl}" style="color: hsl(30, 50%, 40%); word-break: break-all;">${inviteUrl}</a>
+          </p>
+        </div>
+      `,
+    }),
+  });
+
+  if (!res.ok) {
+    const errBody = await res.text();
+    console.error("Resend error:", res.status, errBody);
+    return false;
+  }
+  return true;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -65,14 +115,18 @@ Deno.serve(async (req) => {
     if (existing && existing.length > 0) {
       const existingToken = existing[0].token;
       const inviteUrl = `https://unionen.lovable.app/auth?invite=${existingToken}`;
+
+      // Re-send the email even for existing invitations
+      const displayName = inviterName || "Din partner";
+      await sendInviteEmail(email, displayName, inviteUrl);
+
       return new Response(
-        JSON.stringify({ success: true, inviteUrl, token: existingToken, existing: true }),
+        JSON.stringify({ success: true, inviteUrl, token: existingToken, existing: true, emailSent: true }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     // Create a placeholder couple (needed for NOT NULL constraint)
-    // but do NOT link the inviter's profile yet
     const { data: couple, error: coupleErr } = await adminClient
       .from("couples")
       .insert({})
@@ -108,8 +162,12 @@ Deno.serve(async (req) => {
 
     const inviteUrl = `https://unionen.lovable.app/auth?invite=${token}`;
 
+    // Send the invitation email
+    const displayName = inviterName || "Din partner";
+    const emailSent = await sendInviteEmail(email, displayName, inviteUrl);
+
     return new Response(
-      JSON.stringify({ success: true, inviteUrl, token }),
+      JSON.stringify({ success: true, inviteUrl, token, emailSent }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {

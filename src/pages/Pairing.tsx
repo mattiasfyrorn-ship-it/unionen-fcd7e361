@@ -148,8 +148,10 @@ export default function Pairing() {
       } else {
         setInviteLink(data.inviteUrl);
         toast({
-          title: data.existing ? "Din befintliga inbjudningslänk 🔗" : "Inbjudningslänk skapad! 🔗",
-          description: "Kopiera och dela länken nedan med din partner. Inget mejl skickas automatiskt.",
+          title: data.existing ? "Inbjudan skickad igen! 📧" : "Inbjudan skickad! 📧",
+          description: data.emailSent
+            ? "Ett mejl med inbjudningslänken har skickats. Du kan också kopiera länken nedan."
+            : "Länken skapades men mejlet kunde inte skickas. Kopiera och dela länken nedan.",
         });
         setPartnerEmail("");
       }
