@@ -162,6 +162,36 @@ export type Database = {
         }
         Relationships: []
       }
+      messages: {
+        Row: {
+          content: string
+          couple_id: string
+          created_at: string
+          id: string
+          read: boolean
+          sender_id: string
+          type: string
+        }
+        Insert: {
+          content: string
+          couple_id: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          sender_id: string
+          type?: string
+        }
+        Update: {
+          content?: string
+          couple_id?: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          sender_id?: string
+          type?: string
+        }
+        Relationships: []
+      }
       partner_invitations: {
         Row: {
           couple_id: string
@@ -361,6 +391,39 @@ export type Database = {
           quarter_start?: string
           relationship_done?: boolean | null
           relationship_goal?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      quick_repairs: {
+        Row: {
+          category: string | null
+          couple_id: string
+          created_at: string
+          delivery: string | null
+          id: string
+          partner_response: string | null
+          phrase: string | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          couple_id: string
+          created_at?: string
+          delivery?: string | null
+          id?: string
+          partner_response?: string | null
+          phrase?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          couple_id?: string
+          created_at?: string
+          delivery?: string | null
+          id?: string
+          partner_response?: string | null
+          phrase?: string | null
           user_id?: string
         }
         Relationships: []
