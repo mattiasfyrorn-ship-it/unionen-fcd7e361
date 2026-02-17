@@ -143,19 +143,34 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create a placeholder couple (needed for NOT NULL constraint)
-    const { data: couple, error: coupleErr } = await adminClient
-      .from("couples")
-      .insert({})
-      .select()
+    // Check if inviter already has a couple_id — reuse it to avoid orphaned records
+    const { data: inviterProfile } = await adminClient
+      .from("profiles")
+      .select("couple_id")
+      .eq("user_id", user.id)
       .single();
 
-    if (coupleErr || !couple) {
-      console.error("Create couple error:", coupleErr);
-      return new Response(JSON.stringify({ error: "Could not create invitation" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    let coupleId: string;
+
+    if (inviterProfile?.couple_id) {
+      // Reuse existing couple so we don't create orphaned records
+      coupleId = inviterProfile.couple_id;
+    } else {
+      // Only create a new couple when the inviter has none
+      const { data: couple, error: coupleErr } = await adminClient
+        .from("couples")
+        .insert({})
+        .select()
+        .single();
+
+      if (coupleErr || !couple) {
+        console.error("Create couple error:", coupleErr);
+        return new Response(JSON.stringify({ error: "Could not create invitation" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      coupleId = couple.id;
     }
 
     // Generate token and create invitation
@@ -164,7 +179,7 @@ Deno.serve(async (req) => {
     const { error: invErr } = await adminClient.from("partner_invitations").insert({
       inviter_id: user.id,
       invitee_email: email,
-      couple_id: couple.id,
+      couple_id: coupleId,
       token,
       status: "pending",
     });
