@@ -6,6 +6,17 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function escapeHtml(text: string): string {
+  const map: Record<string, string> = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  };
+  return text.replace(/[&<>"']/g, (m) => map[m]);
+}
+
 async function sendInviteEmail(to: string, inviterName: string, inviteUrl: string) {
   const resendKey = Deno.env.get("RESEND_API_KEY");
   if (!resendKey) {
@@ -22,7 +33,7 @@ async function sendInviteEmail(to: string, inviterName: string, inviteUrl: strin
     body: JSON.stringify({
       from: "Unionen <onboarding@resend.dev>",
       to: [to],
-      subject: `${inviterName} vill koppla ihop med dig på Unionen 💕`,
+      subject: `${escapeHtml(inviterName)} vill koppla ihop med dig på Unionen 💕`,
       html: `
         <div style="font-family: 'Georgia', serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
           <div style="text-align: center; margin-bottom: 32px;">
@@ -32,7 +43,7 @@ async function sendInviteEmail(to: string, inviterName: string, inviteUrl: strin
             Hej! 👋
           </p>
           <p style="color: hsl(25, 20%, 35%); font-size: 16px; line-height: 1.6;">
-            <strong>${inviterName}</strong> har bjudit in dig att koppla ihop på Unionen – en app för att stärka er relation.
+            <strong>${escapeHtml(inviterName)}</strong> har bjudit in dig att koppla ihop på Unionen – en app för att stärka er relation.
           </p>
           <div style="text-align: center; margin: 32px 0;">
             <a href="${inviteUrl}" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, hsl(43, 60%, 55%), hsl(30, 50%, 48%)); color: white; text-decoration: none; border-radius: 12px; font-size: 16px; font-weight: 500;">
@@ -102,6 +113,13 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Sanitize and validate inviterName to prevent HTML injection
+    let sanitizedInviterName = "Din partner";
+    if (inviterName && typeof inviterName === "string") {
+      const stripped = inviterName.replace(/[<>"'&]/g, "").trim().slice(0, 100);
+      if (stripped) sanitizedInviterName = stripped;
+    }
+
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
     // If a pending invitation already exists, return the existing link
@@ -117,8 +135,7 @@ Deno.serve(async (req) => {
       const inviteUrl = `https://unionen.lovable.app/auth?invite=${existingToken}`;
 
       // Re-send the email even for existing invitations
-      const displayName = inviterName || "Din partner";
-      await sendInviteEmail(email, displayName, inviteUrl);
+      await sendInviteEmail(email, sanitizedInviterName, inviteUrl);
 
       return new Response(
         JSON.stringify({ success: true, inviteUrl, token: existingToken, existing: true, emailSent: true }),
@@ -163,8 +180,7 @@ Deno.serve(async (req) => {
     const inviteUrl = `https://unionen.lovable.app/auth?invite=${token}`;
 
     // Send the invitation email
-    const displayName = inviterName || "Din partner";
-    const emailSent = await sendInviteEmail(email, displayName, inviteUrl);
+    const emailSent = await sendInviteEmail(email, sanitizedInviterName, inviteUrl);
 
     return new Response(
       JSON.stringify({ success: true, inviteUrl, token, emailSent }),
