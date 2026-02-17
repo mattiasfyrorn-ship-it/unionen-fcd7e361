@@ -54,8 +54,7 @@ export default function Auth() {
           try {
             const { data: result } = await supabase.rpc("accept_invitation", {
               p_token: inviteToken,
-              p_user_id: data.user.id,
-            });
+            } as any);
             const resultObj = result as Record<string, unknown> | null;
             if (resultObj?.success) {
               toast({ title: "Välkommen! 💕", description: "Du är nu ihopkopplad med din partner." });
