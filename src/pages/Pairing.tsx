@@ -136,7 +136,13 @@ export default function Pairing() {
       });
 
       if (error) {
-        toast({ title: "Fel", description: "Kunde inte skapa inbjudan.", variant: "destructive" });
+        // Try to extract message from edge function error response
+        let msg = "Kunde inte skapa inbjudan.";
+        try {
+          const parsed = typeof error === "object" && error.context ? await error.context.json() : null;
+          if (parsed?.error) msg = parsed.error;
+        } catch {}
+        toast({ title: "Fel", description: msg, variant: "destructive" });
       } else if (data?.error) {
         toast({ title: "Fel", description: data.error, variant: "destructive" });
       } else {
