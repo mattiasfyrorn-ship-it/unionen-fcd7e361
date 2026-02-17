@@ -193,7 +193,6 @@ export default function Evaluate() {
         selectedDate={selectedDate}
         onDateChange={setSelectedDate}
         markedDates={markedDates}
-        weekMode
       />
 
       {AREAS.map((area) => {
