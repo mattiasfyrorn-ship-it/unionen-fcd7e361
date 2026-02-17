@@ -698,12 +698,11 @@ export type Database = {
       find_partner_by_code: {
         Args: { p_code: string }
         Returns: {
-          couple_id: string
           display_name: string
-          user_id: string
         }[]
       }
       get_my_couple_id: { Args: never; Returns: string }
+      pair_with_partner: { Args: { p_code: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never

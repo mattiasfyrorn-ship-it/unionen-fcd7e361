@@ -66,52 +66,22 @@ export default function Pairing() {
     setLoading(true);
 
     try {
-      const { data: results, error: findError } = await supabase
-        .rpc("find_partner_by_code", { p_code: partnerCode.trim() });
+      const { data: result, error } = await supabase
+        .rpc("pair_with_partner", { p_code: partnerCode.trim() } as any);
 
-      const partnerProfile = results && results.length > 0 ? results[0] : null;
-
-      if (findError || !partnerProfile) {
+      if (error || !result) {
         toast({ title: "Hittade ingen", description: "Kontrollera koden och försök igen.", variant: "destructive" });
         setLoading(false);
         return;
       }
 
-      if (partnerProfile.user_id === user.id) {
-        toast({ title: "Det där är din egen kod!", variant: "destructive" });
-        setLoading(false);
-        return;
-      }
+      const res = result as { success: boolean; error?: string; partnerName?: string };
 
-      let coupleId = partnerProfile.couple_id;
-
-      if (!coupleId) {
-        const { data: couple, error: coupleError } = await supabase
-          .from("couples")
-          .insert({})
-          .select()
-          .single();
-
-        if (coupleError || !couple) {
-          toast({ title: "Fel", description: "Kunde inte skapa par. Försök igen.", variant: "destructive" });
-          setLoading(false);
-          return;
-        }
-        coupleId = couple.id;
-
-        await supabase
-          .from("profiles")
-          .update({ couple_id: coupleId })
-          .eq("user_id", partnerProfile.user_id);
-      }
-
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ couple_id: coupleId })
-        .eq("user_id", user.id);
-
-      if (updateError) {
-        toast({ title: "Fel", description: updateError.message, variant: "destructive" });
+      if (!res.success) {
+        const msg = res.error === "Partner not found"
+          ? "Kontrollera koden och försök igen."
+          : res.error || "Något gick fel.";
+        toast({ title: "Hittade ingen", description: msg, variant: "destructive" });
       } else {
         await refreshProfile();
         toast({ title: "Ihopkopplade! 💕" });

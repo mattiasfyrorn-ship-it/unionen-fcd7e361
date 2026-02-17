@@ -88,6 +88,29 @@ serve(async (req) => {
     if (action === 'send') {
       const { couple_id, sender_id, title, body: notifBody, type } = body;
 
+      // Input validation
+      if (typeof title !== 'string' || title.length === 0 || title.length > 100) {
+        return new Response(JSON.stringify({ error: 'Invalid title' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (typeof notifBody !== 'string' || notifBody.length === 0 || notifBody.length > 500) {
+        return new Response(JSON.stringify({ error: 'Invalid body' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (!['message', 'repair'].includes(type)) {
+        return new Response(JSON.stringify({ error: 'Invalid type' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      // Strip control characters from user-supplied content
+      const sanitizedTitle = title.replace(/[\x00-\x1F\x7F]/g, '').trim();
+      const sanitizedBody = notifBody.replace(/[\x00-\x1F\x7F]/g, '').trim();
+
       const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
       const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
       const supabase = createClient(supabaseUrl, supabaseKey);
@@ -151,8 +174,8 @@ serve(async (req) => {
       }
 
       const payload = JSON.stringify({
-        title,
-        body: notifBody,
+        title: sanitizedTitle,
+        body: sanitizedBody,
         icon: '/icon-192.png',
         badge: '/icon-192.png',
         data: { type, url: type === 'message' ? '/messages' : '/repair' },
