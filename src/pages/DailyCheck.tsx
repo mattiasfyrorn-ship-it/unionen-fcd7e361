@@ -179,7 +179,7 @@ export default function DailyCheck() {
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
       <div>
-        <h1 className="text-3xl text-primary">Daglig check</h1>
+        <h1 className="text-3xl text-primary">Relationskontot</h1>
         <p className="text-muted-foreground text-sm">3–5 minuter. Konsekvent handling stärker relationen.</p>
       </div>
 

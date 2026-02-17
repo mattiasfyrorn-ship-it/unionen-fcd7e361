@@ -10,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   MessageCircle, Plus, Trash2, CheckCircle, Loader2, Lock, Unlock,
-  ChevronDown, CalendarDays, Sparkles, Heart, ClipboardList, SmilePlus
+  ChevronDown, CalendarDays, Sparkles, Heart, ClipboardList, SmilePlus, Play
 } from "lucide-react";
 
 function getWeekStart() {
@@ -25,7 +25,11 @@ interface MeetingNotes {
   appreciations?: string;
   wins?: string;
   issues?: string;
+  logistics?: string;
+  intention?: string;
+  closing?: string;
   general?: string;
+  [key: string]: string | undefined;
 }
 interface Logistics {
   when?: string;
@@ -46,21 +50,18 @@ export default function WeeklyConversation() {
   const [takeaway, setTakeaway] = useState("");
   const [ready, setReady] = useState(false);
   const [partnerReady, setPartnerReady] = useState(false);
-  const [status, setStatus] = useState("preparing");
   const [loading, setLoading] = useState(false);
   const [entryId, setEntryId] = useState<string | null>(null);
 
-  // New fields
   const [meetingNotes, setMeetingNotes] = useState<MeetingNotes>({});
   const [logistics, setLogistics] = useState<Logistics>({});
   const [intention, setIntention] = useState("");
   const [checkoutFeeling, setCheckoutFeeling] = useState("");
   const [partnerLearning, setPartnerLearning] = useState("");
 
-  // Partner data
   const [partnerEntry, setPartnerEntry] = useState<any>(null);
+  const [meetingStarted, setMeetingStarted] = useState(false);
 
-  // Archive
   const [archive, setArchive] = useState<any[]>([]);
   const [expandedArchive, setExpandedArchive] = useState<string | null>(null);
   const [archiveEntries, setArchiveEntries] = useState<Record<string, any[]>>({});
@@ -68,7 +69,6 @@ export default function WeeklyConversation() {
   useEffect(() => {
     if (!profile?.couple_id) return;
     const load = async () => {
-      // Get or create conversation
       let { data: conv } = await supabase
         .from("weekly_conversations")
         .select("*")
@@ -87,9 +87,7 @@ export default function WeeklyConversation() {
 
       if (!conv) return;
       setConversationId(conv.id);
-      setStatus(conv.status);
 
-      // Load my entry
       const { data: myEntry } = await supabase
         .from("weekly_entries")
         .select("*")
@@ -111,7 +109,6 @@ export default function WeeklyConversation() {
         setPartnerLearning((myEntry as any).partner_learning || "");
       }
 
-      // Check partner
       const { data: pEntry } = await supabase
         .from("weekly_entries")
         .select("*")
@@ -124,7 +121,6 @@ export default function WeeklyConversation() {
         setPartnerEntry(pEntry);
       }
 
-      // Load archive
       const { data: pastConvs } = await supabase
         .from("weekly_conversations")
         .select("*")
@@ -215,12 +211,161 @@ export default function WeeklyConversation() {
     );
   }
 
+  // Meeting flow sections
+  const meetingSections = [
+    {
+      key: "appreciations",
+      title: "Uppskattningar",
+      icon: <Heart className="w-5 h-5 text-primary" />,
+      myContent: appreciations.filter(Boolean),
+      partnerContent: partnerEntry?.appreciations?.filter(Boolean) || [],
+    },
+    {
+      key: "wins",
+      title: "Vad gick bra",
+      icon: <Sparkles className="w-5 h-5 text-primary" />,
+      myContent: wins.filter(Boolean),
+      partnerContent: partnerEntry?.wins?.filter(Boolean) || [],
+    },
+    {
+      key: "issues",
+      title: "Frågor / Problem",
+      icon: <MessageCircle className="w-5 h-5 text-primary" />,
+      myContent: issues.filter(i => i.text.trim()).map(i => `${i.text} (${i.tag})`),
+      partnerContent: (Array.isArray(partnerEntry?.issues) ? partnerEntry.issues as Issue[] : []).filter((i: Issue) => i.text?.trim()).map((i: Issue) => `${i.text} (${i.tag})`),
+    },
+    {
+      key: "logistics",
+      title: "Praktiskt",
+      icon: <ClipboardList className="w-5 h-5 text-primary" />,
+      myContent: [logistics.when, logistics.who, logistics.needs].filter(Boolean) as string[],
+      partnerContent: [
+        (partnerEntry?.logistics as Logistics)?.when,
+        (partnerEntry?.logistics as Logistics)?.who,
+        (partnerEntry?.logistics as Logistics)?.needs,
+      ].filter(Boolean) as string[],
+    },
+    {
+      key: "intention",
+      title: "Positiv intention",
+      icon: <Sparkles className="w-5 h-5 text-primary" />,
+      myContent: intention ? [intention] : [],
+      partnerContent: partnerEntry?.intention ? [partnerEntry.intention] : [],
+    },
+    {
+      key: "closing",
+      title: "Avslutning",
+      icon: <SmilePlus className="w-5 h-5 text-primary" />,
+      myContent: [],
+      partnerContent: [],
+    },
+  ];
+
+  // Meeting flow view
+  if (bothReady && meetingStarted) {
+    return (
+      <div className="space-y-4 max-w-2xl mx-auto">
+        <div>
+          <h1 className="text-3xl text-primary">Veckosamtal – möte</h1>
+          <p className="text-muted-foreground text-sm">Gå igenom varje sektion tillsammans</p>
+        </div>
+
+        {meetingSections.map((section) => (
+          <Card key={section.key} className="bg-card/80 border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                {section.icon}
+                {section.title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {(section.myContent.length > 0 || section.partnerContent.length > 0) ? (
+                <div className="space-y-2">
+                  {section.myContent.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">Du</p>
+                      <ul className="list-disc list-inside text-sm space-y-0.5">
+                        {section.myContent.map((item, i) => <li key={i}>{item}</li>)}
+                      </ul>
+                    </div>
+                  )}
+                  {section.partnerContent.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">Partner</p>
+                      <ul className="list-disc list-inside text-sm space-y-0.5">
+                        {section.partnerContent.map((item, i) => <li key={i}>{item}</li>)}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground italic">Inget förifyllt – använd anteckningsfältet nedan</p>
+              )}
+              <Textarea
+                placeholder={`Anteckningar – ${section.title.toLowerCase()}...`}
+                value={meetingNotes[section.key] || ""}
+                onChange={(e) => setMeetingNotes(prev => ({ ...prev, [section.key]: e.target.value }))}
+                className="bg-muted/50 border-border resize-none text-sm"
+                rows={2}
+              />
+            </CardContent>
+          </Card>
+        ))}
+
+        {/* Post-meeting */}
+        <Card className="bg-card/80 border-border/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Efter samtalet</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Textarea
+              placeholder="Vad fick jag ut av detta samtal?"
+              value={takeaway}
+              onChange={(e) => setTakeaway(e.target.value)}
+              className="bg-muted/50 border-border resize-none text-sm"
+              rows={2}
+            />
+            <Input
+              placeholder="Vad lärde jag mig om min partner? (max 120 tecken)"
+              maxLength={120}
+              value={partnerLearning}
+              onChange={(e) => setPartnerLearning(e.target.value)}
+              className="bg-muted/50 border-border text-sm"
+            />
+            <Input
+              placeholder="En känsla som lever i mig just nu..."
+              value={checkoutFeeling}
+              onChange={(e) => setCheckoutFeeling(e.target.value)}
+              className="bg-muted/50 border-border text-sm"
+            />
+          </CardContent>
+        </Card>
+
+        <div className="flex gap-3">
+          <Button onClick={() => handleSave()} disabled={loading} className="flex-1">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Spara anteckningar"}
+          </Button>
+          <Button variant="outline" onClick={() => setMeetingStarted(false)} className="flex-1">
+            Tillbaka till förberedelser
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
       <div>
         <h1 className="text-3xl text-primary">Veckosamtal</h1>
         <p className="text-muted-foreground text-sm">State of the Union – förbered och genomför ert veckosamtal</p>
       </div>
+
+      {/* Start meeting button */}
+      {bothReady && (
+        <Button onClick={() => setMeetingStarted(true)} className="w-full gap-2" size="lg">
+          <Play className="w-5 h-5" /> Starta möte
+        </Button>
+      )}
 
       {/* Archive */}
       {archive.length > 0 && (
@@ -242,7 +387,7 @@ export default function WeeklyConversation() {
                 </CardHeader>
                 {expandedArchive === conv.id && archiveEntries[conv.id] && (
                   <CardContent className="space-y-2 text-xs text-muted-foreground">
-                    {archiveEntries[conv.id].map((entry, i) => (
+                    {archiveEntries[conv.id].map((entry) => (
                       <div key={entry.id} className="space-y-1 border-t border-border/30 pt-2">
                         <p className="font-medium text-foreground">{entry.user_id === user?.id ? "Du" : "Partner"}</p>
                         {entry.appreciations?.length > 0 && <p><strong>Uppskattningar:</strong> {entry.appreciations.join(", ")}</p>}
@@ -270,46 +415,6 @@ export default function WeeklyConversation() {
         </span>
       </div>
 
-      {/* Partner agenda visible when both ready */}
-      {bothReady && partnerEntry && (
-        <Card className="bg-primary/5 border-primary/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Heart className="w-5 h-5 text-primary" />
-              Partners agenda
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            {partnerEntry.appreciations?.length > 0 && (
-              <div>
-                <p className="font-medium text-muted-foreground text-xs mb-1">Uppskattningar</p>
-                <ul className="list-disc list-inside space-y-0.5">
-                  {partnerEntry.appreciations.map((a: string, i: number) => <li key={i}>{a}</li>)}
-                </ul>
-              </div>
-            )}
-            {partnerEntry.wins?.length > 0 && (
-              <div>
-                <p className="font-medium text-muted-foreground text-xs mb-1">Vad gick bra</p>
-                <ul className="list-disc list-inside space-y-0.5">
-                  {partnerEntry.wins.map((w: string, i: number) => <li key={i}>{w}</li>)}
-                </ul>
-              </div>
-            )}
-            {Array.isArray(partnerEntry.issues) && partnerEntry.issues.length > 0 && (
-              <div>
-                <p className="font-medium text-muted-foreground text-xs mb-1">Frågor/Problem</p>
-                <ul className="list-disc list-inside space-y-0.5">
-                  {(partnerEntry.issues as Issue[]).map((issue, i) => (
-                    <li key={i}>{issue.text} <span className="text-xs text-muted-foreground">({issue.tag})</span></li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
       {/* Appreciations */}
       <Card className="bg-card/80 border-border/50">
         <CardHeader className="pb-2">
@@ -330,15 +435,6 @@ export default function WeeklyConversation() {
               disabled={ready}
             />
           ))}
-          {bothReady && (
-            <Textarea
-              placeholder="Mötesanteckningar om uppskattningar..."
-              value={meetingNotes.appreciations || ""}
-              onChange={(e) => setMeetingNotes(prev => ({ ...prev, appreciations: e.target.value }))}
-              className="bg-muted/50 border-border resize-none text-sm mt-2"
-              rows={2}
-            />
-          )}
         </CardContent>
       </Card>
 
@@ -358,15 +454,6 @@ export default function WeeklyConversation() {
               disabled={ready}
             />
           ))}
-          {bothReady && (
-            <Textarea
-              placeholder="Mötesanteckningar om vinster..."
-              value={meetingNotes.wins || ""}
-              onChange={(e) => setMeetingNotes(prev => ({ ...prev, wins: e.target.value }))}
-              className="bg-muted/50 border-border resize-none text-sm mt-2"
-              rows={2}
-            />
-          )}
         </CardContent>
       </Card>
 
@@ -407,15 +494,6 @@ export default function WeeklyConversation() {
               <Plus className="w-3 h-3 mr-1" /> Lägg till
             </Button>
           )}
-          {bothReady && (
-            <Textarea
-              placeholder="Mötesanteckningar om frågor..."
-              value={meetingNotes.issues || ""}
-              onChange={(e) => setMeetingNotes(prev => ({ ...prev, issues: e.target.value }))}
-              className="bg-muted/50 border-border resize-none text-sm mt-2"
-              rows={2}
-            />
-          )}
         </CardContent>
       </Card>
 
@@ -428,27 +506,9 @@ export default function WeeklyConversation() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <Input
-            placeholder="När ses vi?"
-            value={logistics.when || ""}
-            onChange={(e) => setLogistics(prev => ({ ...prev, when: e.target.value }))}
-            className="bg-muted/50 border-border text-sm"
-            disabled={ready}
-          />
-          <Input
-            placeholder="Vem tar hand om vad?"
-            value={logistics.who || ""}
-            onChange={(e) => setLogistics(prev => ({ ...prev, who: e.target.value }))}
-            className="bg-muted/50 border-border text-sm"
-            disabled={ready}
-          />
-          <Input
-            placeholder="Speciella behov att ta hänsyn till"
-            value={logistics.needs || ""}
-            onChange={(e) => setLogistics(prev => ({ ...prev, needs: e.target.value }))}
-            className="bg-muted/50 border-border text-sm"
-            disabled={ready}
-          />
+          <Input placeholder="När ses vi?" value={logistics.when || ""} onChange={(e) => setLogistics(prev => ({ ...prev, when: e.target.value }))} className="bg-muted/50 border-border text-sm" disabled={ready} />
+          <Input placeholder="Vem tar hand om vad?" value={logistics.who || ""} onChange={(e) => setLogistics(prev => ({ ...prev, who: e.target.value }))} className="bg-muted/50 border-border text-sm" disabled={ready} />
+          <Input placeholder="Speciella behov att ta hänsyn till" value={logistics.needs || ""} onChange={(e) => setLogistics(prev => ({ ...prev, needs: e.target.value }))} className="bg-muted/50 border-border text-sm" disabled={ready} />
         </CardContent>
       </Card>
 
@@ -461,47 +521,9 @@ export default function WeeklyConversation() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Input
-            placeholder="Min positiva intention för veckan..."
-            value={intention}
-            onChange={(e) => setIntention(e.target.value)}
-            className="bg-muted/50 border-border text-sm"
-            disabled={ready}
-          />
+          <Input placeholder="Min positiva intention för veckan..." value={intention} onChange={(e) => setIntention(e.target.value)} className="bg-muted/50 border-border text-sm" disabled={ready} />
         </CardContent>
       </Card>
-
-      {/* Post-conversation takeaway */}
-      {bothReady && (
-        <Card className="bg-card/80 border-border/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Efter samtalet</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Textarea
-              placeholder="Vad fick jag ut av detta samtal? (1 mening)"
-              value={takeaway}
-              onChange={(e) => setTakeaway(e.target.value)}
-              className="bg-muted/50 border-border resize-none text-sm"
-              rows={2}
-            />
-            <Textarea
-              placeholder="Generella mötesanteckningar..."
-              value={meetingNotes.general || ""}
-              onChange={(e) => setMeetingNotes(prev => ({ ...prev, general: e.target.value }))}
-              className="bg-muted/50 border-border resize-none text-sm"
-              rows={2}
-            />
-            <Input
-              placeholder="Vad lärde jag mig om min partner idag? (max 120 tecken)"
-              maxLength={120}
-              value={partnerLearning}
-              onChange={(e) => setPartnerLearning(e.target.value)}
-              className="bg-muted/50 border-border text-sm"
-            />
-          </CardContent>
-        </Card>
-      )}
 
       {/* Checkout feeling */}
       <Card className="bg-card/80 border-border/50">
@@ -512,12 +534,7 @@ export default function WeeklyConversation() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Input
-            placeholder="En känsla som lever i mig just nu..."
-            value={checkoutFeeling}
-            onChange={(e) => setCheckoutFeeling(e.target.value)}
-            className="bg-muted/50 border-border text-sm"
-          />
+          <Input placeholder="En känsla som lever i mig just nu..." value={checkoutFeeling} onChange={(e) => setCheckoutFeeling(e.target.value)} className="bg-muted/50 border-border text-sm" />
         </CardContent>
       </Card>
 
