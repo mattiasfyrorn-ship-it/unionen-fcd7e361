@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Send, Heart } from "lucide-react";
+import { sendPushToPartner } from "@/lib/pushNotifications";
 
 interface Message {
   id: string;
@@ -87,7 +88,11 @@ export default function Messages() {
       type: "text",
     });
     if (error) toast({ title: "Fel", description: error.message, variant: "destructive" });
-    else setInput("");
+    else {
+      setInput("");
+      // Send push notification to partner
+      sendPushToPartner(profile.couple_id, user.id, "Nytt meddelande", input.trim(), "message");
+    }
     setLoading(false);
   };
 

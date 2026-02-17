@@ -2,3 +2,9 @@ project_id = "ucgarzkamhrcihmcfsul"
 
 [functions.send-invitation]
 verify_jwt = false
+
+[functions.send-push-notification]
+verify_jwt = false
+
+[functions.daily-reminder]
+verify_jwt = false

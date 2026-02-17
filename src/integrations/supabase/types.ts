@@ -192,6 +192,36 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          daily_reminder_enabled: boolean
+          daily_reminder_time: string
+          id: string
+          messages_enabled: boolean
+          repairs_enabled: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          daily_reminder_enabled?: boolean
+          daily_reminder_time?: string
+          id?: string
+          messages_enabled?: boolean
+          repairs_enabled?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          daily_reminder_enabled?: boolean
+          daily_reminder_time?: string
+          id?: string
+          messages_enabled?: boolean
+          repairs_enabled?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       partner_invitations: {
         Row: {
           couple_id: string
@@ -352,6 +382,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      push_subscriptions: {
+        Row: {
+          created_at: string
+          id: string
+          subscription: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          subscription: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          subscription?: Json
+          user_id?: string
+        }
+        Relationships: []
       }
       quarterly_goals: {
         Row: {

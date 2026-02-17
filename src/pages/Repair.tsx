@@ -12,6 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import BreathingAnimation from "@/components/BreathingAnimation";
 import TimerCircle from "@/components/TimerCircle";
+import { sendPushToPartner } from "@/lib/pushNotifications";
 
 const NEEDS_OPTIONS = [
   "Att bli hörd",
@@ -265,6 +266,9 @@ export default function Repair() {
       content: phrase,
       type: "repair_quick",
     } as any);
+
+    // Send push notification to partner
+    sendPushToPartner(profile.couple_id, user.id, "Reparationsförsök ❤️", phrase, "repair");
 
     setLoading(false);
     setStep(13);
