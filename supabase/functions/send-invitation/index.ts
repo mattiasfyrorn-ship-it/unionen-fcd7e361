@@ -54,19 +54,21 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Prevent duplicate pending invitations
+    // If a pending invitation already exists, return the existing link
     const { data: existing } = await adminClient
       .from("partner_invitations")
-      .select("id")
+      .select("id, token")
       .eq("inviter_id", user.id)
       .eq("status", "pending")
       .limit(1);
 
     if (existing && existing.length > 0) {
-      return new Response(JSON.stringify({ error: "Du har redan en väntande inbjudan. Be din partner att använda länken du redan skickat." }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      const existingToken = existing[0].token;
+      const inviteUrl = `https://unionen.lovable.app/auth?invite=${existingToken}`;
+      return new Response(
+        JSON.stringify({ success: true, inviteUrl, token: existingToken, existing: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Create a placeholder couple (needed for NOT NULL constraint)
