@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,14 +9,18 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { Map, Heart, ArrowRightLeft, Handshake, RefreshCw, CheckCircle, Loader2, CloudSun } from "lucide-react";
+import { Map, Heart, ArrowRightLeft, Handshake, RefreshCw, Loader2, CloudSun } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
+import WeekDayPicker from "@/components/WeekDayPicker";
+import { format, startOfWeek, addDays } from "date-fns";
 
 export default function DailyCheck() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   const [question, setQuestion] = useState("");
   const [loveMapAnswer, setLoveMapAnswer] = useState("");
@@ -29,17 +33,28 @@ export default function DailyCheck() {
   const [adjusted, setAdjusted] = useState(false);
   const [adjustedNote, setAdjustedNote] = useState("");
   const [loading, setLoading] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [existingId, setExistingId] = useState<string | null>(null);
-
-  // New: climate
   const [climate, setClimate] = useState(3);
+  const [markedDates, setMarkedDates] = useState<string[]>([]);
 
   // Graph state
   const [graphRange, setGraphRange] = useState("week");
   const [graphData, setGraphData] = useState<any[]>([]);
 
-  const today = new Date().toISOString().split("T")[0];
+  const resetForm = () => {
+    setQuestion("");
+    setLoveMapAnswer("");
+    setLoveMapCompleted(false);
+    setGaveAppreciation(false);
+    setWasPresent(false);
+    setAppreciationNote("");
+    setTurnTowardOptions([]);
+    setTurnTowardExample("");
+    setAdjusted(false);
+    setAdjustedNote("");
+    setClimate(3);
+    setExistingId(null);
+  };
 
   const loadQuestion = async () => {
     const { data } = await supabase.from("love_map_questions").select("question").limit(50);
@@ -49,39 +64,56 @@ export default function DailyCheck() {
     }
   };
 
-  useEffect(() => {
+  // Load marked dates for current week
+  const loadMarkedDates = useCallback(async () => {
     if (!user) return;
-    const loadExisting = async () => {
-      const { data } = await supabase
-        .from("daily_checks")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("check_date", today)
-        .maybeSingle();
+    const ws = startOfWeek(selectedDate, { weekStartsOn: 1 });
+    const we = addDays(ws, 6);
+    const { data } = await supabase
+      .from("daily_checks")
+      .select("check_date")
+      .eq("user_id", user.id)
+      .gte("check_date", format(ws, "yyyy-MM-dd"))
+      .lte("check_date", format(we, "yyyy-MM-dd"));
+    if (data) setMarkedDates(data.map((d) => d.check_date));
+  }, [user, selectedDate]);
 
-      if (data) {
-        setExistingId(data.id);
-        setQuestion(data.love_map_question || "");
-        setLoveMapAnswer(data.love_map_answer || "");
-        setLoveMapCompleted(data.love_map_completed || false);
-        setGaveAppreciation(data.gave_appreciation || false);
-        setWasPresent(data.was_present || false);
-        setAppreciationNote(data.appreciation_note || "");
-        setTurnTowardOptions(
-          (data as any).turn_toward_options?.length
-            ? (data as any).turn_toward_options
-            : data.turn_toward ? [data.turn_toward] : []
-        );
-        setTurnTowardExample(data.turn_toward_example || "");
-        setAdjusted(data.adjusted || false);
-        setAdjustedNote(data.adjusted_note || "");
-        setClimate((data as any).climate ?? 3);
-      } else {
-        loadQuestion();
-      }
-    };
-    loadExisting();
-  }, [user]);
+  // Load data for selected date
+  const loadForDate = useCallback(async () => {
+    if (!user) return;
+    resetForm();
+    const dateStr = format(selectedDate, "yyyy-MM-dd");
+    const { data } = await supabase
+      .from("daily_checks")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("check_date", dateStr)
+      .maybeSingle();
+
+    if (data) {
+      setExistingId(data.id);
+      setQuestion(data.love_map_question || "");
+      setLoveMapAnswer(data.love_map_answer || "");
+      setLoveMapCompleted(data.love_map_completed || false);
+      setGaveAppreciation(data.gave_appreciation || false);
+      setWasPresent(data.was_present || false);
+      setAppreciationNote(data.appreciation_note || "");
+      setTurnTowardOptions(
+        (data as any).turn_toward_options?.length
+          ? (data as any).turn_toward_options
+          : data.turn_toward ? [data.turn_toward] : []
+      );
+      setTurnTowardExample(data.turn_toward_example || "");
+      setAdjusted(data.adjusted || false);
+      setAdjustedNote(data.adjusted_note || "");
+      setClimate((data as any).climate ?? 3);
+    } else {
+      loadQuestion();
+    }
+  }, [user, selectedDate]);
+
+  useEffect(() => { loadForDate(); }, [loadForDate]);
+  useEffect(() => { loadMarkedDates(); }, [loadMarkedDates]);
 
   // Fetch graph data
   useEffect(() => {
@@ -121,11 +153,12 @@ export default function DailyCheck() {
   const handleSave = async () => {
     if (!user || !profile?.couple_id) return;
     setLoading(true);
+    const dateStr = format(selectedDate, "yyyy-MM-dd");
 
     const payload: any = {
       user_id: user.id,
       couple_id: profile.couple_id,
-      check_date: today,
+      check_date: dateStr,
       love_map_question: question,
       love_map_answer: loveMapAnswer || null,
       love_map_completed: loveMapCompleted,
@@ -150,8 +183,10 @@ export default function DailyCheck() {
     if (error) {
       toast({ title: "Fel", description: error.message, variant: "destructive" });
     } else {
-      setSaved(true);
       toast({ title: "Sparat! 💪" });
+      loadMarkedDates();
+      // Reload to get the new existingId
+      loadForDate();
     }
     setLoading(false);
   };
@@ -165,23 +200,18 @@ export default function DailyCheck() {
     );
   }
 
-  if (saved) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <CheckCircle className="w-16 h-16 text-teal" />
-        <h2 className="text-2xl text-primary">Dagens check klar!</h2>
-        <p className="text-muted-foreground">Bra jobbat. Små steg varje dag.</p>
-        <Button onClick={() => navigate("/")}>Tillbaka till dashboard</Button>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
       <div>
         <h1 className="text-3xl text-primary">Relationskontot</h1>
         <p className="text-muted-foreground text-sm">3–5 minuter. Konsekvent handling stärker relationen.</p>
       </div>
+
+      <WeekDayPicker
+        selectedDate={selectedDate}
+        onDateChange={setSelectedDate}
+        markedDates={markedDates}
+      />
 
       {/* Card 1: Love Map */}
       <Card className="bg-card/80 border-border/50">
@@ -330,7 +360,7 @@ export default function DailyCheck() {
       </Card>
 
       <Button onClick={handleSave} disabled={loading} className="w-full" size="lg">
-        {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sparar...</> : "Spara dagens check"}
+        {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sparar...</> : existingId ? "Uppdatera" : "Spara dagens check"}
       </Button>
 
       {/* Graph */}
