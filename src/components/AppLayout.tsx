@@ -2,14 +2,15 @@ import { ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Heart, BarChart3, Sparkles, MessageCircle, Link2, LogOut, User, CalendarCheck, Sun } from "lucide-react";
+import { Heart, BarChart3, Sparkles, MessageCircle, Link2, LogOut, User, CalendarCheck, Sun, Shield } from "lucide-react";
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", icon: BarChart3 },
   { to: "/daily", label: "Daglig check", icon: Sun },
   { to: "/evaluate", label: "Närd", icon: Sparkles },
   { to: "/weekly", label: "Veckosamtal", icon: CalendarCheck },
-  { to: "/repair", label: "Reparera", icon: Heart },
+  { to: "/repair", label: "Reglering", icon: Shield },
+  { to: "/messages", label: "Meddelanden", icon: MessageCircle },
   { to: "/pairing", label: "Partner", icon: Link2 },
 ];
 
@@ -29,10 +30,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </span>
           </Link>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground hidden sm:inline">
-              <User className="w-3 h-3 inline mr-1" />
-              {profile?.display_name || ""}
-            </span>
+            <Link to="/account" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <User className="w-3 h-3" />
+              <span className="hidden sm:inline">{profile?.display_name || ""}</span>
+            </Link>
             <Button variant="ghost" size="sm" onClick={signOut}>
               <LogOut className="w-4 h-4" />
             </Button>

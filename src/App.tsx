@@ -12,6 +12,8 @@ import WeeklyConversation from "./pages/WeeklyConversation";
 import Pairing from "./pages/Pairing";
 import AppLayout from "./components/AppLayout";
 import Repair from "./pages/Repair";
+import Account from "./pages/Account";
+import Messages from "./pages/Messages";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,6 +53,8 @@ const App = () => (
             <Route path="/weekly" element={<ProtectedRoute><WeeklyConversation /></ProtectedRoute>} />
             <Route path="/pairing" element={<ProtectedRoute><Pairing /></ProtectedRoute>} />
             <Route path="/repair" element={<ProtectedRoute><Repair /></ProtectedRoute>} />
+            <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+            <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
