@@ -66,11 +66,10 @@ export default function Pairing() {
     setLoading(true);
 
     try {
-      const { data: partnerProfile, error: findError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("pairing_code", partnerCode.trim())
-        .single();
+      const { data: results, error: findError } = await supabase
+        .rpc("find_partner_by_code", { p_code: partnerCode.trim() });
+
+      const partnerProfile = results && results.length > 0 ? results[0] : null;
 
       if (findError || !partnerProfile) {
         toast({ title: "Hittade ingen", description: "Kontrollera koden och försök igen.", variant: "destructive" });

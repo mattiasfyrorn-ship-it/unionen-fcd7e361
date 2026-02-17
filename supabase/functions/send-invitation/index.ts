@@ -43,7 +43,31 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Validate email format and length
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (typeof email !== "string" || !emailRegex.test(email) || email.length > 255) {
+      return new Response(JSON.stringify({ error: "Invalid email format" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Prevent duplicate pending invitations
+    const { data: existing } = await adminClient
+      .from("partner_invitations")
+      .select("id")
+      .eq("inviter_id", user.id)
+      .eq("status", "pending")
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      return new Response(JSON.stringify({ error: "You already have a pending invitation" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Create a placeholder couple (needed for NOT NULL constraint)
     // but do NOT link the inviter's profile yet

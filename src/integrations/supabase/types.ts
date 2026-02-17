@@ -695,6 +695,14 @@ export type Database = {
         Args: { p_token: string; p_user_id: string }
         Returns: Json
       }
+      find_partner_by_code: {
+        Args: { p_code: string }
+        Returns: {
+          couple_id: string
+          display_name: string
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
