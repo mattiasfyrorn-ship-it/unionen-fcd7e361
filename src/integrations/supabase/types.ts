@@ -703,6 +703,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_my_couple_id: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never
