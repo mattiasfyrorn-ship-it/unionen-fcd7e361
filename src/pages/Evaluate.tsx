@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { Heart, Briefcase, DollarSign, Users, Sparkles, Loader2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import WeekDayPicker from "@/components/WeekDayPicker";
@@ -28,7 +27,6 @@ function getWeekStartFromDate(date: Date): string {
 export default function Evaluate() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [scores, setScores] = useState<Record<string, number>>({
@@ -166,15 +164,6 @@ export default function Evaluate() {
     }
     setLoading(false);
   };
-
-  if (!profile?.couple_id) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <p className="text-muted-foreground">Du måste koppla ihop med din partner först.</p>
-        <Button onClick={() => navigate("/pairing")}>Gå till parkoppling</Button>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">

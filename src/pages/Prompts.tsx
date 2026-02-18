@@ -6,14 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Heart, HandHeart, Send } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 
 export default function Prompts() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [prompts, setPrompts] = useState<any[]>([]);
   const [message, setMessage] = useState("");
   const [type, setType] = useState<"longing" | "need">("longing");
@@ -81,14 +79,6 @@ export default function Prompts() {
     setLoading(false);
   };
 
-  if (!profile?.couple_id) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <p className="text-muted-foreground">Koppla ihop med din partner först.</p>
-        <Button onClick={() => navigate("/pairing")}>Gå till parkoppling</Button>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">

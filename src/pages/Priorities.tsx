@@ -8,7 +8,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 const AREAS = [
   { key: "health", label: "Hälsa" },
@@ -25,7 +24,6 @@ function getCurrentMonth() {
 export default function Priorities() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [priorities, setPriorities] = useState<any[]>([]);
   const [partnerPriorities, setPartnerPriorities] = useState<any[]>([]);
   const [newTitle, setNewTitle] = useState("");
@@ -82,14 +80,6 @@ export default function Priorities() {
     fetchPriorities();
   };
 
-  if (!profile?.couple_id) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <p className="text-muted-foreground">Koppla ihop med din partner först.</p>
-        <Button onClick={() => navigate("/pairing")}>Gå till parkoppling</Button>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">

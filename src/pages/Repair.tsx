@@ -292,14 +292,6 @@ export default function Repair() {
     setStep(13);
   };
 
-  if (!profile?.couple_id) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <p className="text-muted-foreground">Koppla ihop med din partner först.</p>
-        <Button onClick={() => navigate("/pairing")}>Gå till parkoppling</Button>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-lg mx-auto space-y-6 animate-fade-in">
