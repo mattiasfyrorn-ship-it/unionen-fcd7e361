@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
 import { Map, Heart, ArrowRightLeft, Handshake, RefreshCw, Loader2, CloudSun } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
@@ -18,7 +17,6 @@ import { format, startOfWeek, addDays } from "date-fns";
 export default function DailyCheck() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   const [selectedDate, setSelectedDate] = useState(new Date());
 
@@ -191,14 +189,6 @@ export default function DailyCheck() {
     setLoading(false);
   };
 
-  if (!profile?.couple_id) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <p className="text-muted-foreground">Koppla ihop med din partner först.</p>
-        <Button onClick={() => navigate("/pairing")}>Gå till parkoppling</Button>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto">

@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   MessageCircle, Plus, Trash2, CheckCircle, Loader2, Lock, Unlock,
@@ -40,7 +39,6 @@ interface Logistics {
 export default function WeeklyConversation() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
   const weekStart = getWeekStart();
 
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -201,15 +199,6 @@ export default function WeeklyConversation() {
   };
 
   const bothReady = ready && partnerReady;
-
-  if (!profile?.couple_id) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <p className="text-muted-foreground">Koppla ihop med din partner först.</p>
-        <Button onClick={() => navigate("/pairing")}>Gå till parkoppling</Button>
-      </div>
-    );
-  }
 
   // Meeting flow sections
   const meetingSections = [

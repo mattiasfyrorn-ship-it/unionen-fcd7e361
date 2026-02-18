@@ -3,9 +3,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Send, Heart } from "lucide-react";
 import { sendPushToPartner } from "@/lib/pushNotifications";
 
@@ -22,7 +21,6 @@ interface Message {
 export default function Messages() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -120,18 +118,24 @@ export default function Messages() {
     });
   };
 
-  if (!profile?.couple_id) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <p className="text-muted-foreground">Koppla ihop med din partner först.</p>
-        <Button onClick={() => navigate("/pairing")}>Gå till parkoppling</Button>
-      </div>
-    );
-  }
+  const hasPartner = messages.some(m => m.sender_id !== user?.id);
 
   return (
     <div className="max-w-lg mx-auto flex flex-col h-[calc(100vh-10rem)]">
       <h1 className="text-2xl text-primary mb-4">Meddelanden</h1>
+
+      {/* Solo-läge banner */}
+      {!hasPartner && messages.length === 0 && (
+        <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-muted/40 px-4 py-3 text-sm text-muted-foreground mb-4">
+          <Heart className="w-4 h-4 shrink-0 text-primary" />
+          <span>
+            Din partner har inte registrerat sig ännu.{" "}
+            <Link to="/pairing" className="text-primary underline-offset-2 hover:underline">
+              Bjud in dem via Parkoppling.
+            </Link>
+          </span>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-3 pb-4">

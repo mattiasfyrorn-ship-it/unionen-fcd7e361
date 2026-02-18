@@ -56,17 +56,17 @@ export default function Dashboard() {
   const [trends, setTrends] = useState<TrendInsight[]>([]);
 
   useEffect(() => {
-    if (!profile?.couple_id || !user) return;
+    if (!user) return;
     fetchAll();
   }, [profile?.couple_id, user?.id]);
 
   useEffect(() => {
-    if (!profile?.couple_id || !user) return;
+    if (!user) return;
     rebuildGraphs();
   }, [graphPeriod, naringPeriod, view]);
 
   const fetchAll = async () => {
-    if (!profile?.couple_id || !user) return;
+    if (!user) return;
 
     // Partner name
     const { data: partner } = await supabase
@@ -111,7 +111,7 @@ export default function Dashboard() {
   };
 
   const rebuildGraphs = async () => {
-    if (!profile?.couple_id || !user) return;
+    if (!user) return;
     const days = graphPeriod === "week" ? 7 : graphPeriod === "month" ? 30 : 365;
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - days);
@@ -250,7 +250,7 @@ export default function Dashboard() {
   };
 
   const buildTrendInsights = async () => {
-    if (!profile?.couple_id || !user) return;
+    if (!user) return;
 
     const now = new Date();
     const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
@@ -408,27 +408,30 @@ export default function Dashboard() {
     );
   };
 
-  if (!profile?.couple_id) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
-        <Heart className="w-16 h-16 text-primary animate-pulse" />
-        <h2 className="text-2xl text-primary">Koppla ihop med din partner</h2>
-        <p className="text-muted-foreground text-center max-w-md">
-          Dela din parningskod med din partner eller ange deras kod för att komma igång.
-        </p>
-        <Link to="/pairing"><Button>Gå till parkoppling</Button></Link>
-      </div>
-    );
-  }
+  const hasPartner = !!partnerName;
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl text-primary">Dashboard</h1>
-        <p className="text-muted-foreground">Du & {partnerName || "din partner"} – beteendeträning</p>
+        <p className="text-muted-foreground">
+          {hasPartner ? `Du & ${partnerName} – beteendeträning` : "Din beteendeträning"}
+        </p>
       </div>
 
-      {/* Quarterly goals - TOP */}
+      {/* Solo-läge banner */}
+      {!hasPartner && (
+        <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+          <Heart className="w-4 h-4 shrink-0 text-primary" />
+          <span>
+            Din partner har inte registrerat sig ännu.{" "}
+            <Link to="/pairing" className="text-primary underline-offset-2 hover:underline">
+              Bjud in dem via Parkoppling.
+            </Link>
+          </span>
+        </div>
+      )}
+
       <Card className="bg-card/80 border-border/50">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-lg">
