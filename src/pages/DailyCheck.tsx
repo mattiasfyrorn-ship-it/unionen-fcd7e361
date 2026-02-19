@@ -149,7 +149,7 @@ export default function DailyCheck() {
   }, [user, graphRange]);
 
   const handleSave = async () => {
-    if (!user || !profile?.couple_id) return;
+    if (!user || !profile) return;
     setLoading(true);
     const dateStr = format(selectedDate, "yyyy-MM-dd");
 
@@ -171,19 +171,15 @@ export default function DailyCheck() {
       climate,
     };
 
-    let error;
-    if (existingId) {
-      ({ error } = await supabase.from("daily_checks").update(payload).eq("id", existingId));
-    } else {
-      ({ error } = await supabase.from("daily_checks").insert(payload));
-    }
+    const { error } = await supabase.from("daily_checks").upsert(payload, {
+      onConflict: "user_id,check_date",
+    });
 
     if (error) {
       toast({ title: "Fel", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Sparat! 💪" });
       loadMarkedDates();
-      // Reload to get the new existingId
       loadForDate();
     }
     setLoading(false);
