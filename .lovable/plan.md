@@ -1,113 +1,77 @@
 
-## Tillåt användning av appen innan partner registrerat sig
+## Åtgärda två buggar: Daglig Check & Närd
 
-### Problemet
+### Rotorsak: Två separata problem
 
-Flera sidor blockerar helt om `profile.couple_id` saknas. Det innebär att en användare som bjudit in sin partner — men partnern ännu inte registrerat sig — inte kan använda några funktioner.
+#### Problem 1 — Daglig Check: Duplicate key constraint
 
-### Berörda sidor och blockeringar
+`handleSave` i `DailyCheck.tsx` har kvar:
+```typescript
+if (!user || !profile?.couple_id) return;
+```
 
-**Hårt blockerade (visar "gå till parkoppling"-skärm):**
-- `Dashboard` (rad 411–422) – visar "koppla ihop"-prompt istället för innehåll
-- `Evaluate` (rad 170–177) – "Du måste koppla ihop med din partner först"
-- `Messages` – "Koppla ihop med din partner först"
+Nu när alla användare alltid har ett `couple_id` borde detta aldrig blockera. Men om `profile` är `null` i en tidig render, hoppar funktionen ur — och när användaren försöker igen (med `profile` laddad) sker ett nytt `INSERT` istället för `UPDATE`, eftersom `existingId` inte laddats korrekt. Det bryter `UNIQUE (user_id, check_date)`.
 
-**Funktioner som kräver `couple_id` vid sparning men inte blockerar vyn:**
-- `DailyCheck` – sparar med `couple_id` i `daily_checks`-tabellen
-- `Repair` – `handleShare` kräver `couple_id`
-- `WeeklyConversation` – hela laddningen beror på `couple_id`
+**Fix**: Byt `insert` mot `upsert` med `onConflict: "user_id,check_date"` — precis som `evaluations` gör. Då hanteras duplicates automatiskt utan att `existingId` behöver vara satt.
 
-### Lösningen
+#### Problem 2 — Närd (Evaluate): RLS USING-policy blockerar upsert
 
-#### Strategi: "Solo-läge"
+Postgres `upsert` kontrollerar BOTH `INSERT WITH CHECK` och `SELECT USING` när en befintlig rad ska uppdateras. SELECT-policyn för `evaluations` är:
+```sql
+USING (couple_id = get_my_couple_id())
+```
 
-En användare utan `couple_id` bör kunna använda alla individuella funktioner. Data sparas med `user_id` men temporärt utan `couple_id`. När parkopplingen sker knyts datan till paret.
+`handleSubmit` i `Evaluate.tsx` har fortfarande:
+```typescript
+if (!user || !profile?.couple_id) return;
+```
 
-Det finns dock ett problem: tabellerna `daily_checks`, `evaluations`, `quarterly_goals`, `repairs` etc. har `couple_id NOT NULL`. Det innebär att data **inte kan sparas** utan ett `couple_id`.
+Problemet uppstår i en race condition: `profile.couple_id` finns, men `get_my_couple_id()` på databasservern returnerar `NULL` eller en annan couple_id eftersom profilen nyligen skapades av trigger men inte synkroniserats tillbaka till `useAuth`-kontexten. Upsert skickar rätt `couple_id`, men RLS SELECT-policyn nekar "synen" på raden.
 
-**Bästa lösning:** Skapa ett "eget" (solo) couple-objekt per användare vid registrering, via en trigger. När partnern sedan kopplas ihop migreras datan till det gemensamma coupleId.
-
-**Alternativ enklare lösning (vald):** Låt `couple_id` i `daily_checks`, `evaluations`, `quarterly_goals` och `repairs` vara nullable, och hantera solo-data med `user_id`. Vyer och grafer anpassas för att fungera utan partnerdata.
-
-**Den enklaste och robustaste lösningen (rekommenderas):** Skapa automatiskt ett "solo couple" för varje ny användare via en DB-trigger/funktion. Det löser alla null-problem på en gång.
+**Fix**: Lägg till `refreshProfile()` efter att profilen laddats + ändra SELECT-policyn för `evaluations` så den även tillåter att läsa egna rader (via `user_id = auth.uid()`), precis som `repairs`-tabellen redan gör.
 
 ### Implementationsplan
 
-#### 1. Databasmigration: Auto-skapa solo-couple vid signup
+#### Steg 1 — Databasmigration: Lägg till SELECT-policy för egna evaluations
 
-En trigger på `profiles`-tabellen (efter `handle_new_user`) skapar automatiskt ett `couples`-rad och sätter `couple_id` på profilen direkt vid registrering. Det innebär att varje användare alltid har ett `couple_id` — antingen ett solo-couple eller ett delat couple.
-
-```sql
--- Funktion: skapa solo-couple och sätt couple_id direkt vid ny profil
-CREATE OR REPLACE FUNCTION public.handle_new_profile_couple()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
-AS $$
-DECLARE
-  v_couple_id uuid;
-BEGIN
-  INSERT INTO couples DEFAULT VALUES RETURNING id INTO v_couple_id;
-  NEW.couple_id := v_couple_id;
-  RETURN NEW;
-END;
-$$;
-
--- Trigger: körs BEFORE INSERT på profiles
-CREATE TRIGGER on_profile_created_create_couple
-  BEFORE INSERT ON public.profiles
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_profile_couple();
-```
-
-**Varför BEFORE INSERT?** Så att `couple_id` sätts direkt i samma INSERT, inga tomma rader.
-
-#### 2. Befintliga användare utan couple_id
-
-En del befintliga användare kan sakna `couple_id`. SQL-migration uppdaterar dessa:
+Lägg till en alternativ SELECT-policy som alltid tillåter användare att läsa sina egna rader, oberoende av `couple_id`:
 
 ```sql
--- Skapa solo-couples för befintliga profiler som saknar couple_id
-DO $$
-DECLARE
-  r RECORD;
-  v_couple_id uuid;
-BEGIN
-  FOR r IN SELECT user_id FROM profiles WHERE couple_id IS NULL LOOP
-    INSERT INTO couples DEFAULT VALUES RETURNING id INTO v_couple_id;
-    UPDATE profiles SET couple_id = v_couple_id WHERE user_id = r.user_id;
-  END LOOP;
-END;
-$$;
+CREATE POLICY "Users can read own evaluations"
+ON public.evaluations FOR SELECT
+USING (auth.uid() = user_id);
 ```
 
-#### 3. Frontend: Ta bort couple_id-blockeringar
+Detta är samma mönster som redan används i `repairs`-tabellen ("Users can read own repairs" + "Partners can read couple repairs").
 
-När alla användare alltid har ett `couple_id` behöver vi inte längre blockera:
+#### Steg 2 — DailyCheck.tsx: Byt insert mot upsert
 
-- **Dashboard**: Ta bort `if (!profile?.couple_id)` redirect-blocket. Visa istället ett banner/tips om att bjuda in sin partner om `hasPartner === false`.
-- **Evaluate**: Ta bort `if (!profile?.couple_id)` redirect-blocket.
-- **Messages**: Ta bort redirect-blocket. Visa ett tomt chattfönster med info om att partnern inte kopplat ihop ännu.
-- **WeeklyConversation**: Låt laddningen köras — den hittar inget från en solo-partner, men kraschar inte.
-
-#### 4. Partner-status i Dashboard
-
-Dashboard visar idag `"Du & {partnerName || 'din partner'}"`. Utan en riktig partner visas ett diskret banner:
-
-```
-"Din partner har inte registrerat sig ännu. Bjud in dem via Parkoppling."
+Ändra `handleSave` från:
+```typescript
+if (existingId) {
+  await supabase.from("daily_checks").update(payload).eq("id", existingId);
+} else {
+  await supabase.from("daily_checks").insert(payload);
+}
 ```
 
-Detta visas baserat på om det finns en annan profil med samma `couple_id` (logiken finns redan i `Pairing.tsx` via `hasPartner`-kontrollen).
+Till att alltid använda `upsert` med conflict-hantering:
+```typescript
+await supabase.from("daily_checks").upsert(payload, {
+  onConflict: "user_id,check_date",
+});
+```
 
-### Tekniska detaljer
+Ta också bort den gamla `if (!user || !profile?.couple_id) return;`-guarden — den är nu onödig eftersom alla användare alltid har `couple_id`.
 
-**Varför trigger BEFORE INSERT (inte AFTER)?**  
-`handle_invitation_on_signup`-triggern körs AFTER INSERT och kan behöva skriva om `couple_id` om en inbjudan hittas. Med en BEFORE-trigger sätts solo-couple_id direkt i raden — AFTER-triggern kan sedan skriva över den om en inbjudan matchar. Det är en clean lösning.
+#### Steg 3 — Evaluate.tsx: Ta bort gammal guard + refreshProfile
 
-**Påverkar pair_with_partner-funktionen?**  
-Ja — `pair_with_partner` kolla redan om `v_my_couple_id IS NOT NULL` och `v_partner_couple_id IS NOT NULL`. Den väljer det äldsta/existerande coupleId. Det innebär att när två solo-users parar ihop sig väljs en av deras solo-couples, och den andra överges. Data som sparats under solo-coupleId följer med (eftersom den andra profilen uppdateras till det valda coupleId). Ingen dataförlust.
+- Ändra `if (!user || !profile?.couple_id) return;` till `if (!user) return;`
+- Lägg till `await refreshProfile()` i `useAuth`-kontexten anropas innan `upsert` om `profile` verkar vara stale — alternativt vänta på att `profile?.couple_id` finns via en `useEffect`
 
-**Migrationsordning:**
-1. Kör SQL för befintliga profiler utan couple_id
-2. Skapa trigger för nya profiler
-3. Uppdatera frontend-sidor
+#### Tekniska detaljer
 
-Inga ändringar krävs i RLS-policies — de fungerar redan med `get_my_couple_id()`.
+- `daily_checks` har `UNIQUE (user_id, check_date)` — upsert med `onConflict` löser race conditions elegant
+- `evaluations` har `UNIQUE (user_id, week_start, area)` — upsert fungerar redan, problemet är enbart RLS SELECT
+- Inga ändringar i `couples`-tabellen eller triggers behövs
+- `get_my_couple_id()` är VOLATILE — returnerar alltid rätt värde från databasen, men det kan vara ett timing-problem om profilen skapades i samma session utan refresh
