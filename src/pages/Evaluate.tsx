@@ -55,7 +55,7 @@ export default function Evaluate() {
     setHasExisting(false);
   };
 
-  // Load marked weeks (show all days of weeks that have data)
+  // Load marked weeks (show only the week_start day as marked)
   const loadMarkedDates = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase
@@ -64,17 +64,7 @@ export default function Evaluate() {
       .eq("user_id", user.id);
     if (data) {
       const uniqueWeeks = [...new Set(data.map((d) => d.week_start))];
-      // Mark all 7 days of each week that has data
-      const allDates: string[] = [];
-      uniqueWeeks.forEach((ws) => {
-        const d = new Date(ws + "T00:00:00");
-        for (let i = 0; i < 7; i++) {
-          const day = new Date(d);
-          day.setDate(d.getDate() + i);
-          allDates.push(format(day, "yyyy-MM-dd"));
-        }
-      });
-      setMarkedDates(allDates);
+      setMarkedDates(uniqueWeeks);
     }
   }, [user]);
 
