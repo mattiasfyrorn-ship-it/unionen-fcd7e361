@@ -126,7 +126,7 @@ export default function DailyCheck() {
         .from("daily_checks")
         .select("check_date, turn_toward, turn_toward_options, gave_appreciation, adjusted, climate")
         .eq("user_id", user.id)
-        .gte("check_date", since.toISOString().split("T")[0])
+        .gte("check_date", format(since, "yyyy-MM-dd"))
         .order("check_date", { ascending: true });
 
       if (!data) return;
