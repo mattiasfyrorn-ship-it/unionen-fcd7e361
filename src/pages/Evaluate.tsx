@@ -138,7 +138,7 @@ export default function Evaluate() {
   }, [user, graphRange]);
 
   const handleSubmit = async () => {
-    if (!user || !profile?.couple_id) return;
+    if (!user || !profile) return;
     setLoading(true);
 
     const inserts = AREAS.map((area) => ({
