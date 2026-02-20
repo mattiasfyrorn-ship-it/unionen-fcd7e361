@@ -1,5 +1,10 @@
-// Custom service worker for push notifications
-// This works alongside the PWA plugin's service worker
+// Workbox injicerar sitt precache-manifest här automatiskt vid build
+// Guard för development-läge där __WB_MANIFEST inte är definierat
+if (typeof self.__WB_MANIFEST !== 'undefined') {
+  // eslint-disable-next-line no-undef
+  const { precacheAndRoute } = workbox.precaching;
+  precacheAndRoute(self.__WB_MANIFEST);
+}
 
 self.addEventListener('push', (event) => {
   if (!event.data) return;
