@@ -20,6 +20,9 @@ const AREAS = [
   { key: "relationships", label: "Relationer", icon: Users, description: "Kärlek, familj och vänner" },
 ];
 
+const DEFAULT_SCORES = { health: 5, career: 5, economy: 5, relationships: 5 };
+const DEFAULT_COMMENTS = { health: "", career: "", economy: "", relationships: "" };
+
 function getWeekStartFromDate(date: Date): string {
   return format(startOfWeek(date, { weekStartsOn: 1 }), "yyyy-MM-dd");
 }
@@ -29,12 +32,8 @@ export default function Evaluate() {
   const { toast } = useToast();
 
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [scores, setScores] = useState<Record<string, number>>({
-    health: 5, career: 5, economy: 5, relationships: 5,
-  });
-  const [comments, setComments] = useState<Record<string, string>>({
-    health: "", career: "", economy: "", relationships: "",
-  });
+  const [scores, setScores] = useState<Record<string, number>>(DEFAULT_SCORES);
+  const [comments, setComments] = useState<Record<string, string>>(DEFAULT_COMMENTS);
   const [needToday, setNeedToday] = useState("");
   const [wantToday, setWantToday] = useState("");
   const [loading, setLoading] = useState(false);
@@ -45,44 +44,46 @@ export default function Evaluate() {
   const [graphRange, setGraphRange] = useState("week");
   const [graphData, setGraphData] = useState<{ week: string; total: number }[]>([]);
 
+  // Per-day date string (used for loading/saving)
+  const checkDate = format(selectedDate, "yyyy-MM-dd");
+  // Week start (used only for the graph grouping and as a stored field)
   const weekStart = getWeekStartFromDate(selectedDate);
 
   const resetForm = () => {
-    setScores({ health: 5, career: 5, economy: 5, relationships: 5 });
-    setComments({ health: "", career: "", economy: "", relationships: "" });
+    setScores({ ...DEFAULT_SCORES });
+    setComments({ ...DEFAULT_COMMENTS });
     setNeedToday("");
     setWantToday("");
     setHasExisting(false);
   };
 
-  // Load marked weeks (show only the week_start day as marked)
+  // Load marked days (one dot per day that has data)
   const loadMarkedDates = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase
       .from("evaluations")
-      .select("week_start")
+      .select("check_date")
       .eq("user_id", user.id);
     if (data) {
-      const uniqueWeeks = [...new Set(data.map((d) => d.week_start))];
-      setMarkedDates(uniqueWeeks);
+      const uniqueDays = [...new Set(data.map((d) => (d as any).check_date as string))];
+      setMarkedDates(uniqueDays);
     }
   }, [user]);
 
-  // Load data for selected week
-  const loadForWeek = useCallback(async () => {
+  // Load data for the selected day
+  const loadForDay = useCallback(async () => {
     if (!user) return;
     resetForm();
-    const { data } = await supabase
-      .from("evaluations")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("week_start", weekStart);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const query = supabase.from("evaluations").select("*").eq("user_id", user.id);
+    const { data } = await (query as any).eq("check_date", checkDate);
 
     if (data && data.length > 0) {
       setHasExisting(true);
-      const newScores: Record<string, number> = { health: 5, career: 5, economy: 5, relationships: 5 };
-      const newComments: Record<string, string> = { health: "", career: "", economy: "", relationships: "" };
-      data.forEach((row) => {
+      const newScores: Record<string, number> = { ...DEFAULT_SCORES };
+      const newComments: Record<string, string> = { ...DEFAULT_COMMENTS };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data.forEach((row: any) => {
         newScores[row.area] = row.score;
         newComments[row.area] = row.comment || "";
         if (row.need_today) setNeedToday(row.need_today);
@@ -91,12 +92,12 @@ export default function Evaluate() {
       setScores(newScores);
       setComments(newComments);
     }
-  }, [user, weekStart]);
+  }, [user, checkDate]);
 
-  useEffect(() => { loadForWeek(); }, [loadForWeek]);
+  useEffect(() => { loadForDay(); }, [loadForDay]);
   useEffect(() => { loadMarkedDates(); }, [loadMarkedDates]);
 
-  // Fetch graph data
+  // Fetch graph data (grouped by week_start)
   useEffect(() => {
     if (!user) return;
     const fetchGraph = async () => {
@@ -135,6 +136,7 @@ export default function Evaluate() {
       user_id: user.id,
       couple_id: profile.couple_id!,
       week_start: weekStart,
+      check_date: checkDate,
       area: area.key,
       score: scores[area.key],
       comment: comments[area.key] || null,
@@ -142,13 +144,13 @@ export default function Evaluate() {
     }));
 
     const { error } = await supabase.from("evaluations").upsert(inserts as any, {
-      onConflict: "user_id,week_start,area",
+      onConflict: "user_id,check_date,area",
     });
 
     if (error) {
       toast({ title: "Fel", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Sparat!", description: "Din veckoutvärdering är registrerad." });
+      toast({ title: "Sparat!", description: "Din dagsutvärdering är registrerad." });
       setHasExisting(true);
       loadMarkedDates();
     }

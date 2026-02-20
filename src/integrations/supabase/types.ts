@@ -100,6 +100,7 @@ export type Database = {
       evaluations: {
         Row: {
           area: string
+          check_date: string
           comment: string | null
           couple_id: string
           created_at: string
@@ -112,6 +113,7 @@ export type Database = {
         }
         Insert: {
           area: string
+          check_date: string
           comment?: string | null
           couple_id: string
           created_at?: string
@@ -124,6 +126,7 @@ export type Database = {
         }
         Update: {
           area?: string
+          check_date?: string
           comment?: string | null
           couple_id?: string
           created_at?: string
