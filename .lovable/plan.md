@@ -1,26 +1,43 @@
 
-## Problemet: PostgREST-cache ej uppdaterad
+## Fixa header som täcks av telefonens statusbar
 
-Unika indexet `evaluations_user_id_check_date_area_key` skapades korrekt i databasen, men PostgREST (API-lagret som Supabase använder) håller en intern cache av databasschemat. Den cachen uppdateras inte automatiskt vid DDL-ändringar (som `CREATE UNIQUE INDEX`), och därför vet API:et fortfarande inte att indexet finns — och avvisar `ON CONFLICT`-specifikationen.
+### Grundorsaken
 
-Felet "no unique or exclusion constraint matching the ON CONFLICT specification" är precis detta: API:et hittar inte det nya indexet i sin cache.
+`index.html` har `apple-mobile-web-app-status-bar-style: black-translucent`. Det gör statusbaren genomskinlig och appen "fyller ut" hela skärmen — inklusive under statusbaren. Utan kompensation hamnar headern bakom klockan och mottagningsstaplarna.
 
-### Lösning
+Den moderna CSS-lösningen heter **Safe Area Insets** (`env(safe-area-inset-top)`). Det är ett CSS-miljövariabel-värde som automatiskt anger hur många pixlar telefonens statusbar tar upp — oavsett om det är en iPhone med notch, Dynamic Island eller en vanlig Android.
 
-Kör `NOTIFY pgrst, 'reload schema';` via en ny databasmigration. Det tvingar PostgREST att läsa om databasschemat och känna igen det nya unika indexet — inga kodfiler behöver ändras.
+### Lösning: två små ändringar
+
+#### 1 — `index.css`: lägg till `padding-top: env(safe-area-inset-top)` på `body`
+
+```css
+body {
+  padding-top: env(safe-area-inset-top);
+}
+```
+
+Det ger hela appen ett grundavstånd som matchar exakt den aktuella telefonens statusbar. Eftersom headern är `sticky top-0` klibbar den korrekt direkt under statusbaren.
+
+#### 2 — `AppLayout.tsx`: ta bort `sticky top-0` på headern *eller* håll den kvar
+
+Med `padding-top` på `body` behövs inga ändringar i layoutkomponenten — headern klibbar automatiskt precis under statusbaren tack vare `sticky top-0`. Det är rent och korrekt.
 
 ### Tekniska detaljer
 
-**En ny migration med en enda SQL-rad:**
-
-```sql
-NOTIFY pgrst, 'reload schema';
-```
-
-Det är allt. Indexet finns redan, koden är redan korrekt — det är bara cache-synkroniseringen som saknas.
+- `env(safe-area-inset-top)` returnerar `0px` på desktop och i webbläsare utan statusbar, så inga visuella sidoeffekter på dator.
+- `viewport-fit=cover` finns redan i `index.html` — det krävs för att `env(safe-area-inset-top)` ska fungera, och det är redan satt korrekt.
+- Ingen databasändring behövs.
+- Ingen förändring för desktopanvändare.
 
 ### Påverkan
 
-- Inga databasstrukturer ändras
-- Ingen kod ändras
-- Efter migrationen fungerar sparning i Närd direkt — rätt dag sparas, prickar visas, standardvärden återställs korrekt
+| Plattform | Förut | Efter |
+|---|---|---|
+| iPhone (installerad PWA) | Header bakom statusbar | Header synlig under statusbar |
+| Android (installerad PWA) | Header bakom statusbar | Header synlig under statusbar |
+| Desktop / webbläsare | Ingen förändring | Ingen förändring |
+
+### Filer som ändras
+
+- `src/index.css` — lägg till `padding-top: env(safe-area-inset-top)` på `body`
