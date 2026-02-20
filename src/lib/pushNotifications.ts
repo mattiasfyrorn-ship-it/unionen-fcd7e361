@@ -30,9 +30,14 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
     const permission = await requestNotificationPermission();
     if (permission !== 'granted') return false;
 
-    const registration = await navigator.serviceWorker.ready;
+    const registration = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Service worker timeout efter 5s')), 5000)
+      ),
+    ]) as ServiceWorkerRegistration;
     const reg = registration as any;
-    
+
     // Check existing subscription
     let subscription = await reg.pushManager.getSubscription();
     
@@ -62,7 +67,11 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
 
     return true;
   } catch (err) {
-    console.error('Push subscription failed:', err);
+    if (err instanceof Error) {
+      console.error('Push subscription failed:', err.message, err);
+    } else {
+      console.error('Push subscription failed (unknown error):', err);
+    }
     return false;
   }
 }

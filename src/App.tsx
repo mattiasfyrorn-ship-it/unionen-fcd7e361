@@ -22,16 +22,8 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 function PushInitializer() {
-  const { user } = useAuth();
-
-  useEffect(() => {
-    if (!user) return;
-    // Register custom service worker for push
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(console.error);
-    }
-  }, [user?.id]);
-
+  // VitePWA registrerar service workern automatiskt via injectManifest-strategin.
+  // Ingen manuell registrering behövs här — dubbel-registrering orsakar konflikter.
   return null;
 }
 
