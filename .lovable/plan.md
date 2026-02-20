@@ -1,84 +1,54 @@
 
-## Åtgärda två problem: Daglig Check & Närd
+## Byt till externt cron-jobb med CRON_SECRET
 
-### Problem 1 — Närd: Alla dagar i veckan får prick, oavsett om de är ifyllda
+### Vad som ändras
 
-**Rotorsak**: I `Evaluate.tsx`, `loadMarkedDates` (rad 59–79) markerar **alla 7 dagar** i varje vecka som har sparad data:
+Idag utlöses `daily-reminder`-funktionen av ett internt pg_cron-jobb i databasen. Det fungerar bara när databasen är på Lovable Cloud / Supabase. Om du byter databas slutar det fungera.
 
-```typescript
-uniqueWeeks.forEach((ws) => {
-  const d = new Date(ws + "T00:00:00");
-  for (let i = 0; i < 7; i++) {       // ← 7 dagar per vecka
-    allDates.push(format(day, "yyyy-MM-dd"));
-  }
-});
-```
+Lösningen är att:
+- En **extern cron-tjänst** (t.ex. cron-job.org, GitHub Actions, eller liknande) anropar funktionens URL varje timme via HTTP
+- Funktionen skyddas med en hemlig nyckel (`CRON_SECRET`) som bara den externa tjänsten känner till
+- Det interna pg_cron-jobbet tas bort
 
-Evaluate sparar data per **vecka** (ett `week_start`-värde), inte per dag. Så varje vecka som är ifylld genererar 7 prickar — en per dag. Eftersom varje ny vecka skapar 4 rader (en per område: hälsa, karriär, ekonomi, relationer), och dessa räknas som "ifylld vecka", syns prickar på alla dagarna.
+### Tekniska detaljer
 
-**Fix**: Markera bara en dag per vecka — specifikt `week_start`-dagen (måndag). Alternativt: skicka enbart veckostartdatum till `markedDates` och låt `WeekDayPicker` jämföra om den visade veckans start matchar en markerad vecka.
+**Steg 1 — Lägg till CRON_SECRET som backend-secret**
 
-Den renaste lösningen är att bara lägga till `week_start` som en enda prick (dvs. markera måndag i veckor som är ifyllda), inte alla 7 dagar. Så pricken syns bara på måndagen för ifyllda veckor. Men eftersom Närd är veckobaserat passar det bättre att visa pricken på *alla* dagar i den veckan, fast med ett nytt `weekMode`-prop i `WeekDayPicker`. 
+Ett nytt hemligt lösenord skapas och lagras i backend-secrets. Den externa cron-tjänsten skickar det i en `Authorization`-header vid varje anrop.
 
-Enklaste och klaraste lösningen: **Markera enbart den dag som är `week_start`** (alltid en måndag) och låt en prick synas bara på den dagen i veckovyn. Alternativt: ta bort denna "alla 7 dagar"-loop och bara lägg till `week_start`-datumet.
+**Steg 2 — Uppdatera `daily-reminder/index.ts`**
 
-### Problem 2 — Daglig Check: Kan inte fylla i dagar bakåt
-
-**Rotorsak**: `loadMarkedDates` hämtar bara dagar i **den aktuellt visade veckan** (rad 66–77 i DailyCheck.tsx):
+Lägg till en check i början av funktionen:
 
 ```typescript
-const ws = startOfWeek(selectedDate, { weekStartsOn: 1 });
-const we = addDays(ws, 6);
-// Hämtar bara dagar i [ws, we]
+const cronSecret = Deno.env.get('CRON_SECRET');
+const authHeader = req.headers.get('x-cron-secret');
+if (!cronSecret || authHeader !== cronSecret) {
+  return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+    status: 401,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
 ```
 
-Det betyder att prickarna försvinner/uppdateras korrekt vid veckonavigering. **Men problemet med att faktiskt spara bakåtdatum** beror på ett timezone-problem: `since.toISOString().split("T")[0]` i grafdatahämtningen (rad 129) konverterar till UTC, vilket kan ge fel datum vid midnatt i europeisk tid.
+**Steg 3 — Ta bort pg_cron-jobbet**
 
-Det troliga huvudproblemet med bakåt-sparning: `format(selectedDate, "yyyy-MM-dd")` använder lokal tid och borde ge rätt datum. Men när `WeekDayPicker` anropar `onDateChange(day)` med en `Date`-instans skapad av `addDays(weekStart, i)`, kan `weekStart` (från `startOfWeek(selectedDate, {weekStartsOn: 1})`) ge ett resultat som konverteras fel om `selectedDate` är ett UTC-datum.
-
-**Mest trolig bugg**: `loadMarkedDates` är beroende av `selectedDate` och hämtar bara innevarande vecka — detta är korrekt beteende. Men `loadForDate` resetar formuläret och anropar `loadQuestion()` om `data` är null. När en användare navigerar bakåt i tid och ingen data finns, laddas en ny fråga. Det är korrekt. Problemet är om sparning faktiskt fungerar eller inte.
-
-**Säkrare datumformatering**: Byt ut `since.toISOString().split("T")[0]` till en lokal datumformatering för att undvika timezone-shift vid grafdatainhämtning.
-
-### Implementationsplan
-
-#### Fix 1 — Evaluate.tsx: Rätta markedDates till att bara markera en dag per vecka
-
-Ändra `loadMarkedDates` i `Evaluate.tsx` så att den enbart lägger till `week_start`-datumet (måndag) per ifylld vecka, istället för alla 7 dagar:
-
-```typescript
-// Förut:
-uniqueWeeks.forEach((ws) => {
-  const d = new Date(ws + "T00:00:00");
-  for (let i = 0; i < 7; i++) {
-    const day = new Date(d);
-    day.setDate(d.getDate() + i);
-    allDates.push(format(day, "yyyy-MM-dd"));
-  }
-});
-setMarkedDates(allDates);
-
-// Efter:
-setMarkedDates(uniqueWeeks); // week_start är redan "yyyy-MM-dd"
+En databasmigration kör:
+```sql
+SELECT cron.unschedule('daily-reminder-hourly');
 ```
 
-Eftersom `WeekDayPicker` visar prickar per dag, och Närd är veckobaserat, är det mest intuitivt att visa pricken på **måndagen** (week_start) när veckan är ifylld. Det undviker att alla dagar i veckan markeras.
+**Steg 4 — Konfigurera extern cron-tjänst**
 
-#### Fix 2 — DailyCheck.tsx: Säkrare datumhantering
+Du behöver konfigurera en gratis tjänst som [cron-job.org](https://cron-job.org) med:
+- **URL**: `https://ucgarzkamhrcihmcfsul.supabase.co/functions/v1/daily-reminder`
+- **Schema**: Varje timme (`0 * * * *`)
+- **Header**: `x-cron-secret: DIN_HEMLIGA_NYCKEL`
 
-Byt ut `since.toISOString().split("T")[0]` i grafdatahämtningen mot en lokal datumformatering med `format(since, "yyyy-MM-dd")` från date-fns, för att undvika UTC-shift:
+Jag ger dig exakta instruktioner och nyckelns värde när allt är klart.
 
-```typescript
-// Förut:
-.gte("check_date", since.toISOString().split("T")[0])
+### Varför detta är bättre
 
-// Efter:
-.gte("check_date", format(since, "yyyy-MM-dd"))
-```
-
-#### Tekniska detaljer
-
-- `evaluations` lagrar data per vecka (ett `week_start` per vecka), inte per dag — därför ska pricken visas på veckostarten, inte på alla 7 dagar
-- `daily_checks` lagrar per dag — prickar per dag är korrekt
-- `format()` från date-fns använder lokal tid, vilket är korrekt för svenska användare i CET/CEST
-- `toISOString()` konverterar till UTC och kan ge fel datum (t.ex. ger `2025-02-19 00:30 CET` → `2025-02-18T23:30:00Z`)
+- Fungerar oavsett var databasen körs (Supabase, Railway, annan host)
+- Tydlig autentisering — ingen kan trigga funktionen utan nyckeln
+- Lätt att övervaka och testa manuellt via en HTTP-anrop
