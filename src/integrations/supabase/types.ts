@@ -232,6 +232,7 @@ export type Database = {
           id: string
           invitee_email: string
           inviter_id: string
+          inviter_name: string | null
           status: string
           token: string | null
         }
@@ -241,6 +242,7 @@ export type Database = {
           id?: string
           invitee_email: string
           inviter_id: string
+          inviter_name?: string | null
           status?: string
           token?: string | null
         }
@@ -250,6 +252,7 @@ export type Database = {
           id?: string
           invitee_email?: string
           inviter_id?: string
+          inviter_name?: string | null
           status?: string
           token?: string | null
         }
@@ -702,6 +705,12 @@ export type Database = {
         Args: { p_code: string }
         Returns: {
           display_name: string
+        }[]
+      }
+      get_invitation_info: {
+        Args: { p_token: string }
+        Returns: {
+          inviter_name: string
         }[]
       }
       get_my_couple_id: { Args: never; Returns: string }
