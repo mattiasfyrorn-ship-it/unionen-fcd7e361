@@ -85,6 +85,14 @@ export default function Pairing() {
       } else {
         await refreshProfile();
         toast({ title: "Ihopkopplade! 💕" });
+        // Send notification emails (best-effort, don't block navigation)
+        try {
+          await supabase.functions.invoke("notify-partner-paired", {
+            body: { inviteToken: "", inviteeName: profile?.display_name || "" },
+          });
+        } catch (notifyErr) {
+          console.error("Notify error:", notifyErr);
+        }
         navigate("/");
       }
     } catch (err) {

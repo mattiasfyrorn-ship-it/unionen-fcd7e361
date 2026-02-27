@@ -10,16 +10,23 @@ export default function Auth() {
   const [searchParams] = useSearchParams();
   const inviteToken = searchParams.get("invite");
 
-  const [isLogin, setIsLogin] = useState(!inviteToken); // default to signup if invite
+  const [isLogin, setIsLogin] = useState(!inviteToken);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [inviterName, setInviterName] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     if (inviteToken) {
       setIsLogin(false);
+      // Fetch inviter name
+      supabase.rpc("get_invitation_info", { p_token: inviteToken } as any).then(({ data }) => {
+        if (data && Array.isArray(data) && data.length > 0 && data[0].inviter_name) {
+          setInviterName(data[0].inviter_name);
+        }
+      });
     }
   }, [inviteToken]);
 
@@ -49,7 +56,6 @@ export default function Auth() {
       if (error) {
         toast({ title: "Fel vid registrering", description: error.message, variant: "destructive" });
       } else {
-        // If user is confirmed immediately (auto-confirm), try to accept invitation
         if (data.user && inviteToken && data.session) {
           try {
             const { data: result } = await supabase.rpc("accept_invitation", {
@@ -58,6 +64,14 @@ export default function Auth() {
             const resultObj = result as Record<string, unknown> | null;
             if (resultObj?.success) {
               toast({ title: "Välkommen! 💕", description: "Du är nu ihopkopplad med din partner." });
+              // Send notification emails
+              try {
+                await supabase.functions.invoke("notify-partner-paired", {
+                  body: { inviteToken, inviteeName: displayName },
+                });
+              } catch (notifyErr) {
+                console.error("Notify error:", notifyErr);
+              }
             }
           } catch (err) {
             console.error("Accept invitation error:", err);
@@ -90,7 +104,9 @@ export default function Auth() {
           </h1>
           <p className="mt-2 text-sm" style={{ color: "hsl(25, 15%, 50%)" }}>
             {inviteToken
-              ? "Du har blivit inbjuden! Skapa ditt konto för att kopplas ihop."
+              ? inviterName
+                ? `Du har blivit inbjuden av ${inviterName}! Skapa ditt konto för att kopplas ihop.`
+                : "Du har blivit inbjuden! Skapa ditt konto för att kopplas ihop."
               : isLogin ? "Välkommen tillbaka" : "Skapa ditt konto"}
           </p>
         </div>
@@ -106,7 +122,7 @@ export default function Auth() {
               background: "hsla(43, 60%, 60%, 0.15)",
               color: "hsl(30, 50%, 35%)"
             }}>
-              💌 Du har en inbjudan från din partner!
+              💌 {inviterName ? `Du har en inbjudan från ${inviterName}!` : "Du har en inbjudan från din partner!"}
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">

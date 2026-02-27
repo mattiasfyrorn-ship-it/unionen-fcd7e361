@@ -193,7 +193,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const inviteUrl = `https://unionen.lovable.app/auth?invite=${token}`;
+    const inviteUrl = `https://unionen.fyrorn.se/auth?invite=${token}`;
 
     // Send the invitation email
     const emailSent = await sendInviteEmail(email, sanitizedInviterName, inviteUrl);
