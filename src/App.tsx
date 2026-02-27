@@ -58,6 +58,7 @@ const App = () => (
           <PushInitializer />
           <Routes>
             <Route path="/auth" element={<AuthRoute />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/daily" element={<ProtectedRoute><DailyCheck /></ProtectedRoute>} />
             <Route path="/evaluate" element={<ProtectedRoute><Evaluate /></ProtectedRoute>} />

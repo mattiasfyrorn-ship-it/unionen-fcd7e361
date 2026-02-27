@@ -161,7 +161,7 @@ export default function Auth() {
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
+            {!isLogin && !forgotPassword && (
               <div>
                 <label className="block text-xs font-medium mb-1.5" style={{ color: "hsl(25, 20%, 40%)" }}>
                   Ditt namn
@@ -188,20 +188,22 @@ export default function Auth() {
                 className="border-0 bg-white/60 text-gray-800 placeholder:text-gray-400 focus-visible:ring-amber-400/50"
               />
             </div>
-            <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: "hsl(25, 20%, 40%)" }}>
-                Lösenord
-              </label>
-              <Input
-                type="password"
-                placeholder="Minst 6 tecken"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                className="border-0 bg-white/60 text-gray-800 placeholder:text-gray-400 focus-visible:ring-amber-400/50"
-              />
-            </div>
+            {!forgotPassword && (
+              <div>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: "hsl(25, 20%, 40%)" }}>
+                  Lösenord
+                </label>
+                <Input
+                  type="password"
+                  placeholder="Minst 6 tecken"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="border-0 bg-white/60 text-gray-800 placeholder:text-gray-400 focus-visible:ring-amber-400/50"
+                />
+              </div>
+            )}
             <Button
               type="submit"
               className="w-full h-12 text-white font-medium rounded-xl shadow-md"
@@ -210,18 +212,41 @@ export default function Auth() {
                 background: "linear-gradient(135deg, hsl(43, 60%, 55%), hsl(30, 50%, 48%))",
               }}
             >
-              {loading ? "Laddar..." : isLogin ? "Logga in" : "Registrera"}
+              {loading ? "Laddar..." : forgotPassword ? "Skicka återställningslänk" : isLogin ? "Logga in" : "Registrera"}
             </Button>
           </form>
-          <p className="text-center text-sm mt-6" style={{ color: "hsl(25, 15%, 50%)" }}>
-            {isLogin ? "Inget konto?" : "Har redan konto?"}{" "}
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="font-medium hover:underline"
-              style={{ color: "hsl(30, 50%, 40%)" }}
-            >
-              {isLogin ? "Registrera dig" : "Logga in"}
-            </button>
+          {isLogin && !forgotPassword && (
+            <p className="text-center text-sm mt-4">
+              <button
+                onClick={() => setForgotPassword(true)}
+                className="font-medium hover:underline"
+                style={{ color: "hsl(30, 50%, 40%)" }}
+              >
+                Glömt lösenord?
+              </button>
+            </p>
+          )}
+          <p className="text-center text-sm mt-4" style={{ color: "hsl(25, 15%, 50%)" }}>
+            {forgotPassword ? (
+              <button
+                onClick={() => setForgotPassword(false)}
+                className="font-medium hover:underline"
+                style={{ color: "hsl(30, 50%, 40%)" }}
+              >
+                Tillbaka till inloggning
+              </button>
+            ) : (
+              <>
+                {isLogin ? "Inget konto?" : "Har redan konto?"}{" "}
+                <button
+                  onClick={() => setIsLogin(!isLogin)}
+                  className="font-medium hover:underline"
+                  style={{ color: "hsl(30, 50%, 40%)" }}
+                >
+                  {isLogin ? "Registrera dig" : "Logga in"}
+                </button>
+              </>
+            )}
           </p>
         </div>
       </div>
