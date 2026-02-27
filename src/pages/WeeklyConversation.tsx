@@ -435,9 +435,11 @@ export default function WeeklyConversation() {
         <span className={`flex items-center gap-1 ${ready ? "text-teal" : "text-muted-foreground"}`}>
           <CheckCircle className="w-4 h-4" /> Du: {ready ? "Klar" : "Förbereder"}
         </span>
-        <span className={`flex items-center gap-1 ${partnerReady ? "text-teal" : "text-muted-foreground"}`}>
-          <CheckCircle className="w-4 h-4" /> Partner: {partnerReady ? "Klar" : "Förbereder"}
-        </span>
+        {hasCoupleId && (
+          <span className={`flex items-center gap-1 ${partnerReady ? "text-teal" : "text-muted-foreground"}`}>
+            <CheckCircle className="w-4 h-4" /> Partner: {partnerReady ? "Klar" : "Förbereder"}
+          </span>
+        )}
       </div>
 
       {/* Appreciations */}
