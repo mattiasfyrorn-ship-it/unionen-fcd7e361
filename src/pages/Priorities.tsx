@@ -10,10 +10,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2 } from "lucide-react";
 
 const AREAS = [
-  { key: "health", label: "Hälsa" },
-  { key: "career", label: "Karriär" },
-  { key: "economy", label: "Ekonomi" },
-  { key: "relationships", label: "Relationer" },
+  { key: "health", label: "Kropp" },
+  { key: "career", label: "Sinne" },
+  { key: "economy", label: "Relationer" },
+  { key: "relationships", label: "Mission" },
 ];
 
 function getCurrentMonth() {

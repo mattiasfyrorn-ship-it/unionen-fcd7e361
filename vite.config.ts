@@ -15,7 +15,6 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === "development" && componentTagger(),
     VitePWA({
       strategies: "injectManifest",
       srcDir: "public",
