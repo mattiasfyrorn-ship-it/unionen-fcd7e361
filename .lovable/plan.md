@@ -1,68 +1,82 @@
 
-## Problem: Två service workers krockar och bryter push-notiser
 
-### Rotorsaken
+## Visa inbjudarens namn + alla mejl via Resend (mail1.fyrorn.se)
 
-Det finns en fundamental konflikt i hur service workers är uppsatta:
+### Vad som andras
 
-1. VitePWA-pluginen genererar en `sw.js` via Workbox vid build och skriver automatiskt över `public/sw.js`
-2. Vår anpassade `public/sw.js` med push-logik försvinner alltså i produktionsbygget
-3. Resultatet: `navigator.serviceWorker.ready` pekar på Workbox service worker som saknar push-hantering
-4. `reg.pushManager.subscribe(...)` kastar ett fel (t.ex. ogiltig VAPID-nyckel eller problem med workern) och fångas i `catch`-blocket → returnerar `false` → felmeddelandet visas
+#### 1. Databasandring — lagg till `inviter_name` pa `partner_invitations`
 
-Dessutom finns ett timeout-problem: `navigator.serviceWorker.ready` kan hänga länge i en vanlig webbläsarflik (inte installerad PWA) om service workern inte aktiveras direkt.
+Ny kolumn for att spara inbjudarens namn sa det kan visas pa Auth-sidan utan inloggning.
 
-### Lösning: Slå samman till en enda service worker med `injectManifest`
-
-VitePWA stöder ett läge som heter `injectManifest` där vi skriver vår egen service worker och Workbox injicerar sina cache-definitioner i den. På så sätt har vi bara en service worker som gör allt.
-
-#### Konkreta ändringar
-
-**1. `vite.config.ts`** — Byt strategi från `generateSW` (default) till `injectManifest` och peka på vår custom service worker:
-
-```ts
-VitePWA({
-  strategies: 'injectManifest',
-  srcDir: 'public',
-  filename: 'sw.js',
-  registerType: 'autoUpdate',
-  // ...resten är samma
-})
+```sql
+ALTER TABLE partner_invitations ADD COLUMN inviter_name text DEFAULT '';
 ```
 
-**2. `public/sw.js`** — Lägg till Workbox-injektionspunkt överst och behåll push/notificationclick-logiken:
+Plus en ny RPC-funktion som gar att anropa utan inloggning (SECURITY DEFINER) for att hamta inbjudarens namn fran en token:
 
-```js
-// Workbox injicerar sitt precache-manifest här automatiskt vid build
-import { precacheAndRoute } from 'workbox-precaching';
-precacheAndRoute(self.__WB_MANIFEST);
-
-// Push-logiken finns kvar nedan (oförändrad)
-self.addEventListener('push', ...);
-self.addEventListener('notificationclick', ...);
+```sql
+CREATE FUNCTION get_invitation_info(p_token text)
+RETURNS TABLE(inviter_name text) AS $$
+  SELECT inviter_name FROM partner_invitations
+  WHERE token = p_token AND status = 'pending' LIMIT 1;
+$$ LANGUAGE sql SECURITY DEFINER;
 ```
 
-**3. `src/lib/pushNotifications.ts`** — Lägg till timeout på `serviceWorker.ready` (max 5 sekunder) och bättre felhantering som loggar exakt vad som går fel, så att framtida problem är lättare att felsöka:
+#### 2. `supabase/functions/send-invitation/index.ts` — tre fixar
 
-```ts
-const registration = await Promise.race([
-  navigator.serviceWorker.ready,
-  new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 5000))
-]);
+- **Fran-adress**: Byt `onboarding@resend.dev` till `Unionen <noreply@mail1.fyrorn.se>`
+- **URL:er**: Byt `unionen.lovable.app` till `unionen.fyrorn.se`
+- **Spara namn**: Lagg till `inviter_name` i insert-anropet
+
+#### 3. Ny edge-funktion `supabase/functions/notify-partner-paired/index.ts`
+
+Anropas fran klienten efter lyckad parkoppling. Tar emot `inviteToken` och `inviteeName`.
+
+Funktionen:
+1. Slar upp inbjudan via token (hamtar inviter_id, inviter_name, invitee_email)
+2. Hamtar inbjudarens e-post fran auth.users via service role
+3. Skickar tva mejl via Resend fran `noreply@mail1.fyrorn.se`:
+   - **Till invitee**: "Valkommen [namn]! Du ar nu ihopkopplad med [inbjudarens namn]."
+   - **Till inviter**: "[Partnerns namn] har registrerat sig! Ni ar nu ihopkopplade."
+
+#### 4. `supabase/config.toml` — lagg till ny funktion
+
+```toml
+[functions.notify-partner-paired]
+verify_jwt = false
 ```
 
-**4. `src/App.tsx`** — Ta bort den manuella registreringen av `/sw.js` i `PushInitializer` eftersom VitePWA sköter registreringen automatiskt. Dubbel-registrering kan orsaka problem.
+#### 5. `src/pages/Auth.tsx` — visa inbjudarens namn + trigga notifiering
 
-### Tekniska detaljer
+- Vid laddning: om `invite`-token finns, anropa `get_invitation_info` RPC och hamta inbjudarens namn
+- Visa i bannern: "Du har en inbjudan fran **Anna**!" istallet for generiskt meddelande
+- Efter lyckad registrering + parkoppling: anropa `notify-partner-paired` edge-funktionen med token och den nyas namn
 
-- `injectManifest`-strategin kräver att service worker-filen innehåller `self.__WB_MANIFEST` — det är platsen Workbox injicerar sitt precache-manifest
-- I development-läge fungerar `self.__WB_MANIFEST` inte utan en speciell mock — vi lägger till `if (typeof self.__WB_MANIFEST !== 'undefined')` som guard
-- VAPID-nycklarna är korrekt konfigurerade som secrets, så det problemet är inte orsaken
-- Ingen databasändring behövs
+#### 6. `src/pages/Pairing.tsx` — trigga notifiering vid manuell parkoppling
 
-### Filer som ändras
+Nar `pair_with_partner` lyckas via parningskod: anropa `notify-partner-paired` for att skicka bekraftelsemejl till bada parter.
 
-- `vite.config.ts` — lägg till `strategies: 'injectManifest'`, `srcDir: 'public'`, `filename: 'sw.js'`
-- `public/sw.js` — lägg till Workbox precache-anrop överst med `__WB_MANIFEST`-guard
-- `src/lib/pushNotifications.ts` — lägg till timeout på `serviceWorker.ready` och förbättrad fellogning
-- `src/App.tsx` — ta bort manuell `navigator.serviceWorker.register('/sw.js')` i `PushInitializer`
+---
+
+### E-postflodet efter andringarna
+
+```text
+1. Anna anger Eriks e-post → send-invitation skickar mejl fran noreply@mail1.fyrorn.se
+2. Erik klickar lanken → Auth-sidan visar "Du har en inbjudan fran Anna!"
+3. Erik registrerar sig → parkoppling sker
+4. notify-partner-paired skickar:
+   a) Bekraftelse till Erik: "Valkommen Erik! Du ar ihopkopplad med Anna."
+   b) Notifiering till Anna: "Erik har registrerat sig! Ni ar ihopkopplade."
+```
+
+### Filer som andras
+
+| Fil | Andring |
+|---|---|
+| Migration (SQL) | Lagg till `inviter_name`-kolumn, skapa `get_invitation_info` RPC |
+| `supabase/functions/send-invitation/index.ts` | Byt fran-adress till `mail1.fyrorn.se`, byt URL:er till `unionen.fyrorn.se`, spara `inviter_name` |
+| `supabase/functions/notify-partner-paired/index.ts` | **Ny fil** — skickar bekraftelse + notifiering via Resend |
+| `supabase/config.toml` | Automatiskt uppdaterad med `[functions.notify-partner-paired]` |
+| `src/pages/Auth.tsx` | Hamta och visa inbjudarens namn, anropa notify efter parkoppling |
+| `src/pages/Pairing.tsx` | Anropa notify efter lyckad manuell parkoppling |
+
