@@ -182,6 +182,7 @@ Deno.serve(async (req) => {
       couple_id: coupleId,
       token,
       status: "pending",
+      inviter_name: sanitizedInviterName,
     });
 
     if (invErr) {
