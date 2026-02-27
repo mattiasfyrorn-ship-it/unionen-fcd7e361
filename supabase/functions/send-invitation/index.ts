@@ -132,7 +132,7 @@ Deno.serve(async (req) => {
 
     if (existing && existing.length > 0) {
       const existingToken = existing[0].token;
-      const inviteUrl = `https://unionen.lovable.app/auth?invite=${existingToken}`;
+      const inviteUrl = `https://unionen.fyrorn.se/auth?invite=${existingToken}`;
 
       // Re-send the email even for existing invitations
       await sendInviteEmail(email, sanitizedInviterName, inviteUrl);
