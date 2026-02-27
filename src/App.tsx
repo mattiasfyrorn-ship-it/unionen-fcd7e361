@@ -43,8 +43,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function AuthRoute() {
   const { user, loading } = useAuth();
+  const [searchParams] = useSearchParams();
+  const hasInvite = searchParams.has("invite");
   if (loading) return null;
-  if (user) return <Navigate to="/" replace />;
+  if (user && !hasInvite) return <Navigate to="/" replace />;
   return <Auth />;
 }
 
