@@ -94,7 +94,7 @@ export default function WeeklyConversation() {
       }
 
       if (!conv) {
-        const { data: newConv } = await supabase
+        const { data: newConv, error: insertErr } = await supabase
           .from("weekly_conversations")
           .insert({
             couple_id: profile?.couple_id || null,
@@ -103,6 +103,11 @@ export default function WeeklyConversation() {
           } as any)
           .select()
           .single();
+        if (insertErr) {
+          console.error("Failed to create conversation:", insertErr);
+          toast({ title: "Fel", description: "Kunde inte skapa veckosamtal.", variant: "destructive" });
+          return;
+        }
         conv = newConv;
       }
 
