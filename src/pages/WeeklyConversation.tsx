@@ -233,7 +233,8 @@ export default function WeeklyConversation() {
     setLoading(false);
   };
 
-  const bothReady = ready && partnerReady;
+  const bothReady = hasCoupleId ? (ready && partnerReady) : ready;
+  const canStartMeeting = bothReady;
 
   // Meeting flow sections
   const meetingSections = [
