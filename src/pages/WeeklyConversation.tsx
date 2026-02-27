@@ -287,7 +287,7 @@ export default function WeeklyConversation() {
   ];
 
   // Meeting flow view
-  if (bothReady && meetingStarted) {
+  if (canStartMeeting && meetingStarted) {
     return (
       <div className="space-y-4 max-w-2xl mx-auto">
         <div>
