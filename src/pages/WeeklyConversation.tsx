@@ -202,7 +202,11 @@ export default function WeeklyConversation() {
   };
 
   const handleSave = async (markReady?: boolean) => {
-    if (!user || !conversationId) return;
+    if (!user) return;
+    if (!conversationId) {
+      toast({ title: "Fel", description: "Veckosamtalet kunde inte laddas. Försök ladda om sidan.", variant: "destructive" });
+      return;
+    }
     setLoading(true);
 
     const payload: any = {
