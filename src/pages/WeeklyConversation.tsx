@@ -165,7 +165,7 @@ export default function WeeklyConversation() {
       }
     };
     load();
-  }, [profile?.couple_id, user?.id]);
+  }, [user?.id, hasCoupleId]);
 
   const loadArchiveEntries = async (convId: string) => {
     if (archiveEntries[convId]) {
