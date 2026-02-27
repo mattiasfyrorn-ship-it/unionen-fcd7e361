@@ -94,7 +94,7 @@ export default function WeeklyConversation() {
       }
 
       if (!conv) {
-        const { data: newConv } = await supabase
+        const { data: newConv, error: insertErr } = await supabase
           .from("weekly_conversations")
           .insert({
             couple_id: profile?.couple_id || null,
@@ -103,6 +103,11 @@ export default function WeeklyConversation() {
           } as any)
           .select()
           .single();
+        if (insertErr) {
+          console.error("Failed to create conversation:", insertErr);
+          toast({ title: "Fel", description: "Kunde inte skapa veckosamtal.", variant: "destructive" });
+          return;
+        }
         conv = newConv;
       }
 
@@ -197,7 +202,11 @@ export default function WeeklyConversation() {
   };
 
   const handleSave = async (markReady?: boolean) => {
-    if (!user || !conversationId) return;
+    if (!user) return;
+    if (!conversationId) {
+      toast({ title: "Fel", description: "Veckosamtalet kunde inte laddas. Försök ladda om sidan.", variant: "destructive" });
+      return;
+    }
     setLoading(true);
 
     const payload: any = {
