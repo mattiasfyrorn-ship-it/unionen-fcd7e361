@@ -11,6 +11,7 @@ export default function Auth() {
   const inviteToken = searchParams.get("invite");
 
   const [isLogin, setIsLogin] = useState(!inviteToken);
+  const [forgotPassword, setForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
