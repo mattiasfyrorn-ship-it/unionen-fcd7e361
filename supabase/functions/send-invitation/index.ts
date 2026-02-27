@@ -31,7 +31,7 @@ async function sendInviteEmail(to: string, inviterName: string, inviteUrl: strin
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Unionen <onboarding@resend.dev>",
+      from: "Unionen <noreply@mail1.fyrorn.se>",
       to: [to],
       subject: `${escapeHtml(inviterName)} vill koppla ihop med dig på Unionen 💕`,
       html: `
