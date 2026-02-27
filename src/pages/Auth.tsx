@@ -1,14 +1,43 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Heart } from "lucide-react";
 
+const DUMMY_USER_ID = "00000000-0000-0000-0000-000000000000";
+
+async function acceptAndNotify(inviteToken: string, inviteeName: string, toast: any) {
+  try {
+    const { data: result } = await supabase.rpc("accept_invitation", {
+      p_token: inviteToken,
+      p_user_id: DUMMY_USER_ID,
+    } as any);
+    const resultObj = result as Record<string, unknown> | null;
+    if (resultObj?.success) {
+      toast({ title: "Välkommen! 💕", description: "Du är nu ihopkopplad med din partner." });
+      try {
+        await supabase.functions.invoke("notify-partner-paired", {
+          body: { inviteToken, inviteeName },
+        });
+      } catch (e) {
+        console.error("Notify error:", e);
+      }
+      return true;
+    }
+  } catch (err) {
+    console.error("Accept invitation error:", err);
+  }
+  return false;
+}
+
 export default function Auth() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const inviteToken = searchParams.get("invite");
+  const { user } = useAuth();
 
   const [isLogin, setIsLogin] = useState(!inviteToken);
   const [forgotPassword, setForgotPassword] = useState(false);
@@ -17,12 +46,12 @@ export default function Auth() {
   const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(false);
   const [inviterName, setInviterName] = useState<string | null>(null);
+  const [acceptingInvite, setAcceptingInvite] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     if (inviteToken) {
       setIsLogin(false);
-      // Fetch inviter name
       supabase.rpc("get_invitation_info", { p_token: inviteToken } as any).then(({ data }) => {
         if (data && Array.isArray(data) && data.length > 0 && data[0].inviter_name) {
           setInviterName(data[0].inviter_name);
@@ -30,6 +59,15 @@ export default function Auth() {
       });
     }
   }, [inviteToken]);
+
+  // Auto-accept invitation if user is already logged in with invite token
+  useEffect(() => {
+    if (user && inviteToken && !acceptingInvite) {
+      setAcceptingInvite(true);
+      acceptAndNotify(inviteToken, user.user_metadata?.display_name || user.email || "", toast)
+        .then(() => navigate("/", { replace: true }));
+    }
+  }, [user, inviteToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,26 +90,8 @@ export default function Auth() {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         toast({ title: "Fel vid inloggning", description: error.message, variant: "destructive" });
-      } else if (inviteToken) {
-        try {
-          const { data: result } = await supabase.rpc("accept_invitation", {
-            p_token: inviteToken,
-          } as any);
-          const resultObj = result as Record<string, unknown> | null;
-          if (resultObj?.success) {
-            toast({ title: "Välkommen! 💕", description: "Du är nu ihopkopplad med din partner." });
-            try {
-              await supabase.functions.invoke("notify-partner-paired", {
-                body: { inviteToken, inviteeName: email },
-              });
-            } catch (notifyErr) {
-              console.error("Notify error:", notifyErr);
-            }
-          }
-        } catch (err) {
-          console.error("Accept invitation error:", err);
-        }
       }
+      // If inviteToken exists, the useEffect above will handle accept_invitation after user state updates
     } else {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -88,34 +108,28 @@ export default function Auth() {
       });
       if (error) {
         toast({ title: "Fel vid registrering", description: error.message, variant: "destructive" });
+      } else if (data.user && inviteToken && data.session) {
+        // Session exists immediately — useEffect will handle pairing
       } else {
-        if (data.user && inviteToken && data.session) {
-          try {
-            const { data: result } = await supabase.rpc("accept_invitation", {
-              p_token: inviteToken,
-            } as any);
-            const resultObj = result as Record<string, unknown> | null;
-            if (resultObj?.success) {
-              toast({ title: "Välkommen! 💕", description: "Du är nu ihopkopplad med din partner." });
-              // Send notification emails
-              try {
-                await supabase.functions.invoke("notify-partner-paired", {
-                  body: { inviteToken, inviteeName: displayName },
-                });
-              } catch (notifyErr) {
-                console.error("Notify error:", notifyErr);
-              }
-            }
-          } catch (err) {
-            console.error("Accept invitation error:", err);
-          }
-        } else {
-          toast({ title: "Kolla din e-post!", description: "Vi har skickat en verifieringslänk." });
-        }
+        toast({ title: "Kolla din e-post!", description: "Vi har skickat en verifieringslänk." });
       }
     }
     setLoading(false);
   };
+
+  // If already logged in and accepting invite, show a loading state
+  if (user && inviteToken) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{
+        background: "linear-gradient(135deg, hsl(35, 40%, 95%) 0%, hsl(30, 35%, 90%) 30%, hsl(25, 30%, 87%) 60%, hsl(20, 25%, 85%) 100%)"
+      }}>
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p style={{ color: "hsl(25, 15%, 50%)" }}>Kopplar ihop er...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{
