@@ -31,7 +31,7 @@ async function sendInviteEmail(to: string, inviterName: string, inviteUrl: strin
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Unionen <onboarding@resend.dev>",
+      from: "Unionen <noreply@mail1.fyrorn.se>",
       to: [to],
       subject: `${escapeHtml(inviterName)} vill koppla ihop med dig på Unionen 💕`,
       html: `
@@ -132,7 +132,7 @@ Deno.serve(async (req) => {
 
     if (existing && existing.length > 0) {
       const existingToken = existing[0].token;
-      const inviteUrl = `https://unionen.lovable.app/auth?invite=${existingToken}`;
+      const inviteUrl = `https://unionen.fyrorn.se/auth?invite=${existingToken}`;
 
       // Re-send the email even for existing invitations
       await sendInviteEmail(email, sanitizedInviterName, inviteUrl);
@@ -182,6 +182,7 @@ Deno.serve(async (req) => {
       couple_id: coupleId,
       token,
       status: "pending",
+      inviter_name: sanitizedInviterName,
     });
 
     if (invErr) {
@@ -192,7 +193,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const inviteUrl = `https://unionen.lovable.app/auth?invite=${token}`;
+    const inviteUrl = `https://unionen.fyrorn.se/auth?invite=${token}`;
 
     // Send the invitation email
     const emailSent = await sendInviteEmail(email, sanitizedInviterName, inviteUrl);
