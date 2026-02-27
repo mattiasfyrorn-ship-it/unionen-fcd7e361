@@ -136,11 +136,13 @@ export default function Auth() {
             Unionen
           </h1>
           <p className="mt-2 text-sm" style={{ color: "hsl(25, 15%, 50%)" }}>
-            {inviteToken
-              ? inviterName
-                ? `Du har blivit inbjuden av ${inviterName}! Skapa ditt konto för att kopplas ihop.`
-                : "Du har blivit inbjuden! Skapa ditt konto för att kopplas ihop."
-              : isLogin ? "Välkommen tillbaka" : "Skapa ditt konto"}
+            {forgotPassword
+              ? "Ange din e-postadress så skickar vi en länk för att återställa ditt lösenord"
+              : inviteToken
+                ? inviterName
+                  ? `Du har blivit inbjuden av ${inviterName}! Skapa ditt konto för att kopplas ihop.`
+                  : "Du har blivit inbjuden! Skapa ditt konto för att kopplas ihop."
+                : isLogin ? "Välkommen tillbaka" : "Skapa ditt konto"}
           </p>
         </div>
 
