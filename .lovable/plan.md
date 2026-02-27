@@ -1,68 +1,66 @@
 
-## Problem: Två service workers krockar och bryter push-notiser
 
-### Rotorsaken
+## Alla funktioner ska fungera utan partner
 
-Det finns en fundamental konflikt i hur service workers är uppsatta:
+### Problem
 
-1. VitePWA-pluginen genererar en `sw.js` via Workbox vid build och skriver automatiskt över `public/sw.js`
-2. Vår anpassade `public/sw.js` med push-logik försvinner alltså i produktionsbygget
-3. Resultatet: `navigator.serviceWorker.ready` pekar på Workbox service worker som saknar push-hantering
-4. `reg.pushManager.subscribe(...)` kastar ett fel (t.ex. ogiltig VAPID-nyckel eller problem med workern) och fångas i `catch`-blocket → returnerar `false` → felmeddelandet visas
+- `daily_checks.couple_id` och `evaluations.couple_id` har NOT NULL-constraint -- blockerar sparning utan partner
+- RLS-policys for SELECT kraver matchande `couple_id` via `get_my_couple_id()`
+- WeeklyConversation avbryter helt om `couple_id` saknas (rad 68)
+- Koden skickar `profile.couple_id` direkt utan fallback
 
-Dessutom finns ett timeout-problem: `navigator.serviceWorker.ready` kan hänga länge i en vanlig webbläsarflik (inte installerad PWA) om service workern inte aktiveras direkt.
+### Databasandringar (migration)
 
-### Lösning: Slå samman till en enda service worker med `injectManifest`
-
-VitePWA stöder ett läge som heter `injectManifest` där vi skriver vår egen service worker och Workbox injicerar sina cache-definitioner i den. På så sätt har vi bara en service worker som gör allt.
-
-#### Konkreta ändringar
-
-**1. `vite.config.ts`** — Byt strategi från `generateSW` (default) till `injectManifest` och peka på vår custom service worker:
-
-```ts
-VitePWA({
-  strategies: 'injectManifest',
-  srcDir: 'public',
-  filename: 'sw.js',
-  registerType: 'autoUpdate',
-  // ...resten är samma
-})
+1. **Gor `couple_id` nullable** i bade `daily_checks` och `evaluations`:
+```sql
+ALTER TABLE daily_checks ALTER COLUMN couple_id DROP NOT NULL;
+ALTER TABLE evaluations ALTER COLUMN couple_id DROP NOT NULL;
+ALTER TABLE weekly_conversations ALTER COLUMN couple_id DROP NOT NULL;
 ```
 
-**2. `public/sw.js`** — Lägg till Workbox-injektionspunkt överst och behåll push/notificationclick-logiken:
+2. **Uppdatera RLS-policys** sa att anvandare alltid kan lasa sin egen data, oavsett `couple_id`:
 
-```js
-// Workbox injicerar sitt precache-manifest här automatiskt vid build
-import { precacheAndRoute } from 'workbox-precaching';
-precacheAndRoute(self.__WB_MANIFEST);
+- `daily_checks` INSERT: Tillat om `auth.uid() = user_id` (redan sa, men couple_id null maste tillatas)
+- `daily_checks` SELECT: Lagg till policy for `auth.uid() = user_id` (utover befintlig couple-baserad)
+- `evaluations` INSERT/SELECT: Samma monster
+- `weekly_conversations`: Lagg till policy som tillater operationer baserat pa user_id via entries, inte bara couple_id
 
-// Push-logiken finns kvar nedan (oförändrad)
-self.addEventListener('push', ...);
-self.addEventListener('notificationclick', ...);
+3. **Lagg till SELECT-policy for egen data** pa `weekly_conversations`:
+```sql
+CREATE POLICY "Users can manage own conversations"
+ON weekly_conversations FOR ALL
+USING (
+  couple_id = get_my_couple_id()
+  OR couple_id IS NULL
+  OR EXISTS (
+    SELECT 1 FROM weekly_entries we WHERE we.conversation_id = id AND we.user_id = auth.uid()
+  )
+);
 ```
 
-**3. `src/lib/pushNotifications.ts`** — Lägg till timeout på `serviceWorker.ready` (max 5 sekunder) och bättre felhantering som loggar exakt vad som går fel, så att framtida problem är lättare att felsöka:
+### Kodandringar
 
-```ts
-const registration = await Promise.race([
-  navigator.serviceWorker.ready,
-  new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 5000))
-]);
-```
+#### DailyCheck.tsx
+- Andra `couple_id: profile.couple_id` till `couple_id: profile.couple_id || null` i payload (rad 158)
 
-**4. `src/App.tsx`** — Ta bort den manuella registreringen av `/sw.js` i `PushInitializer` eftersom VitePWA sköter registreringen automatiskt. Dubbel-registrering kan orsaka problem.
+#### Evaluate.tsx
+- Samma andring: `couple_id: profile.couple_id || null` i inserts (rad 120)
+- Ta bort check som blockerar om couple_id saknas
 
-### Tekniska detaljer
+#### WeeklyConversation.tsx
+- Ta bort `if (!profile?.couple_id) return;` (rad 68)
+- Anvand `profile.couple_id || null` vid insert av conversation
+- Dolj partner-status-rad om ingen partner finns
+- Tillat "Klar for mote" och sparning aven utan partner
+- Gom "Starta mote"-knappen om ingen partner ar kopplad (behover bada vara redo)
+- Visa anteckningsvy direkt om ingen partner finns (solo-mote)
 
-- `injectManifest`-strategin kräver att service worker-filen innehåller `self.__WB_MANIFEST` — det är platsen Workbox injicerar sitt precache-manifest
-- I development-läge fungerar `self.__WB_MANIFEST` inte utan en speciell mock — vi lägger till `if (typeof self.__WB_MANIFEST !== 'undefined')` som guard
-- VAPID-nycklarna är korrekt konfigurerade som secrets, så det problemet är inte orsaken
-- Ingen databasändring behövs
+### Sammanfattning
 
-### Filer som ändras
+| Andring | Plats |
+|---|---|
+| Gor couple_id nullable i 3 tabeller | DB-migration |
+| Lagg till RLS for egen data | DB-migration |
+| Fallback for null couple_id | DailyCheck.tsx, Evaluate.tsx |
+| Solo-lage for veckosamtal | WeeklyConversation.tsx |
 
-- `vite.config.ts` — lägg till `strategies: 'injectManifest'`, `srcDir: 'public'`, `filename: 'sw.js'`
-- `public/sw.js` — lägg till Workbox precache-anrop överst med `__WB_MANIFEST`-guard
-- `src/lib/pushNotifications.ts` — lägg till timeout på `serviceWorker.ready` och förbättrad fellogning
-- `src/App.tsx` — ta bort manuell `navigator.serviceWorker.register('/sw.js')` i `PushInitializer`
