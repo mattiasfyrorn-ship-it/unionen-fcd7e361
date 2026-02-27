@@ -64,20 +64,43 @@ export default function WeeklyConversation() {
   const [expandedArchive, setExpandedArchive] = useState<string | null>(null);
   const [archiveEntries, setArchiveEntries] = useState<Record<string, any[]>>({});
 
+  const hasCoupleId = !!profile?.couple_id;
+
   useEffect(() => {
-    if (!profile?.couple_id) return;
+    if (!user) return;
     const load = async () => {
-      let { data: conv } = await supabase
-        .from("weekly_conversations")
-        .select("*")
-        .eq("couple_id", profile.couple_id!)
-        .eq("week_start", weekStart)
-        .maybeSingle();
+      let conv: any = null;
+
+      if (hasCoupleId) {
+        // Try to find existing conversation for couple
+        const { data } = await supabase
+          .from("weekly_conversations")
+          .select("*")
+          .eq("couple_id", profile!.couple_id!)
+          .eq("week_start", weekStart)
+          .maybeSingle();
+        conv = data;
+      }
+
+      if (!conv) {
+        // Try to find solo conversation
+        const { data } = await supabase
+          .from("weekly_conversations")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("week_start", weekStart)
+          .maybeSingle();
+        conv = data;
+      }
 
       if (!conv) {
         const { data: newConv } = await supabase
           .from("weekly_conversations")
-          .insert({ couple_id: profile.couple_id!, week_start: weekStart })
+          .insert({
+            couple_id: profile?.couple_id || null,
+            user_id: user.id,
+            week_start: weekStart,
+          } as any)
           .select()
           .single();
         conv = newConv;
