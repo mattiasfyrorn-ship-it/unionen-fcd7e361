@@ -1,48 +1,68 @@
 
+## Problem: Två service workers krockar och bryter push-notiser
 
-## Tre andringar: Glomt losenord, losenordsaterstallning, och invite-fix vid inloggning
+### Rotorsaken
 
-### 1. Lagg till "Glomt losenord" i Auth.tsx
+Det finns en fundamental konflikt i hur service workers är uppsatta:
 
-Nytt state `forgotPassword` i Auth.tsx. Nar aktivt visas:
-- Rubrik: "Aterstall losenord"
-- Beskrivning: "Ange din e-postadress sa skickar vi en lank for att aterstalla ditt losenord"
-- E-postfalt
-- Knapp "Skicka aterstallningslank"
-- Lanken "Tillbaka till inloggning"
+1. VitePWA-pluginen genererar en `sw.js` via Workbox vid build och skriver automatiskt över `public/sw.js`
+2. Vår anpassade `public/sw.js` med push-logik försvinner alltså i produktionsbygget
+3. Resultatet: `navigator.serviceWorker.ready` pekar på Workbox service worker som saknar push-hantering
+4. `reg.pushManager.subscribe(...)` kastar ett fel (t.ex. ogiltig VAPID-nyckel eller problem med workern) och fångas i `catch`-blocket → returnerar `false` → felmeddelandet visas
 
-Anropar `supabase.auth.resetPasswordForEmail(email, { redirectTo: '${origin}/reset-password' })` och visar toast "Kolla din e-post! Vi har skickat en lank for att aterstalla ditt losenord."
+Dessutom finns ett timeout-problem: `navigator.serviceWorker.ready` kan hänga länge i en vanlig webbläsarflik (inte installerad PWA) om service workern inte aktiveras direkt.
 
-"Glomt losenord?"-lanken visas under inloggningsformulaeret (bara i login-lage, inte vid registrering).
+### Lösning: Slå samman till en enda service worker med `injectManifest`
 
-### 2. Skapa ny sida ResetPassword.tsx
+VitePWA stöder ett läge som heter `injectManifest` där vi skriver vår egen service worker och Workbox injicerar sina cache-definitioner i den. På så sätt har vi bara en service worker som gör allt.
 
-Ny sida pa `/reset-password` som:
-- Lyssnar pa `PASSWORD_RECOVERY`-event via `supabase.auth.onAuthStateChange`
-- Visar formulaer med tva falt: "Nytt losenord" och "Bekrafta losenord"
-- Validerar att losenorden matchar och ar minst 6 tecken
-- Anropar `supabase.auth.updateUser({ password })` for att spara
-- Visar toast vid lyckad uppdatering och redirectar till `/`
-- Om inget recovery-event hittas visas ett meddelande om att lanken ar ogiltig
+#### Konkreta ändringar
 
-Stilen matchar Auth.tsx (samma gradient-bakgrund, glasmorfism-kort, hjart-logga).
+**1. `vite.config.ts`** — Byt strategi från `generateSW` (default) till `injectManifest` och peka på vår custom service worker:
 
-### 3. Fix: Accept invitation vid inloggning
+```ts
+VitePWA({
+  strategies: 'injectManifest',
+  srcDir: 'public',
+  filename: 'sw.js',
+  registerType: 'autoUpdate',
+  // ...resten är samma
+})
+```
 
-I `handleSubmit` — efter lyckad `signInWithPassword` och om `inviteToken` finns:
-- Anropa `supabase.rpc("accept_invitation", { p_token: inviteToken })`
-- Visa toast "Valkommen! Du ar nu ihopkopplad med din partner."
-- Anropa `notify-partner-paired` edge function
+**2. `public/sw.js`** — Lägg till Workbox-injektionspunkt överst och behåll push/notificationclick-logiken:
 
-### 4. Lagg till route i App.tsx
+```js
+// Workbox injicerar sitt precache-manifest här automatiskt vid build
+import { precacheAndRoute } from 'workbox-precaching';
+precacheAndRoute(self.__WB_MANIFEST);
 
-Lagg till publik route `/reset-password` som renderar `ResetPassword`-komponenten utan `ProtectedRoute`-wrapper.
+// Push-logiken finns kvar nedan (oförändrad)
+self.addEventListener('push', ...);
+self.addEventListener('notificationclick', ...);
+```
 
-### Teknisk sammanfattning
+**3. `src/lib/pushNotifications.ts`** — Lägg till timeout på `serviceWorker.ready` (max 5 sekunder) och bättre felhantering som loggar exakt vad som går fel, så att framtida problem är lättare att felsöka:
 
-| Fil | Andring |
-|---|---|
-| `src/pages/Auth.tsx` | Lagg till `forgotPassword`-state, vy for e-postinmatning, "Glomt losenord?"-lank vid inloggning, och `accept_invitation` vid inloggning med invite-token |
-| `src/pages/ResetPassword.tsx` | **Ny fil** — formulaer for att satta nytt losenord efter klick pa aterstallningslank |
-| `src/App.tsx` | Lagg till publik route `/reset-password` |
+```ts
+const registration = await Promise.race([
+  navigator.serviceWorker.ready,
+  new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 5000))
+]);
+```
 
+**4. `src/App.tsx`** — Ta bort den manuella registreringen av `/sw.js` i `PushInitializer` eftersom VitePWA sköter registreringen automatiskt. Dubbel-registrering kan orsaka problem.
+
+### Tekniska detaljer
+
+- `injectManifest`-strategin kräver att service worker-filen innehåller `self.__WB_MANIFEST` — det är platsen Workbox injicerar sitt precache-manifest
+- I development-läge fungerar `self.__WB_MANIFEST` inte utan en speciell mock — vi lägger till `if (typeof self.__WB_MANIFEST !== 'undefined')` som guard
+- VAPID-nycklarna är korrekt konfigurerade som secrets, så det problemet är inte orsaken
+- Ingen databasändring behövs
+
+### Filer som ändras
+
+- `vite.config.ts` — lägg till `strategies: 'injectManifest'`, `srcDir: 'public'`, `filename: 'sw.js'`
+- `public/sw.js` — lägg till Workbox precache-anrop överst med `__WB_MANIFEST`-guard
+- `src/lib/pushNotifications.ts` — lägg till timeout på `serviceWorker.ready` och förbättrad fellogning
+- `src/App.tsx` — ta bort manuell `navigator.serviceWorker.register('/sw.js')` i `PushInitializer`

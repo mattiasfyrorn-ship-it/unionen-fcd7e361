@@ -11,6 +11,7 @@ export default function Auth() {
   const inviteToken = searchParams.get("invite");
 
   const [isLogin, setIsLogin] = useState(!inviteToken);
+  const [forgotPassword, setForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -34,10 +35,42 @@ export default function Auth() {
     e.preventDefault();
     setLoading(true);
 
+    if (forgotPassword) {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) {
+        toast({ title: "Fel", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Kolla din e-post!", description: "Vi har skickat en länk för att återställa ditt lösenord." });
+      }
+      setLoading(false);
+      return;
+    }
+
     if (isLogin) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         toast({ title: "Fel vid inloggning", description: error.message, variant: "destructive" });
+      } else if (inviteToken) {
+        try {
+          const { data: result } = await supabase.rpc("accept_invitation", {
+            p_token: inviteToken,
+          } as any);
+          const resultObj = result as Record<string, unknown> | null;
+          if (resultObj?.success) {
+            toast({ title: "Välkommen! 💕", description: "Du är nu ihopkopplad med din partner." });
+            try {
+              await supabase.functions.invoke("notify-partner-paired", {
+                body: { inviteToken, inviteeName: email },
+              });
+            } catch (notifyErr) {
+              console.error("Notify error:", notifyErr);
+            }
+          }
+        } catch (err) {
+          console.error("Accept invitation error:", err);
+        }
       }
     } else {
       const { data, error } = await supabase.auth.signUp({
@@ -103,11 +136,13 @@ export default function Auth() {
             Unionen
           </h1>
           <p className="mt-2 text-sm" style={{ color: "hsl(25, 15%, 50%)" }}>
-            {inviteToken
-              ? inviterName
-                ? `Du har blivit inbjuden av ${inviterName}! Skapa ditt konto för att kopplas ihop.`
-                : "Du har blivit inbjuden! Skapa ditt konto för att kopplas ihop."
-              : isLogin ? "Välkommen tillbaka" : "Skapa ditt konto"}
+            {forgotPassword
+              ? "Ange din e-postadress så skickar vi en länk för att återställa ditt lösenord"
+              : inviteToken
+                ? inviterName
+                  ? `Du har blivit inbjuden av ${inviterName}! Skapa ditt konto för att kopplas ihop.`
+                  : "Du har blivit inbjuden! Skapa ditt konto för att kopplas ihop."
+                : isLogin ? "Välkommen tillbaka" : "Skapa ditt konto"}
           </p>
         </div>
 
@@ -126,7 +161,7 @@ export default function Auth() {
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
+            {!isLogin && !forgotPassword && (
               <div>
                 <label className="block text-xs font-medium mb-1.5" style={{ color: "hsl(25, 20%, 40%)" }}>
                   Ditt namn
@@ -153,20 +188,22 @@ export default function Auth() {
                 className="border-0 bg-white/60 text-gray-800 placeholder:text-gray-400 focus-visible:ring-amber-400/50"
               />
             </div>
-            <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: "hsl(25, 20%, 40%)" }}>
-                Lösenord
-              </label>
-              <Input
-                type="password"
-                placeholder="Minst 6 tecken"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                className="border-0 bg-white/60 text-gray-800 placeholder:text-gray-400 focus-visible:ring-amber-400/50"
-              />
-            </div>
+            {!forgotPassword && (
+              <div>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: "hsl(25, 20%, 40%)" }}>
+                  Lösenord
+                </label>
+                <Input
+                  type="password"
+                  placeholder="Minst 6 tecken"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="border-0 bg-white/60 text-gray-800 placeholder:text-gray-400 focus-visible:ring-amber-400/50"
+                />
+              </div>
+            )}
             <Button
               type="submit"
               className="w-full h-12 text-white font-medium rounded-xl shadow-md"
@@ -175,18 +212,41 @@ export default function Auth() {
                 background: "linear-gradient(135deg, hsl(43, 60%, 55%), hsl(30, 50%, 48%))",
               }}
             >
-              {loading ? "Laddar..." : isLogin ? "Logga in" : "Registrera"}
+              {loading ? "Laddar..." : forgotPassword ? "Skicka återställningslänk" : isLogin ? "Logga in" : "Registrera"}
             </Button>
           </form>
-          <p className="text-center text-sm mt-6" style={{ color: "hsl(25, 15%, 50%)" }}>
-            {isLogin ? "Inget konto?" : "Har redan konto?"}{" "}
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="font-medium hover:underline"
-              style={{ color: "hsl(30, 50%, 40%)" }}
-            >
-              {isLogin ? "Registrera dig" : "Logga in"}
-            </button>
+          {isLogin && !forgotPassword && (
+            <p className="text-center text-sm mt-4">
+              <button
+                onClick={() => setForgotPassword(true)}
+                className="font-medium hover:underline"
+                style={{ color: "hsl(30, 50%, 40%)" }}
+              >
+                Glömt lösenord?
+              </button>
+            </p>
+          )}
+          <p className="text-center text-sm mt-4" style={{ color: "hsl(25, 15%, 50%)" }}>
+            {forgotPassword ? (
+              <button
+                onClick={() => setForgotPassword(false)}
+                className="font-medium hover:underline"
+                style={{ color: "hsl(30, 50%, 40%)" }}
+              >
+                Tillbaka till inloggning
+              </button>
+            ) : (
+              <>
+                {isLogin ? "Inget konto?" : "Har redan konto?"}{" "}
+                <button
+                  onClick={() => setIsLogin(!isLogin)}
+                  className="font-medium hover:underline"
+                  style={{ color: "hsl(30, 50%, 40%)" }}
+                >
+                  {isLogin ? "Registrera dig" : "Logga in"}
+                </button>
+              </>
+            )}
           </p>
         </div>
       </div>

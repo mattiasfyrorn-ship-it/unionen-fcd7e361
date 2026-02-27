@@ -17,6 +17,7 @@ import Repair from "./pages/Repair";
 import Account from "./pages/Account";
 import Messages from "./pages/Messages";
 import Install from "./pages/Install";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,6 +58,7 @@ const App = () => (
           <PushInitializer />
           <Routes>
             <Route path="/auth" element={<AuthRoute />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/daily" element={<ProtectedRoute><DailyCheck /></ProtectedRoute>} />
             <Route path="/evaluate" element={<ProtectedRoute><Evaluate /></ProtectedRoute>} />
