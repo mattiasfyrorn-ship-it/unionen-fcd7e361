@@ -35,10 +35,42 @@ export default function Auth() {
     e.preventDefault();
     setLoading(true);
 
+    if (forgotPassword) {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) {
+        toast({ title: "Fel", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Kolla din e-post!", description: "Vi har skickat en länk för att återställa ditt lösenord." });
+      }
+      setLoading(false);
+      return;
+    }
+
     if (isLogin) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         toast({ title: "Fel vid inloggning", description: error.message, variant: "destructive" });
+      } else if (inviteToken) {
+        try {
+          const { data: result } = await supabase.rpc("accept_invitation", {
+            p_token: inviteToken,
+          } as any);
+          const resultObj = result as Record<string, unknown> | null;
+          if (resultObj?.success) {
+            toast({ title: "Välkommen! 💕", description: "Du är nu ihopkopplad med din partner." });
+            try {
+              await supabase.functions.invoke("notify-partner-paired", {
+                body: { inviteToken, inviteeName: email },
+              });
+            } catch (notifyErr) {
+              console.error("Notify error:", notifyErr);
+            }
+          }
+        } catch (err) {
+          console.error("Accept invitation error:", err);
+        }
       }
     } else {
       const { data, error } = await supabase.auth.signUp({
