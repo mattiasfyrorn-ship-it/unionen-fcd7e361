@@ -20,7 +20,7 @@ async function generatePushHeaders(subscription: any, vapidPublicKey: string, va
   const claims = {
     aud: audience,
     exp: now + 12 * 60 * 60,
-    sub: "mailto:noreply@unionen.lovable.app",
+    sub: "mailto:noreply@mail1.fyrorn.se",
   };
 
   // Base64url encode

@@ -7,17 +7,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, Briefcase, DollarSign, Users, Sparkles, Loader2 } from "lucide-react";
+import { Heart, Brain, Users, Compass, Sparkles, Loader2 } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import WeekDayPicker from "@/components/WeekDayPicker";
 import { format, startOfWeek } from "date-fns";
 
 const AREAS = [
-  { key: "health", label: "Hälsa", icon: Heart, description: "Fysisk och mental hälsa" },
-  { key: "career", label: "Karriär", icon: Briefcase, description: "Arbete och personlig utveckling" },
-  { key: "economy", label: "Ekonomi", icon: DollarSign, description: "Ekonomisk trygghet och mål" },
-  { key: "relationships", label: "Relationer", icon: Users, description: "Kärlek, familj och vänner" },
+  { key: "health", label: "Kropp", icon: Heart, description: "Fysisk hälsa, energi & avslappning" },
+  { key: "career", label: "Sinne", icon: Brain, description: "Mental & emotionell balans" },
+  { key: "economy", label: "Relationer", icon: Users, description: "Status i relationer generellt & hur påfylld du är av dessa" },
+  { key: "relationships", label: "Mission", icon: Compass, description: "Meningsfullhet, bidragande karriär & ekonomi" },
 ];
 
 const DEFAULT_SCORES = { health: 5, career: 5, economy: 5, relationships: 5 };

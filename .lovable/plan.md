@@ -1,48 +1,68 @@
 
+## Problem: Två service workers krockar och bryter push-notiser
 
-## Tre andringar: Uppdatera omraden i Nard, ny SVG-favicon, ta bort Lovable-branding
+### Rotorsaken
 
-### 1. Byt omraden i Evaluate.tsx och Priorities.tsx
+Det finns en fundamental konflikt i hur service workers är uppsatta:
 
-Byt ut de fyra omradena (Halsa, Karriar, Ekonomi, Relationer) mot nya:
+1. VitePWA-pluginen genererar en `sw.js` via Workbox vid build och skriver automatiskt över `public/sw.js`
+2. Vår anpassade `public/sw.js` med push-logik försvinner alltså i produktionsbygget
+3. Resultatet: `navigator.serviceWorker.ready` pekar på Workbox service worker som saknar push-hantering
+4. `reg.pushManager.subscribe(...)` kastar ett fel (t.ex. ogiltig VAPID-nyckel eller problem med workern) och fångas i `catch`-blocket → returnerar `false` → felmeddelandet visas
 
-| Nyckel | Nytt namn | Ny beskrivning | Ikon |
-|---|---|---|---|
-| health | Kropp | Fysisk halsa, energi & avslappning | Heart |
-| career | Sinne | Mental & emotionell balans | Brain (ny import) |
-| economy | Relationer | Status i relationer generellt & hur pafylld du ar av dessa | Users |
-| relationships | Mission | Meningsfullhet, bidragande karriar & ekonomi | Compass (ny import) |
+Dessutom finns ett timeout-problem: `navigator.serviceWorker.ready` kan hänga länge i en vanlig webbläsarflik (inte installerad PWA) om service workern inte aktiveras direkt.
 
-**Filer:** `src/pages/Evaluate.tsx` och `src/pages/Priorities.tsx`
+### Lösning: Slå samman till en enda service worker med `injectManifest`
 
-- I Evaluate.tsx: Uppdatera AREAS-arrayen med nya labels, beskrivningar och ikoner. Byt ut `Briefcase` och `DollarSign` mot `Brain` och `Compass` fran lucide-react.
-- I Priorities.tsx: Uppdatera AREAS-arrayen med nya labels.
-- Databasnycklar (health, career, economy, relationships) behalls oforandrade for bakatkompabilitet med befintlig data.
+VitePWA stöder ett läge som heter `injectManifest` där vi skriver vår egen service worker och Workbox injicerar sina cache-definitioner i den. På så sätt har vi bara en service worker som gör allt.
 
-### 2. Skapa SVG-favicon med hjarta
+#### Konkreta ändringar
 
-Skapa en ny fil `public/favicon.svg` med ett hjarta i appens primarfarg (hsl(30, 50%, 45%) = ca #A67C3D).
+**1. `vite.config.ts`** — Byt strategi från `generateSW` (default) till `injectManifest` och peka på vår custom service worker:
 
-Uppdatera `index.html`:
-- Byt `<link rel="icon" href="/favicon.ico">` (om den finns) till `<link rel="icon" type="image/svg+xml" href="/favicon.svg">`
-- Lagg till `<link rel="icon" type="image/svg+xml" href="/favicon.svg">` om den saknas
+```ts
+VitePWA({
+  strategies: 'injectManifest',
+  srcDir: 'public',
+  filename: 'sw.js',
+  registerType: 'autoUpdate',
+  // ...resten är samma
+})
+```
 
-### 3. Ta bort Lovable-branding
+**2. `public/sw.js`** — Lägg till Workbox-injektionspunkt överst och behåll push/notificationclick-logiken:
 
-Tre platser att rensa:
+```js
+// Workbox injicerar sitt precache-manifest här automatiskt vid build
+import { precacheAndRoute } from 'workbox-precaching';
+precacheAndRoute(self.__WB_MANIFEST);
 
-- **index.html:** Ta bort `og:image` och `twitter:image` som pekar pa `lovable.dev`, ta bort `twitter:site` som ar `@Lovable`
-- **vite.config.ts:** Ta bort `lovable-tagger`-importen och `componentTagger()`-anropet (den laggar till "Edit in Lovable"-badgen i dev)
-- **supabase/functions/send-push-notification/index.ts:** Byt `mailto:noreply@unionen.lovable.app` till `mailto:noreply@mail1.fyrorn.se`
+// Push-logiken finns kvar nedan (oförändrad)
+self.addEventListener('push', ...);
+self.addEventListener('notificationclick', ...);
+```
 
-### Teknisk sammanfattning
+**3. `src/lib/pushNotifications.ts`** — Lägg till timeout på `serviceWorker.ready` (max 5 sekunder) och bättre felhantering som loggar exakt vad som går fel, så att framtida problem är lättare att felsöka:
 
-| Fil | Andring |
-|---|---|
-| `src/pages/Evaluate.tsx` | Byt AREAS labels/beskrivningar/ikoner |
-| `src/pages/Priorities.tsx` | Byt AREAS labels |
-| `public/favicon.svg` | **Ny fil** — SVG-hjarta i primarfarg |
-| `index.html` | Lagg till SVG favicon, ta bort Lovable OG/Twitter-taggar |
-| `vite.config.ts` | Ta bort lovable-tagger import och anrop |
-| `supabase/functions/send-push-notification/index.ts` | Byt mailto till mail1.fyrorn.se |
+```ts
+const registration = await Promise.race([
+  navigator.serviceWorker.ready,
+  new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 5000))
+]);
+```
 
+**4. `src/App.tsx`** — Ta bort den manuella registreringen av `/sw.js` i `PushInitializer` eftersom VitePWA sköter registreringen automatiskt. Dubbel-registrering kan orsaka problem.
+
+### Tekniska detaljer
+
+- `injectManifest`-strategin kräver att service worker-filen innehåller `self.__WB_MANIFEST` — det är platsen Workbox injicerar sitt precache-manifest
+- I development-läge fungerar `self.__WB_MANIFEST` inte utan en speciell mock — vi lägger till `if (typeof self.__WB_MANIFEST !== 'undefined')` som guard
+- VAPID-nycklarna är korrekt konfigurerade som secrets, så det problemet är inte orsaken
+- Ingen databasändring behövs
+
+### Filer som ändras
+
+- `vite.config.ts` — lägg till `strategies: 'injectManifest'`, `srcDir: 'public'`, `filename: 'sw.js'`
+- `public/sw.js` — lägg till Workbox precache-anrop överst med `__WB_MANIFEST`-guard
+- `src/lib/pushNotifications.ts` — lägg till timeout på `serviceWorker.ready` och förbättrad fellogning
+- `src/App.tsx` — ta bort manuell `navigator.serviceWorker.register('/sw.js')` i `PushInitializer`
