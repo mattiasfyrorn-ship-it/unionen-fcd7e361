@@ -17,6 +17,7 @@ import Repair from "./pages/Repair";
 import Account from "./pages/Account";
 import Messages from "./pages/Messages";
 import Install from "./pages/Install";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
