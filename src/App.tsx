@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import { subscribeToPush, isPushSupported } from "@/lib/pushNotifications";
@@ -43,8 +43,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function AuthRoute() {
   const { user, loading } = useAuth();
+  const [searchParams] = useSearchParams();
+  const hasInvite = searchParams.has("invite");
   if (loading) return null;
-  if (user) return <Navigate to="/" replace />;
+  if (user && !hasInvite) return <Navigate to="/" replace />;
   return <Auth />;
 }
 
