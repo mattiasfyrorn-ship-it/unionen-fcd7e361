@@ -134,7 +134,7 @@ export default function Evaluate() {
 
     const inserts = AREAS.map((area) => ({
       user_id: user.id,
-      couple_id: profile.couple_id!,
+      couple_id: profile.couple_id || null,
       week_start: weekStart,
       check_date: checkDate,
       area: area.key,

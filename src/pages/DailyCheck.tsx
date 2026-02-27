@@ -155,7 +155,7 @@ export default function DailyCheck() {
 
     const payload: any = {
       user_id: user.id,
-      couple_id: profile.couple_id,
+      couple_id: profile.couple_id || null,
       check_date: dateStr,
       love_map_question: question,
       love_map_answer: loveMapAnswer || null,

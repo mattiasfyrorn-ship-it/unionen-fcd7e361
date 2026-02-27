@@ -36,7 +36,7 @@ export type Database = {
           appreciation_note: string | null
           check_date: string
           climate: number | null
-          couple_id: string
+          couple_id: string | null
           created_at: string
           gave_appreciation: boolean | null
           id: string
@@ -55,7 +55,7 @@ export type Database = {
           appreciation_note?: string | null
           check_date?: string
           climate?: number | null
-          couple_id: string
+          couple_id?: string | null
           created_at?: string
           gave_appreciation?: boolean | null
           id?: string
@@ -74,7 +74,7 @@ export type Database = {
           appreciation_note?: string | null
           check_date?: string
           climate?: number | null
-          couple_id?: string
+          couple_id?: string | null
           created_at?: string
           gave_appreciation?: boolean | null
           id?: string
@@ -102,7 +102,7 @@ export type Database = {
           area: string
           check_date: string
           comment: string | null
-          couple_id: string
+          couple_id: string | null
           created_at: string
           id: string
           need_today: string | null
@@ -115,7 +115,7 @@ export type Database = {
           area: string
           check_date: string
           comment?: string | null
-          couple_id: string
+          couple_id?: string | null
           created_at?: string
           id?: string
           need_today?: string | null
@@ -128,7 +128,7 @@ export type Database = {
           area?: string
           check_date?: string
           comment?: string | null
-          couple_id?: string
+          couple_id?: string | null
           created_at?: string
           id?: string
           need_today?: string | null
@@ -603,24 +603,27 @@ export type Database = {
       }
       weekly_conversations: {
         Row: {
-          couple_id: string
+          couple_id: string | null
           created_at: string
           id: string
           status: string
+          user_id: string | null
           week_start: string
         }
         Insert: {
-          couple_id: string
+          couple_id?: string | null
           created_at?: string
           id?: string
           status?: string
+          user_id?: string | null
           week_start: string
         }
         Update: {
-          couple_id?: string
+          couple_id?: string | null
           created_at?: string
           id?: string
           status?: string
+          user_id?: string | null
           week_start?: string
         }
         Relationships: [
