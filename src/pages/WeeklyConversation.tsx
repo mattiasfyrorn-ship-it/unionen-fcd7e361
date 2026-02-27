@@ -142,15 +142,27 @@ export default function WeeklyConversation() {
         setPartnerEntry(pEntry);
       }
 
-      const { data: pastConvs } = await supabase
-        .from("weekly_conversations")
-        .select("*")
-        .eq("couple_id", profile.couple_id!)
-        .neq("week_start", weekStart)
-        .order("week_start", { ascending: false })
-        .limit(20);
+      if (hasCoupleId) {
+        const { data: pastConvs } = await supabase
+          .from("weekly_conversations")
+          .select("*")
+          .eq("couple_id", profile!.couple_id!)
+          .neq("week_start", weekStart)
+          .order("week_start", { ascending: false })
+          .limit(20);
 
-      if (pastConvs) setArchive(pastConvs);
+        if (pastConvs) setArchive(pastConvs);
+      } else {
+        const { data: pastConvs } = await supabase
+          .from("weekly_conversations")
+          .select("*")
+          .eq("user_id", user!.id)
+          .neq("week_start", weekStart)
+          .order("week_start", { ascending: false })
+          .limit(20);
+
+        if (pastConvs) setArchive(pastConvs);
+      }
     };
     load();
   }, [profile?.couple_id, user?.id]);
