@@ -130,7 +130,7 @@ export default function Dashboard() {
     // My checks
     const { data: myChecks } = await supabase
       .from("daily_checks")
-      .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted")
+      .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted, climate")
       .eq("user_id", user.id)
       .gte("check_date", startDate)
       .order("check_date", { ascending: true });
