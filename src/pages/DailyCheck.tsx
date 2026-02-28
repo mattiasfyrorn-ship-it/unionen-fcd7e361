@@ -355,6 +355,7 @@ export default function DailyCheck() {
               <LineChart data={graphData.map(p => ({
                 date: new Date(p.date).toLocaleDateString("sv-SE", { month: "short", day: "numeric" }),
                 Relationskonto: p.value,
+                Klimat: p.climate,
               }))}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(30 20% 82%)" />
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(25 15% 45%)" />
@@ -362,6 +363,7 @@ export default function DailyCheck() {
                 <Tooltip />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Line type="monotone" dataKey="Relationskonto" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 2 }} />
+                <Line type="monotone" dataKey="Klimat" stroke="hsl(var(--gold))" strokeWidth={2} dot={{ r: 2 }} connectNulls />
               </LineChart>
             </ResponsiveContainer>
           ) : (
