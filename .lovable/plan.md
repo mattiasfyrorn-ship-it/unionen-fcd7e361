@@ -1,68 +1,65 @@
 
-## Problem: Två service workers krockar och bryter push-notiser
 
-### Rotorsaken
+## Relationskonto V2 – Översikt och ny beräkningsmodell
 
-Det finns en fundamental konflikt i hur service workers är uppsatta:
+### Sammanfattning
 
-1. VitePWA-pluginen genererar en `sw.js` via Workbox vid build och skriver automatiskt över `public/sw.js`
-2. Vår anpassade `public/sw.js` med push-logik försvinner alltså i produktionsbygget
-3. Resultatet: `navigator.serviceWorker.ready` pekar på Workbox service worker som saknar push-hantering
-4. `reg.pushManager.subscribe(...)` kastar ett fel (t.ex. ogiltig VAPID-nyckel eller problem med workern) och fångas i `catch`-blocket → returnerar `false` → felmeddelandet visas
+Ersätt den nuvarande dagliga procentgrafen med ett dynamiskt relationskonto (0-100) som bygger på exponentiell utjämning. Byt "Dashboard" till "Översikt" i navigationen, ta bort sidrubriken, och visa trendinsikter direkt överst.
 
-Dessutom finns ett timeout-problem: `navigator.serviceWorker.ready` kan hänga länge i en vanlig webbläsarflik (inte installerad PWA) om service workern inte aktiveras direkt.
+### 1. Navigation och sidrubrik
 
-### Lösning: Slå samman till en enda service worker med `injectManifest`
+- I `AppLayout.tsx`: Byt label "Dashboard" till "Översikt"
+- I `Dashboard.tsx`: Ta bort h1-rubriken "Dashboard" och p-taggen under. Trendinsikter visas direkt som förstaelement (efter solo-bannern)
 
-VitePWA stöder ett läge som heter `injectManifest` där vi skriver vår egen service worker och Workbox injicerar sina cache-definitioner i den. På så sätt har vi bara en service worker som gör allt.
+### 2. Ny beräkningsfunktion: `computeRelationskonto`
 
-#### Konkreta ändringar
+Skapa `src/lib/relationskonto.ts` med logiken:
 
-**1. `vite.config.ts`** — Byt strategi från `generateSW` (default) till `injectManifest` och peka på vår custom service worker:
-
-```ts
-VitePWA({
-  strategies: 'injectManifest',
-  srcDir: 'public',
-  filename: 'sw.js',
-  registerType: 'autoUpdate',
-  // ...resten är samma
-})
+```text
+Initialvarde: 50
+Varje dag: konto_ny = konto_gammal * 0.95 + (100 * d * 0.05)
+  - d = antal markerade av 4 (love_map, appreciation, turn_toward, adjusted) / 4
+  - Om ingen check-in: d = 0.25
+Begransning: 0 <= konto <= 100
 ```
 
-**2. `public/sw.js`** — Lägg till Workbox-injektionspunkt överst och behåll push/notificationclick-logiken:
+Funktionen tar emot en array av daily_checks sorterade efter datum och beraknar kontovarde for varje dag (inklusive "luckor" utan check-in). Returnerar array med `{ date, value }`.
 
-```js
-// Workbox injicerar sitt precache-manifest här automatiskt vid build
-import { precacheAndRoute } from 'workbox-precaching';
-precacheAndRoute(self.__WB_MANIFEST);
+### 3. Uppdatera grafer overallt
 
-// Push-logiken finns kvar nedan (oförändrad)
-self.addEventListener('push', ...);
-self.addEventListener('notificationclick', ...);
-```
+**Dashboard/Oversikt (`Dashboard.tsx`):**
+- Default-vy: "Var utveckling" (ours) istallet for "mine"
+- Relationskontografen visar den nya 0-100 linjen istallet for individuella insattningar
+- Toggle "Mitt konto" / "Vart konto" (genomsnitt av bada partners konton)
+- Period-toggle: Vecka / Manad / Ar
 
-**3. `src/lib/pushNotifications.ts`** — Lägg till timeout på `serviceWorker.ready` (max 5 sekunder) och bättre felhantering som loggar exakt vad som går fel, så att framtida problem är lättare att felsöka:
+**Relationskontot-sidan (`DailyCheck.tsx`):**
+- Ersatt nuvarande graf med samma nya Relationskonto-linje (0-100)
+- Period-toggle: Vecka / Manad / Ar
 
-```ts
-const registration = await Promise.race([
-  navigator.serviceWorker.ready,
-  new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 5000))
-]);
-```
+### 4. Relationskonto-kort pa Oversikten
 
-**4. `src/App.tsx`** — Ta bort den manuella registreringen av `/sw.js` i `PushInitializer` eftersom VitePWA sköter registreringen automatiskt. Dubbel-registrering kan orsaka problem.
+Visa ett kort med:
+- Stort tal: "72 / 100"
+- Trend senaste 7 dagar: "+4" eller "-3"
+- Forklaringstext: "Kontot bygger pa dagliga insattningar och sjunker langamt utan dem."
 
-### Tekniska detaljer
+### 5. Gemensamt konto
 
-- `injectManifest`-strategin kräver att service worker-filen innehåller `self.__WB_MANIFEST` — det är platsen Workbox injicerar sitt precache-manifest
-- I development-läge fungerar `self.__WB_MANIFEST` inte utan en speciell mock — vi lägger till `if (typeof self.__WB_MANIFEST !== 'undefined')` som guard
-- VAPID-nycklarna är korrekt konfigurerade som secrets, så det problemet är inte orsaken
-- Ingen databasändring behövs
+Nar partner finns, hamta partnerns daily_checks via couple_id, berakna deras konto, och visa:
+- `konto_vi = (konto_jag + konto_partner) / 2`
 
-### Filer som ändras
+### Teknisk plan
 
-- `vite.config.ts` — lägg till `strategies: 'injectManifest'`, `srcDir: 'public'`, `filename: 'sw.js'`
-- `public/sw.js` — lägg till Workbox precache-anrop överst med `__WB_MANIFEST`-guard
-- `src/lib/pushNotifications.ts` — lägg till timeout på `serviceWorker.ready` och förbättrad fellogning
-- `src/App.tsx` — ta bort manuell `navigator.serviceWorker.register('/sw.js')` i `PushInitializer`
+| Andring | Fil |
+|---|---|
+| Byt "Dashboard" -> "Oversikt" i nav | `AppLayout.tsx` |
+| Ta bort rubrik, flytta trendinsikter overst | `Dashboard.tsx` |
+| Default-vy "ours" | `Dashboard.tsx` |
+| Ny berakningsfunktion | `src/lib/relationskonto.ts` (ny fil) |
+| Ersatt gamla grafer med Relationskonto 0-100 | `Dashboard.tsx`, `DailyCheck.tsx` |
+| Relationskonto-kort med tal + trend | `Dashboard.tsx` |
+| Gemensamt konto (partner-genomsnitt) | `Dashboard.tsx` |
+
+Ingen databasmigration behovs -- all berakning sker klientsidigt baserat pa befintliga daily_checks-data.
+
