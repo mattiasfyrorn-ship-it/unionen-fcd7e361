@@ -190,11 +190,21 @@ export default function Dashboard() {
       const partnerPoints = computeRelationskonto(partnerChecks || [], calcStart, endDate)
         .filter(p => p.date >= displayStart);
 
-      // Merge into combined graph
+      // Merge into combined graph (average konto + average climate)
       const merged: KontoPoint[] = myPoints.map((mp, i) => {
         const pp = partnerPoints[i];
         const ourVal = pp ? Math.round(((mp.value + pp.value) / 2) * 10) / 10 : mp.value;
-        return { date: mp.date, value: ourVal };
+        const myClim = mp.climate;
+        const ppClim = pp?.climate;
+        let ourClimate: number | undefined;
+        if (myClim != null && ppClim != null) {
+          ourClimate = Math.round(((myClim + ppClim) / 2) * 10) / 10;
+        } else if (myClim != null) {
+          ourClimate = myClim;
+        } else if (ppClim != null) {
+          ourClimate = ppClim;
+        }
+        return { date: mp.date, value: ourVal, climate: ourClimate };
       });
 
       setKontoGraph(merged);
