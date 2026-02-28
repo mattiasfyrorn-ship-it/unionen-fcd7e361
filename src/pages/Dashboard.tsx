@@ -463,6 +463,50 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Quarterly goals – Vår riktning (moved up) */}
+      <Card className="bg-card/80 border-border/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Target className="w-5 h-5 text-primary" /> Vår riktning
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">Kvartalsmål – Q{Math.floor(new Date().getMonth() / 3) + 1} {new Date().getFullYear()}</p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Checkbox checked={relationshipDone} onCheckedChange={(v) => setRelationshipDone(!!v)} />
+            <Input placeholder="Relationsmål" value={relationshipGoal} onChange={(e) => setRelationshipGoal(e.target.value)} className="bg-muted/50 border-border text-sm flex-1" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox checked={experienceDone} onCheckedChange={(v) => setExperienceDone(!!v)} />
+            <Input placeholder="Upplevelsemål" value={experienceGoal} onChange={(e) => setExperienceGoal(e.target.value)} className="bg-muted/50 border-border text-sm flex-1" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox checked={practicalDone} onCheckedChange={(v) => setPracticalDone(!!v)} />
+            <Input placeholder="Praktiskt mål" value={practicalGoal} onChange={(e) => setPracticalGoal(e.target.value)} className="bg-muted/50 border-border text-sm flex-1" />
+          </div>
+          <Button size="sm" variant="outline" onClick={saveGoals}>Spara mål</Button>
+          {pastGoals.length > 0 && (
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1 mt-2">
+                  Tidigare kvartal ({pastGoals.length}) <ChevronDown className="w-3 h-3" />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-2 mt-2">
+                {pastGoals.map((g) => (
+                  <div key={g.id} className="text-xs text-muted-foreground border-t border-border/30 pt-2">
+                    <p className="font-medium text-foreground">{g.quarter_start}</p>
+                    {g.relationship_goal && <p>{g.relationship_done ? "✅" : "◻️"} {g.relationship_goal}</p>}
+                    {g.experience_goal && <p>{g.experience_done ? "✅" : "◻️"} {g.experience_goal}</p>}
+                    {g.practical_goal && <p>{g.practical_done ? "✅" : "◻️"} {g.practical_goal}</p>}
+                  </div>
+                ))}
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Relationskonto summary card */}
       <Card className="bg-card/80 border-border/50">
         <CardContent className="pt-6">
@@ -527,50 +571,6 @@ export default function Dashboard() {
             </ResponsiveContainer>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-8">Ingen data ännu.</p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Quarterly goals */}
-      <Card className="bg-card/80 border-border/50">
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Target className="w-5 h-5 text-primary" /> Vår riktning
-          </CardTitle>
-          <p className="text-xs text-muted-foreground">Kvartalsmål – Q{Math.floor(new Date().getMonth() / 3) + 1} {new Date().getFullYear()}</p>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Checkbox checked={relationshipDone} onCheckedChange={(v) => setRelationshipDone(!!v)} />
-            <Input placeholder="Relationsmål" value={relationshipGoal} onChange={(e) => setRelationshipGoal(e.target.value)} className="bg-muted/50 border-border text-sm flex-1" />
-          </div>
-          <div className="flex items-center gap-2">
-            <Checkbox checked={experienceDone} onCheckedChange={(v) => setExperienceDone(!!v)} />
-            <Input placeholder="Upplevelsemål" value={experienceGoal} onChange={(e) => setExperienceGoal(e.target.value)} className="bg-muted/50 border-border text-sm flex-1" />
-          </div>
-          <div className="flex items-center gap-2">
-            <Checkbox checked={practicalDone} onCheckedChange={(v) => setPracticalDone(!!v)} />
-            <Input placeholder="Praktiskt mål" value={practicalGoal} onChange={(e) => setPracticalGoal(e.target.value)} className="bg-muted/50 border-border text-sm flex-1" />
-          </div>
-          <Button size="sm" variant="outline" onClick={saveGoals}>Spara mål</Button>
-          {pastGoals.length > 0 && (
-            <Collapsible>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1 mt-2">
-                  Tidigare kvartal ({pastGoals.length}) <ChevronDown className="w-3 h-3" />
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-2 mt-2">
-                {pastGoals.map((g) => (
-                  <div key={g.id} className="text-xs text-muted-foreground border-t border-border/30 pt-2">
-                    <p className="font-medium text-foreground">{g.quarter_start}</p>
-                    {g.relationship_goal && <p>{g.relationship_done ? "✅" : "◻️"} {g.relationship_goal}</p>}
-                    {g.experience_goal && <p>{g.experience_done ? "✅" : "◻️"} {g.experience_goal}</p>}
-                    {g.practical_goal && <p>{g.practical_done ? "✅" : "◻️"} {g.practical_goal}</p>}
-                  </div>
-                ))}
-              </CollapsibleContent>
-            </Collapsible>
           )}
         </CardContent>
       </Card>
