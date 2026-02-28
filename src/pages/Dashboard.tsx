@@ -55,7 +55,7 @@ export default function Dashboard() {
   const [naringPeriod, setNaringPeriod] = useState("week");
 
   // Konto summary
-  const [myKonto, setMyKonto] = useState(50);
+  const [myKonto, setMyKonto] = useState(0);
   const [partnerKonto, setPartnerKonto] = useState<number | null>(null);
   const [kontoTrend, setKontoTrend] = useState(0);
   const [kontoView, setKontoView] = useState<"mine" | "ours">("mine");
@@ -130,7 +130,7 @@ export default function Dashboard() {
     // My checks
     const { data: myChecks } = await supabase
       .from("daily_checks")
-      .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted")
+      .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted, climate")
       .eq("user_id", user.id)
       .gte("check_date", startDate)
       .order("check_date", { ascending: true });
@@ -145,7 +145,7 @@ export default function Dashboard() {
     if (profile?.couple_id) {
       const { data: partnerChecks } = await supabase
         .from("daily_checks")
-        .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted")
+        .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted, climate")
         .eq("couple_id", profile.couple_id!)
         .neq("user_id", user.id)
         .gte("check_date", startDate)
@@ -170,7 +170,7 @@ export default function Dashboard() {
       // My konto line
       const { data: myChecks } = await supabase
         .from("daily_checks")
-        .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted")
+        .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted, climate")
         .eq("user_id", user.id)
         .gte("check_date", calcStart)
         .order("check_date", { ascending: true });
@@ -181,7 +181,7 @@ export default function Dashboard() {
       // Partner konto line
       const { data: partnerChecks } = await supabase
         .from("daily_checks")
-        .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted")
+        .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted, climate")
         .eq("couple_id", profile.couple_id!)
         .neq("user_id", user.id)
         .gte("check_date", calcStart)
@@ -190,11 +190,21 @@ export default function Dashboard() {
       const partnerPoints = computeRelationskonto(partnerChecks || [], calcStart, endDate)
         .filter(p => p.date >= displayStart);
 
-      // Merge into combined graph
+      // Merge into combined graph (average konto + average climate)
       const merged: KontoPoint[] = myPoints.map((mp, i) => {
         const pp = partnerPoints[i];
         const ourVal = pp ? Math.round(((mp.value + pp.value) / 2) * 10) / 10 : mp.value;
-        return { date: mp.date, value: ourVal };
+        const myClim = mp.climate;
+        const ppClim = pp?.climate;
+        let ourClimate: number | undefined;
+        if (myClim != null && ppClim != null) {
+          ourClimate = Math.round(((myClim + ppClim) / 2) * 10) / 10;
+        } else if (myClim != null) {
+          ourClimate = myClim;
+        } else if (ppClim != null) {
+          ourClimate = ppClim;
+        }
+        return { date: mp.date, value: ourVal, climate: ourClimate };
       });
 
       setKontoGraph(merged);
@@ -202,7 +212,7 @@ export default function Dashboard() {
       // Mine only
       const { data: myChecks } = await supabase
         .from("daily_checks")
-        .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted")
+        .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted, climate")
         .eq("user_id", user.id)
         .gte("check_date", calcStart)
         .order("check_date", { ascending: true });
@@ -453,6 +463,50 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Quarterly goals – Vår riktning (moved up) */}
+      <Card className="bg-card/80 border-border/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Target className="w-5 h-5 text-primary" /> Vår riktning
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">Kvartalsmål – Q{Math.floor(new Date().getMonth() / 3) + 1} {new Date().getFullYear()}</p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Checkbox checked={relationshipDone} onCheckedChange={(v) => setRelationshipDone(!!v)} />
+            <Input placeholder="Relationsmål" value={relationshipGoal} onChange={(e) => setRelationshipGoal(e.target.value)} className="bg-muted/50 border-border text-sm flex-1" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox checked={experienceDone} onCheckedChange={(v) => setExperienceDone(!!v)} />
+            <Input placeholder="Upplevelsemål" value={experienceGoal} onChange={(e) => setExperienceGoal(e.target.value)} className="bg-muted/50 border-border text-sm flex-1" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox checked={practicalDone} onCheckedChange={(v) => setPracticalDone(!!v)} />
+            <Input placeholder="Praktiskt mål" value={practicalGoal} onChange={(e) => setPracticalGoal(e.target.value)} className="bg-muted/50 border-border text-sm flex-1" />
+          </div>
+          <Button size="sm" variant="outline" onClick={saveGoals}>Spara mål</Button>
+          {pastGoals.length > 0 && (
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1 mt-2">
+                  Tidigare kvartal ({pastGoals.length}) <ChevronDown className="w-3 h-3" />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-2 mt-2">
+                {pastGoals.map((g) => (
+                  <div key={g.id} className="text-xs text-muted-foreground border-t border-border/30 pt-2">
+                    <p className="font-medium text-foreground">{g.quarter_start}</p>
+                    {g.relationship_goal && <p>{g.relationship_done ? "✅" : "◻️"} {g.relationship_goal}</p>}
+                    {g.experience_goal && <p>{g.experience_done ? "✅" : "◻️"} {g.experience_goal}</p>}
+                    {g.practical_goal && <p>{g.practical_done ? "✅" : "◻️"} {g.practical_goal}</p>}
+                  </div>
+                ))}
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Relationskonto summary card */}
       <Card className="bg-card/80 border-border/50">
         <CardContent className="pt-6">
@@ -504,6 +558,7 @@ export default function Dashboard() {
               <LineChart data={kontoGraph.map(p => ({
                 date: new Date(p.date).toLocaleDateString("sv-SE", { month: "short", day: "numeric" }),
                 Relationskonto: p.value,
+                Klimat: p.climate,
               }))}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
@@ -511,54 +566,11 @@ export default function Dashboard() {
                 <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Line type="monotone" dataKey="Relationskonto" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="Klimat" stroke="hsl(var(--gold))" strokeWidth={2} dot={false} connectNulls />
               </LineChart>
             </ResponsiveContainer>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-8">Ingen data ännu.</p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Quarterly goals */}
-      <Card className="bg-card/80 border-border/50">
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Target className="w-5 h-5 text-primary" /> Vår riktning
-          </CardTitle>
-          <p className="text-xs text-muted-foreground">Kvartalsmål – Q{Math.floor(new Date().getMonth() / 3) + 1} {new Date().getFullYear()}</p>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Checkbox checked={relationshipDone} onCheckedChange={(v) => setRelationshipDone(!!v)} />
-            <Input placeholder="Relationsmål" value={relationshipGoal} onChange={(e) => setRelationshipGoal(e.target.value)} className="bg-muted/50 border-border text-sm flex-1" />
-          </div>
-          <div className="flex items-center gap-2">
-            <Checkbox checked={experienceDone} onCheckedChange={(v) => setExperienceDone(!!v)} />
-            <Input placeholder="Upplevelsemål" value={experienceGoal} onChange={(e) => setExperienceGoal(e.target.value)} className="bg-muted/50 border-border text-sm flex-1" />
-          </div>
-          <div className="flex items-center gap-2">
-            <Checkbox checked={practicalDone} onCheckedChange={(v) => setPracticalDone(!!v)} />
-            <Input placeholder="Praktiskt mål" value={practicalGoal} onChange={(e) => setPracticalGoal(e.target.value)} className="bg-muted/50 border-border text-sm flex-1" />
-          </div>
-          <Button size="sm" variant="outline" onClick={saveGoals}>Spara mål</Button>
-          {pastGoals.length > 0 && (
-            <Collapsible>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1 mt-2">
-                  Tidigare kvartal ({pastGoals.length}) <ChevronDown className="w-3 h-3" />
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-2 mt-2">
-                {pastGoals.map((g) => (
-                  <div key={g.id} className="text-xs text-muted-foreground border-t border-border/30 pt-2">
-                    <p className="font-medium text-foreground">{g.quarter_start}</p>
-                    {g.relationship_goal && <p>{g.relationship_done ? "✅" : "◻️"} {g.relationship_goal}</p>}
-                    {g.experience_goal && <p>{g.experience_done ? "✅" : "◻️"} {g.experience_goal}</p>}
-                    {g.practical_goal && <p>{g.practical_done ? "✅" : "◻️"} {g.practical_goal}</p>}
-                  </div>
-                ))}
-              </CollapsibleContent>
-            </Collapsible>
           )}
         </CardContent>
       </Card>

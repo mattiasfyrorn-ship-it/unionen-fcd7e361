@@ -7,11 +7,13 @@ interface DailyCheck {
   turn_toward_options?: string[] | null;
   turn_toward?: string | null;
   adjusted?: boolean | null;
+  climate?: number | null;
 }
 
 export interface KontoPoint {
   date: string;
   value: number;
+  climate?: number;
 }
 
 /**
@@ -35,7 +37,7 @@ export function computeRelationskonto(
   }
 
   const results: KontoPoint[] = [];
-  let konto = 50; // initial value
+  let konto = 0; // initial value
   const start = new Date(startDate + "T00:00:00");
   const end = new Date(endDate + "T00:00:00");
   const totalDays = differenceInCalendarDays(end, start);
@@ -66,7 +68,11 @@ export function computeRelationskonto(
     konto = konto * 0.95 + 100 * d * 0.05;
     konto = Math.max(0, Math.min(100, konto));
 
-    results.push({ date: dateStr, value: Math.round(konto * 10) / 10 });
+    const point: KontoPoint = { date: dateStr, value: Math.round(konto * 10) / 10 };
+    if (check && check.climate != null) {
+      point.climate = check.climate * 20;
+    }
+    results.push(point);
   }
 
   return results;
@@ -76,7 +82,7 @@ export function computeRelationskonto(
  * Get the latest konto value from a series, or 50 if empty.
  */
 export function getLatestKonto(points: KontoPoint[]): number {
-  return points.length > 0 ? points[points.length - 1].value : 50;
+  return points.length > 0 ? points[points.length - 1].value : 0;
 }
 
 /**
