@@ -1,68 +1,63 @@
 
-## Problem: Två service workers krockar och bryter push-notiser
 
-### Rotorsaken
+## Andringar: Startvarde 0, klimatlinje i graf, layout
 
-Det finns en fundamental konflikt i hur service workers är uppsatta:
+### 1. Startvarde 0
 
-1. VitePWA-pluginen genererar en `sw.js` via Workbox vid build och skriver automatiskt över `public/sw.js`
-2. Vår anpassade `public/sw.js` med push-logik försvinner alltså i produktionsbygget
-3. Resultatet: `navigator.serviceWorker.ready` pekar på Workbox service worker som saknar push-hantering
-4. `reg.pushManager.subscribe(...)` kastar ett fel (t.ex. ogiltig VAPID-nyckel eller problem med workern) och fångas i `catch`-blocket → returnerar `false` → felmeddelandet visas
+I `src/lib/relationskonto.ts`:
+- Rad 40: `let konto = 50` andras till `let konto = 0`
+- Rad 79: `getLatestKonto` default fran 50 till 0
 
-Dessutom finns ett timeout-problem: `navigator.serviceWorker.ready` kan hänga länge i en vanlig webbläsarflik (inte installerad PWA) om service workern inte aktiveras direkt.
+I `src/pages/Dashboard.tsx`:
+- Rad 58: `useState(50)` andras till `useState(0)`
 
-### Lösning: Slå samman till en enda service worker med `injectManifest`
+### 2. Klimatlinje i graferna
 
-VitePWA stöder ett läge som heter `injectManifest` där vi skriver vår egen service worker och Workbox injicerar sina cache-definitioner i den. På så sätt har vi bara en service worker som gör allt.
+Klimat (1-5) multipliceras med 20 for att fa 0-100-skalan. Visas som radata utan fordrojning/utjamning.
 
-#### Konkreta ändringar
+**`src/lib/relationskonto.ts`:**
+- Utoka `DailyCheck`-interfacet med `climate?: number | null`
+- Utoka `KontoPoint` till att inkludera `climate?: number`
+- I loopen: om check finns och har climate, satt `climate: check.climate * 20`, annars `undefined`
+- Select-fragen maste inkludera `climate`-faltet
 
-**1. `vite.config.ts`** — Byt strategi från `generateSW` (default) till `injectManifest` och peka på vår custom service worker:
+**`src/pages/DailyCheck.tsx` (graf):**
+- Lagg till `climate` i select-fragen (rad 129)
+- Grafen far en andra linje: `<Line dataKey="Klimat" stroke="hsl(var(--gold))" />`
+- Mappa `p.climate` till `Klimat` i graph-datan
 
-```ts
-VitePWA({
-  strategies: 'injectManifest',
-  srcDir: 'public',
-  filename: 'sw.js',
-  registerType: 'autoUpdate',
-  // ...resten är samma
-})
-```
+**`src/pages/Dashboard.tsx` (graf):**
+- Lagg till `climate` i alla select-fragor for daily_checks
+- **"Min utveckling"**: Visa min klimatlinje direkt
+- **"Var utveckling"**: Berakna genomsnitt av bada partners klimat per dag: `(mitt_klimat + partner_klimat) / 2`
+- Lagg till `<Line dataKey="Klimat" />` i grafen
 
-**2. `public/sw.js`** — Lägg till Workbox-injektionspunkt överst och behåll push/notificationclick-logiken:
+### 3. Layout-ordning pa Oversikten
 
-```js
-// Workbox injicerar sitt precache-manifest här automatiskt vid build
-import { precacheAndRoute } from 'workbox-precaching';
-precacheAndRoute(self.__WB_MANIFEST);
+Nuvarande ordning:
+1. Solo-banner
+2. Trendinsikter
+3. Relationskonto-kort
+4. View toggle
+5. Relationskonto-graf
+6. Var riktning
+7. Nard-graf
 
-// Push-logiken finns kvar nedan (oförändrad)
-self.addEventListener('push', ...);
-self.addEventListener('notificationclick', ...);
-```
+Ny ordning:
+1. Solo-banner
+2. Trendinsikter
+3. **Var riktning** (flyttas upp)
+4. Relationskonto-kort + View toggle + graf
+5. Nard-graf
 
-**3. `src/lib/pushNotifications.ts`** — Lägg till timeout på `serviceWorker.ready` (max 5 sekunder) och bättre felhantering som loggar exakt vad som går fel, så att framtida problem är lättare att felsöka:
+### Teknisk sammanfattning
 
-```ts
-const registration = await Promise.race([
-  navigator.serviceWorker.ready,
-  new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 5000))
-]);
-```
+| Andring | Fil |
+|---|---|
+| `konto = 0`, `getLatestKonto` default 0 | `src/lib/relationskonto.ts` |
+| `useState(0)` | `src/pages/Dashboard.tsx` |
+| Klimat i KontoPoint + berakning | `src/lib/relationskonto.ts` |
+| Klimatlinje i DailyCheck-graf | `src/pages/DailyCheck.tsx` |
+| Klimatlinje + partner-genomsnitt i Dashboard-graf | `src/pages/Dashboard.tsx` |
+| Flytta "Var riktning" fore Relationskonto | `src/pages/Dashboard.tsx` |
 
-**4. `src/App.tsx`** — Ta bort den manuella registreringen av `/sw.js` i `PushInitializer` eftersom VitePWA sköter registreringen automatiskt. Dubbel-registrering kan orsaka problem.
-
-### Tekniska detaljer
-
-- `injectManifest`-strategin kräver att service worker-filen innehåller `self.__WB_MANIFEST` — det är platsen Workbox injicerar sitt precache-manifest
-- I development-läge fungerar `self.__WB_MANIFEST` inte utan en speciell mock — vi lägger till `if (typeof self.__WB_MANIFEST !== 'undefined')` som guard
-- VAPID-nycklarna är korrekt konfigurerade som secrets, så det problemet är inte orsaken
-- Ingen databasändring behövs
-
-### Filer som ändras
-
-- `vite.config.ts` — lägg till `strategies: 'injectManifest'`, `srcDir: 'public'`, `filename: 'sw.js'`
-- `public/sw.js` — lägg till Workbox precache-anrop överst med `__WB_MANIFEST`-guard
-- `src/lib/pushNotifications.ts` — lägg till timeout på `serviceWorker.ready` och förbättrad fellogning
-- `src/App.tsx` — ta bort manuell `navigator.serviceWorker.register('/sw.js')` i `PushInitializer`
