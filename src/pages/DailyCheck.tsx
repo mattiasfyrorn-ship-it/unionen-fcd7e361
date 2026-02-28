@@ -120,31 +120,20 @@ export default function DailyCheck() {
     const fetchGraph = async () => {
       const daysMap: Record<string, number> = { week: 7, month: 30, year: 365 };
       const numDays = daysMap[graphRange] || 7;
-      const since = new Date();
-      since.setDate(since.getDate() - numDays);
+      const endDate = format(new Date(), "yyyy-MM-dd");
+      const calcStart = format(subDays(new Date(), numDays + 60), "yyyy-MM-dd");
+      const displayStart = format(subDays(new Date(), numDays), "yyyy-MM-dd");
 
       const { data } = await supabase
         .from("daily_checks")
-        .select("check_date, turn_toward, turn_toward_options, gave_appreciation, adjusted, climate")
+        .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted")
         .eq("user_id", user.id)
-        .gte("check_date", format(since, "yyyy-MM-dd"))
+        .gte("check_date", calcStart)
         .order("check_date", { ascending: true });
 
-      if (!data) return;
-
-      const mapped = data.map((d: any) => {
-        const opts: string[] = d.turn_toward_options || [];
-        const positive = opts.filter((v: string) => v === "initiated" || v === "received_positively").length;
-        const ttPct = opts.length > 0 ? Math.round((positive / Math.max(opts.length, 1)) * 100) : null;
-        return {
-          date: d.check_date.slice(5),
-          "Turn Toward %": ttPct,
-          Uppskattning: d.gave_appreciation ? 1 : 0,
-          Påverkan: d.adjusted ? 1 : 0,
-          Klimat: d.climate ?? null,
-        };
-      });
-      setGraphData(mapped);
+      const points = computeRelationskonto(data || [], calcStart, endDate)
+        .filter(p => p.date >= displayStart);
+      setGraphData(points);
     };
     fetchGraph();
   }, [user, graphRange]);
