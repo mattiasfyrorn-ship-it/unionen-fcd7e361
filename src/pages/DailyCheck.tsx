@@ -38,7 +38,7 @@ export default function DailyCheck() {
 
   // Graph state
   const [graphRange, setGraphRange] = useState("week");
-  const [graphData, setGraphData] = useState<any[]>([]);
+  const [graphData, setGraphData] = useState<KontoPoint[]>([]);
 
   const resetForm = () => {
     setQuestion("");
