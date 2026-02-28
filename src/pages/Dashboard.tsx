@@ -55,7 +55,7 @@ export default function Dashboard() {
   const [naringPeriod, setNaringPeriod] = useState("week");
 
   // Konto summary
-  const [myKonto, setMyKonto] = useState(50);
+  const [myKonto, setMyKonto] = useState(0);
   const [partnerKonto, setPartnerKonto] = useState<number | null>(null);
   const [kontoTrend, setKontoTrend] = useState(0);
   const [kontoView, setKontoView] = useState<"mine" | "ours">("mine");
