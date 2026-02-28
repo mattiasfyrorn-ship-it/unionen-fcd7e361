@@ -68,7 +68,11 @@ export function computeRelationskonto(
     konto = konto * 0.95 + 100 * d * 0.05;
     konto = Math.max(0, Math.min(100, konto));
 
-    results.push({ date: dateStr, value: Math.round(konto * 10) / 10 });
+    const point: KontoPoint = { date: dateStr, value: Math.round(konto * 10) / 10 };
+    if (check && check.climate != null) {
+      point.climate = check.climate * 20;
+    }
+    results.push(point);
   }
 
   return results;
