@@ -352,16 +352,16 @@ export default function DailyCheck() {
           </ToggleGroup>
           {graphData.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={graphData}>
+              <LineChart data={graphData.map(p => ({
+                date: new Date(p.date).toLocaleDateString("sv-SE", { month: "short", day: "numeric" }),
+                Relationskonto: p.value,
+              }))}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(30 20% 82%)" />
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(25 15% 45%)" />
-                <YAxis tick={{ fontSize: 10 }} stroke="hsl(25 15% 45%)" />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} stroke="hsl(25 15% 45%)" />
                 <Tooltip />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line type="monotone" dataKey="Turn Toward %" stroke="hsl(174 40% 38%)" strokeWidth={2} dot={{ r: 2 }} connectNulls />
-                <Line type="monotone" dataKey="Uppskattning" stroke="hsl(43 60% 55%)" strokeWidth={2} dot={{ r: 2 }} />
-                <Line type="monotone" dataKey="Påverkan" stroke="hsl(30 50% 45%)" strokeWidth={2} dot={{ r: 2 }} />
-                <Line type="monotone" dataKey="Klimat" stroke="hsl(174 60% 30%)" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                <Line type="monotone" dataKey="Relationskonto" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 2 }} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
