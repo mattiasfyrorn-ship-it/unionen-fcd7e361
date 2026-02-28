@@ -145,7 +145,7 @@ export default function Dashboard() {
     if (profile?.couple_id) {
       const { data: partnerChecks } = await supabase
         .from("daily_checks")
-        .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted")
+        .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted, climate")
         .eq("couple_id", profile.couple_id!)
         .neq("user_id", user.id)
         .gte("check_date", startDate)
