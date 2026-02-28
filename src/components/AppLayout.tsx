@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Heart, BarChart3, Sparkles, MessageCircle, Link2, LogOut, User, CalendarCheck, Sun, Shield } from "lucide-react";
 
 const NAV_ITEMS = [
-  { to: "/", label: "Dashboard", icon: BarChart3 },
+  { to: "/", label: "Översikt", icon: BarChart3 },
   { to: "/daily", label: "Relationskontot", icon: Sun },
   { to: "/evaluate", label: "Närd", icon: Sparkles },
   { to: "/weekly", label: "Veckosamtal", icon: CalendarCheck },

@@ -10,12 +10,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
-  Heart, ThumbsUp, ArrowRightLeft, Handshake, Sparkles,
+  Heart, ThumbsUp, ArrowRightLeft, Sparkles,
   TrendingUp, TrendingDown, CloudSun,
   ChevronDown, Target, Lightbulb, Shield
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
+import { computeRelationskonto, getLatestKonto, get7DayTrend, type KontoPoint } from "@/lib/relationskonto";
+import { format, subDays } from "date-fns";
 
 function getQuarterStart() {
   const d = new Date();
@@ -32,7 +34,7 @@ interface TrendInsight {
 
 export default function Dashboard() {
   const { profile, user } = useAuth();
-  const [view, setView] = useState<"mine" | "ours">("mine");
+  const [view, setView] = useState<"mine" | "ours">("ours");
   const [partnerName, setPartnerName] = useState("");
   const [shareDev, setShareDev] = useState(false);
 
@@ -47,10 +49,16 @@ export default function Dashboard() {
   const [pastGoals, setPastGoals] = useState<any[]>([]);
 
   // Graph data
-  const [relationskontGraph, setRelationskontGraph] = useState<any[]>([]);
+  const [kontoGraph, setKontoGraph] = useState<KontoPoint[]>([]);
   const [naringGraph, setNaringGraph] = useState<any[]>([]);
   const [graphPeriod, setGraphPeriod] = useState("week");
   const [naringPeriod, setNaringPeriod] = useState("week");
+
+  // Konto summary
+  const [myKonto, setMyKonto] = useState(50);
+  const [partnerKonto, setPartnerKonto] = useState<number | null>(null);
+  const [kontoTrend, setKontoTrend] = useState(0);
+  const [kontoView, setKontoView] = useState<"mine" | "ours">("mine");
 
   // Trend insights
   const [trends, setTrends] = useState<TrendInsight[]>([]);
@@ -69,14 +77,16 @@ export default function Dashboard() {
     if (!user) return;
 
     // Partner name
-    const { data: partner } = await supabase
-      .from("profiles")
-      .select("display_name")
-      .eq("couple_id", profile.couple_id!)
-      .neq("user_id", user.id)
-      .single();
-    if (partner) setPartnerName(partner.display_name);
-    setShareDev((profile as any).share_development || false);
+    if (profile?.couple_id) {
+      const { data: partner } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("couple_id", profile.couple_id!)
+        .neq("user_id", user.id)
+        .single();
+      if (partner) setPartnerName(partner.display_name);
+    }
+    setShareDev((profile as any)?.share_development || false);
 
     // Quarterly goals
     const qs = getQuarterStart();
@@ -106,101 +116,100 @@ export default function Dashboard() {
       .limit(8);
     if (pg) setPastGoals(pg);
 
+    // Build konto summary (always use 90 days for calculation stability)
+    await buildKontoSummary();
     await rebuildGraphs();
     await buildTrendInsights();
+  };
+
+  const buildKontoSummary = async () => {
+    if (!user) return;
+    const endDate = format(new Date(), "yyyy-MM-dd");
+    const startDate = format(subDays(new Date(), 90), "yyyy-MM-dd");
+
+    // My checks
+    const { data: myChecks } = await supabase
+      .from("daily_checks")
+      .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted")
+      .eq("user_id", user.id)
+      .gte("check_date", startDate)
+      .order("check_date", { ascending: true });
+
+    const myPoints = computeRelationskonto(myChecks || [], startDate, endDate);
+    const myVal = getLatestKonto(myPoints);
+    const myTrend = get7DayTrend(myPoints);
+    setMyKonto(myVal);
+    setKontoTrend(myTrend);
+
+    // Partner checks
+    if (profile?.couple_id) {
+      const { data: partnerChecks } = await supabase
+        .from("daily_checks")
+        .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted")
+        .eq("couple_id", profile.couple_id!)
+        .neq("user_id", user.id)
+        .gte("check_date", startDate)
+        .order("check_date", { ascending: true });
+
+      if (partnerChecks && partnerChecks.length > 0) {
+        const partnerPoints = computeRelationskonto(partnerChecks, startDate, endDate);
+        setPartnerKonto(getLatestKonto(partnerPoints));
+      }
+    }
   };
 
   const rebuildGraphs = async () => {
     if (!user) return;
     const days = graphPeriod === "week" ? 7 : graphPeriod === "month" ? 30 : 365;
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - days);
-    const cutoffStr = cutoff.toISOString().split("T")[0];
+    const endDate = format(new Date(), "yyyy-MM-dd");
+    // Use extra days for calculation warmup
+    const calcStart = format(subDays(new Date(), days + 60), "yyyy-MM-dd");
+    const displayStart = format(subDays(new Date(), days), "yyyy-MM-dd");
 
-    if (view === "mine") {
-      // My daily checks
-      const { data: checks } = await supabase
+    if (view === "ours" && profile?.couple_id) {
+      // My konto line
+      const { data: myChecks } = await supabase
         .from("daily_checks")
-        .select("check_date, turn_toward, gave_appreciation, adjusted, climate")
+        .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted")
         .eq("user_id", user.id)
-        .gte("check_date", cutoffStr)
+        .gte("check_date", calcStart)
         .order("check_date", { ascending: true });
 
-      // My repairs + quick_repairs per date
-      const { data: repairs } = await supabase
-        .from("repairs")
-        .select("created_at")
-        .eq("user_id", user.id)
-        .gte("created_at", cutoff.toISOString());
-      const { data: quickRepairs } = await supabase
-        .from("quick_repairs")
-        .select("created_at")
-        .eq("user_id", user.id)
-        .gte("created_at", cutoff.toISOString());
+      const myPoints = computeRelationskonto(myChecks || [], calcStart, endDate)
+        .filter(p => p.date >= displayStart);
 
-      const repairsByDate: Record<string, number> = {};
-      [...(repairs || []), ...(quickRepairs || [])].forEach(r => {
-        const d = r.created_at.split("T")[0];
-        repairsByDate[d] = (repairsByDate[d] || 0) + 1;
+      // Partner konto line
+      const { data: partnerChecks } = await supabase
+        .from("daily_checks")
+        .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted")
+        .eq("couple_id", profile.couple_id!)
+        .neq("user_id", user.id)
+        .gte("check_date", calcStart)
+        .order("check_date", { ascending: true });
+
+      const partnerPoints = computeRelationskonto(partnerChecks || [], calcStart, endDate)
+        .filter(p => p.date >= displayStart);
+
+      // Merge into combined graph
+      const merged: KontoPoint[] = myPoints.map((mp, i) => {
+        const pp = partnerPoints[i];
+        const ourVal = pp ? Math.round(((mp.value + pp.value) / 2) * 10) / 10 : mp.value;
+        return { date: mp.date, value: ourVal };
       });
 
-      const data = (checks || []).map(c => ({
-        date: new Date(c.check_date).toLocaleDateString("sv-SE", { month: "short", day: "numeric" }),
-        "Turn Toward": c.turn_toward && c.turn_toward !== "missed" ? 100 : c.turn_toward === "missed" ? 0 : null,
-        Uppskattning: c.gave_appreciation ? 1 : 0,
-        Påverkan: c.adjusted ? 1 : 0,
-        Klimat: (c as any).climate || null,
-        Reparationer: repairsByDate[c.check_date] || 0,
-      }));
-      setRelationskontGraph(data);
+      setKontoGraph(merged);
     } else {
-      // Couple checks
-      const { data: coupleChecks } = await supabase
+      // Mine only
+      const { data: myChecks } = await supabase
         .from("daily_checks")
-        .select("check_date, turn_toward, gave_appreciation, climate, user_id")
-        .eq("couple_id", profile.couple_id!)
-        .gte("check_date", cutoffStr)
+        .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted")
+        .eq("user_id", user.id)
+        .gte("check_date", calcStart)
         .order("check_date", { ascending: true });
 
-      const { data: coupleRepairs } = await supabase
-        .from("repairs")
-        .select("created_at")
-        .eq("couple_id", profile.couple_id!)
-        .gte("created_at", cutoff.toISOString());
-      const { data: coupleQR } = await supabase
-        .from("quick_repairs")
-        .select("created_at")
-        .eq("couple_id", profile.couple_id!)
-        .gte("created_at", cutoff.toISOString());
-
-      const repairsByDate: Record<string, number> = {};
-      [...(coupleRepairs || []), ...(coupleQR || [])].forEach(r => {
-        const d = r.created_at.split("T")[0];
-        repairsByDate[d] = (repairsByDate[d] || 0) + 1;
-      });
-
-      // Group by date
-      const byDate: Record<string, any[]> = {};
-      (coupleChecks || []).forEach(c => {
-        if (!byDate[c.check_date]) byDate[c.check_date] = [];
-        byDate[c.check_date].push(c);
-      });
-
-      const data = Object.entries(byDate).sort(([a], [b]) => a.localeCompare(b)).map(([date, cs]) => {
-        const tt = cs.filter(c => c.turn_toward);
-        const ttPct = tt.length > 0 ? Math.round(tt.filter(c => c.turn_toward !== "missed").length / tt.length * 100) : null;
-        const app = cs.filter(c => c.gave_appreciation).length;
-        const climateVals = cs.map(c => (c as any).climate).filter((v: any) => v != null);
-        const climate = climateVals.length > 0 ? Math.round(climateVals.reduce((a: number, b: number) => a + b, 0) / climateVals.length * 10) / 10 : null;
-        return {
-          date: new Date(date).toLocaleDateString("sv-SE", { month: "short", day: "numeric" }),
-          "Turn Toward": ttPct,
-          Uppskattningar: app,
-          Klimat: climate,
-          Reparationer: repairsByDate[date] || 0,
-        };
-      });
-      setRelationskontGraph(data);
+      const myPoints = computeRelationskonto(myChecks || [], calcStart, endDate)
+        .filter(p => p.date >= displayStart);
+      setKontoGraph(myPoints);
     }
 
     // Näring graph (mine view only)
@@ -222,13 +231,11 @@ export default function Dashboard() {
         .eq("user_id", user.id)
         .gte("created_at", naringCutoff.toISOString());
 
-      // Group evals by week_start
       const grouped: Record<string, number> = {};
       (evals || []).forEach(e => {
         grouped[e.week_start] = (grouped[e.week_start] || 0) + e.score;
       });
 
-      // Group repairs by week
       const repairsByWeek: Record<string, number> = {};
       (repairsForNaring || []).forEach(r => {
         const d = new Date(r.created_at);
@@ -256,7 +263,6 @@ export default function Dashboard() {
     const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
     const twoWeeksAgo = new Date(now); twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
 
-    // Fetch recent checks
     const { data: checks } = await supabase
       .from("daily_checks")
       .select("check_date, turn_toward, gave_appreciation, adjusted, climate")
@@ -271,7 +277,6 @@ export default function Dashboard() {
 
     const insights: TrendInsight[] = [];
 
-    // Appreciations trend
     const thisApp = thisWeek.filter(c => c.gave_appreciation).length;
     const lastApp = lastWeek.filter(c => c.gave_appreciation).length;
     if (lastApp > 0 && thisApp !== lastApp) {
@@ -288,7 +293,6 @@ export default function Dashboard() {
       }
     }
 
-    // Turn Toward trend
     const thisTT = thisWeek.filter(c => c.turn_toward);
     const lastTT = lastWeek.filter(c => c.turn_toward);
     const thisTTpct = thisTT.length > 0 ? thisTT.filter(c => c.turn_toward !== "missed").length / thisTT.length * 100 : 0;
@@ -305,7 +309,6 @@ export default function Dashboard() {
       });
     }
 
-    // Repairs count
     const { data: thisWeekRepairs } = await supabase
       .from("repairs")
       .select("id")
@@ -326,7 +329,6 @@ export default function Dashboard() {
       });
     }
 
-    // Climate trend
     const thisClimate = thisWeek.map(c => (c as any).climate).filter((v: any) => v != null);
     const lastClimate = lastWeek.map(c => (c as any).climate).filter((v: any) => v != null);
     if (thisClimate.length > 0 && lastClimate.length > 0) {
@@ -345,7 +347,6 @@ export default function Dashboard() {
       }
     }
 
-    // Näring-reglering correlation
     const { data: recentEvals } = await supabase
       .from("evaluations")
       .select("week_start, score")
@@ -367,7 +368,6 @@ export default function Dashboard() {
       }
     }
 
-    // Sort by magnitude, take top 3
     insights.sort((a, b) => b.magnitude - a.magnitude);
     setTrends(insights.slice(0, 3));
   };
@@ -409,16 +409,12 @@ export default function Dashboard() {
   };
 
   const hasPartner = !!partnerName;
+  const displayKonto = kontoView === "ours" && partnerKonto !== null
+    ? Math.round(((myKonto + partnerKonto) / 2) * 10) / 10
+    : myKonto;
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl text-primary">Dashboard</h1>
-        <p className="text-muted-foreground">
-          {hasPartner ? `Du & ${partnerName} – beteendeträning` : "Din beteendeträning"}
-        </p>
-      </div>
-
       {/* Solo-läge banner */}
       {!hasPartner && (
         <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
@@ -432,6 +428,98 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Trend insights – first */}
+      {trends.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-muted-foreground">Trendinsikter</h3>
+          {trends.map((trend, i) => (
+            <div
+              key={i}
+              className={`flex items-center gap-3 p-4 rounded-lg border ${
+                trend.positive
+                  ? "bg-teal/5 border-teal/20 text-teal"
+                  : "bg-gold/5 border-gold/20 text-gold"
+              }`}
+            >
+              <div className="shrink-0">
+                {trend.positive ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+              </div>
+              <div className="flex items-center gap-2 flex-1">
+                {trend.icon}
+                <p className="text-sm text-foreground">{renderBoldText(trend.text)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Relationskonto summary card */}
+      <Card className="bg-card/80 border-border/50">
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm text-muted-foreground font-medium">Relationskonto</p>
+            {hasPartner && (
+              <ToggleGroup type="single" value={kontoView} onValueChange={(v) => v && setKontoView(v as any)} size="sm">
+                <ToggleGroupItem value="mine" className="text-xs">Mitt</ToggleGroupItem>
+                <ToggleGroupItem value="ours" className="text-xs">Vårt</ToggleGroupItem>
+              </ToggleGroup>
+            )}
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-4xl font-bold text-primary">{Math.round(displayKonto)}</span>
+            <span className="text-lg text-muted-foreground">/ 100</span>
+            <span className={`ml-auto text-sm font-medium ${kontoTrend >= 0 ? "text-teal" : "text-destructive"}`}>
+              {kontoTrend >= 0 ? "+" : ""}{kontoTrend} senaste 7d
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Kontot bygger på dagliga insättningar och sjunker långsamt utan dem.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* View Toggle */}
+      <ToggleGroup type="single" value={view} onValueChange={(v) => v && setView(v as any)}>
+        <ToggleGroupItem value="ours" className="text-sm">Vår utveckling</ToggleGroupItem>
+        <ToggleGroupItem value="mine" className="text-sm">Min utveckling</ToggleGroupItem>
+      </ToggleGroup>
+
+      {/* Relationskonto graph */}
+      <Card className="bg-card/80 border-border/50">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">
+              {view === "ours" ? "Relationskonto – vår utveckling" : "Relationskonto – min utveckling"}
+            </CardTitle>
+            <ToggleGroup type="single" value={graphPeriod} onValueChange={(v) => v && setGraphPeriod(v)} size="sm">
+              <ToggleGroupItem value="week" className="text-xs">Vecka</ToggleGroupItem>
+              <ToggleGroupItem value="month" className="text-xs">Månad</ToggleGroupItem>
+              <ToggleGroupItem value="year" className="text-xs">År</ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {kontoGraph.length > 0 ? (
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={kontoGraph.map(p => ({
+                date: new Date(p.date).toLocaleDateString("sv-SE", { month: "short", day: "numeric" }),
+                Relationskonto: p.value,
+              }))}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Line type="monotone" dataKey="Relationskonto" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-8">Ingen data ännu.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Quarterly goals */}
       <Card className="bg-card/80 border-border/50">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-lg">
@@ -475,59 +563,6 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* View Toggle */}
-      <ToggleGroup type="single" value={view} onValueChange={(v) => v && setView(v as any)}>
-        <ToggleGroupItem value="mine" className="text-sm">Min utveckling</ToggleGroupItem>
-        <ToggleGroupItem value="ours" className="text-sm">Vår utveckling</ToggleGroupItem>
-      </ToggleGroup>
-
-      {/* Graph 1: Relationskontot */}
-      <Card className="bg-card/80 border-border/50">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">
-              {view === "mine" ? "Relationskontot – mina insättningar" : "Relationskontot – våra insättningar"}
-            </CardTitle>
-            <ToggleGroup type="single" value={graphPeriod} onValueChange={(v) => v && setGraphPeriod(v)} size="sm">
-              <ToggleGroupItem value="week" className="text-xs">Vecka</ToggleGroupItem>
-              <ToggleGroupItem value="month" className="text-xs">Månad</ToggleGroupItem>
-              <ToggleGroupItem value="year" className="text-xs">År</ToggleGroupItem>
-            </ToggleGroup>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {relationskontGraph.length > 0 ? (
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={relationskontGraph}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                {view === "mine" ? (
-                  <>
-                    <Line type="monotone" dataKey="Turn Toward" stroke="hsl(var(--teal))" strokeWidth={2} dot={false} connectNulls />
-                    <Line type="monotone" dataKey="Uppskattning" stroke="hsl(var(--gold))" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="Påverkan" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="Klimat" stroke="hsl(174 60% 30%)" strokeWidth={2} dot={false} connectNulls />
-                    <Line type="monotone" dataKey="Reparationer" stroke="hsl(30 50% 45%)" strokeWidth={2} dot={false} />
-                  </>
-                ) : (
-                  <>
-                    <Line type="monotone" dataKey="Turn Toward" stroke="hsl(var(--teal))" strokeWidth={2} dot={false} connectNulls />
-                    <Line type="monotone" dataKey="Uppskattningar" stroke="hsl(var(--gold))" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="Klimat" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} connectNulls />
-                    <Line type="monotone" dataKey="Reparationer" stroke="hsl(30 50% 45%)" strokeWidth={2} dot={false} />
-                  </>
-                )}
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <p className="text-sm text-muted-foreground text-center py-8">Ingen data ännu.</p>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Graph 2: Min näring över tid (mine only) */}
       {view === "mine" && (
         <Card className="bg-card/80 border-border/50">
@@ -566,31 +601,6 @@ export default function Dashboard() {
         <div className="flex items-center gap-3">
           <Switch checked={shareDev} onCheckedChange={toggleShareDev} id="share-dev" />
           <Label htmlFor="share-dev" className="text-sm text-muted-foreground">Dela min utveckling med partner</Label>
-        </div>
-      )}
-
-      {/* Trend insights */}
-      {trends.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-medium text-muted-foreground">Trendinsikter</h3>
-          {trends.map((trend, i) => (
-            <div
-              key={i}
-              className={`flex items-center gap-3 p-4 rounded-lg border ${
-                trend.positive
-                  ? "bg-teal/5 border-teal/20 text-teal"
-                  : "bg-gold/5 border-gold/20 text-gold"
-              }`}
-            >
-              <div className="shrink-0">
-                {trend.positive ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
-              </div>
-              <div className="flex items-center gap-2 flex-1">
-                {trend.icon}
-                <p className="text-sm text-foreground">{renderBoldText(trend.text)}</p>
-              </div>
-            </div>
-          ))}
         </div>
       )}
 

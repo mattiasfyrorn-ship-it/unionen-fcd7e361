@@ -12,7 +12,8 @@ import { Map, Heart, ArrowRightLeft, Handshake, RefreshCw, Loader2, CloudSun } f
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import WeekDayPicker from "@/components/WeekDayPicker";
-import { format, startOfWeek, addDays } from "date-fns";
+import { format, startOfWeek, addDays, subDays } from "date-fns";
+import { computeRelationskonto, type KontoPoint } from "@/lib/relationskonto";
 
 export default function DailyCheck() {
   const { user, profile } = useAuth();
@@ -37,7 +38,7 @@ export default function DailyCheck() {
 
   // Graph state
   const [graphRange, setGraphRange] = useState("week");
-  const [graphData, setGraphData] = useState<any[]>([]);
+  const [graphData, setGraphData] = useState<KontoPoint[]>([]);
 
   const resetForm = () => {
     setQuestion("");
@@ -119,31 +120,20 @@ export default function DailyCheck() {
     const fetchGraph = async () => {
       const daysMap: Record<string, number> = { week: 7, month: 30, year: 365 };
       const numDays = daysMap[graphRange] || 7;
-      const since = new Date();
-      since.setDate(since.getDate() - numDays);
+      const endDate = format(new Date(), "yyyy-MM-dd");
+      const calcStart = format(subDays(new Date(), numDays + 60), "yyyy-MM-dd");
+      const displayStart = format(subDays(new Date(), numDays), "yyyy-MM-dd");
 
       const { data } = await supabase
         .from("daily_checks")
-        .select("check_date, turn_toward, turn_toward_options, gave_appreciation, adjusted, climate")
+        .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted")
         .eq("user_id", user.id)
-        .gte("check_date", format(since, "yyyy-MM-dd"))
+        .gte("check_date", calcStart)
         .order("check_date", { ascending: true });
 
-      if (!data) return;
-
-      const mapped = data.map((d: any) => {
-        const opts: string[] = d.turn_toward_options || [];
-        const positive = opts.filter((v: string) => v === "initiated" || v === "received_positively").length;
-        const ttPct = opts.length > 0 ? Math.round((positive / Math.max(opts.length, 1)) * 100) : null;
-        return {
-          date: d.check_date.slice(5),
-          "Turn Toward %": ttPct,
-          Uppskattning: d.gave_appreciation ? 1 : 0,
-          Påverkan: d.adjusted ? 1 : 0,
-          Klimat: d.climate ?? null,
-        };
-      });
-      setGraphData(mapped);
+      const points = computeRelationskonto(data || [], calcStart, endDate)
+        .filter(p => p.date >= displayStart);
+      setGraphData(points);
     };
     fetchGraph();
   }, [user, graphRange]);
@@ -362,16 +352,16 @@ export default function DailyCheck() {
           </ToggleGroup>
           {graphData.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={graphData}>
+              <LineChart data={graphData.map(p => ({
+                date: new Date(p.date).toLocaleDateString("sv-SE", { month: "short", day: "numeric" }),
+                Relationskonto: p.value,
+              }))}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(30 20% 82%)" />
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(25 15% 45%)" />
-                <YAxis tick={{ fontSize: 10 }} stroke="hsl(25 15% 45%)" />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} stroke="hsl(25 15% 45%)" />
                 <Tooltip />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line type="monotone" dataKey="Turn Toward %" stroke="hsl(174 40% 38%)" strokeWidth={2} dot={{ r: 2 }} connectNulls />
-                <Line type="monotone" dataKey="Uppskattning" stroke="hsl(43 60% 55%)" strokeWidth={2} dot={{ r: 2 }} />
-                <Line type="monotone" dataKey="Påverkan" stroke="hsl(30 50% 45%)" strokeWidth={2} dot={{ r: 2 }} />
-                <Line type="monotone" dataKey="Klimat" stroke="hsl(174 60% 30%)" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                <Line type="monotone" dataKey="Relationskonto" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 2 }} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
