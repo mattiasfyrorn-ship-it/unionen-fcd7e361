@@ -37,7 +37,7 @@ export function computeRelationskonto(
   }
 
   const results: KontoPoint[] = [];
-  let konto = 50; // initial value
+  let konto = 0; // initial value
   const start = new Date(startDate + "T00:00:00");
   const end = new Date(endDate + "T00:00:00");
   const totalDays = differenceInCalendarDays(end, start);
