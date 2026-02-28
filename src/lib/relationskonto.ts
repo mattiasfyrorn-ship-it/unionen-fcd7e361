@@ -7,11 +7,13 @@ interface DailyCheck {
   turn_toward_options?: string[] | null;
   turn_toward?: string | null;
   adjusted?: boolean | null;
+  climate?: number | null;
 }
 
 export interface KontoPoint {
   date: string;
   value: number;
+  climate?: number;
 }
 
 /**
