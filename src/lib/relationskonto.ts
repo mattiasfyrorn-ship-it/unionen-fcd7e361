@@ -82,7 +82,7 @@ export function computeRelationskonto(
  * Get the latest konto value from a series, or 50 if empty.
  */
 export function getLatestKonto(points: KontoPoint[]): number {
-  return points.length > 0 ? points[points.length - 1].value : 50;
+  return points.length > 0 ? points[points.length - 1].value : 0;
 }
 
 /**
