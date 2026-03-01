@@ -580,7 +580,7 @@ export default function WeeklyConversation() {
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Spara"}
         </Button>
         {ready ? (
-          <Button onClick={() => handleSave(false)} disabled={loading} variant="outline" className="flex-1">
+          <Button onClick={() => handleSave(false)} disabled={loading} variant="outline" className="flex-1 rounded-[12px]">
             <Unlock className="w-4 h-4 mr-1" /> Lås upp
           </Button>
         ) : (
