@@ -156,8 +156,8 @@ export default function Messages() {
                     : isRepairQuick
                     ? "bg-primary/10 border border-primary/20"
                     : isMine
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-foreground"
+                    ? "bg-primary/10 text-foreground"
+                    : "bg-card text-foreground"
                 }`}
               >
                 {isRepairQuick && !isMine && (
