@@ -464,12 +464,13 @@ export default function Dashboard() {
       )}
 
       {/* Quarterly goals – Vår riktning (moved up) */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-xl border-none shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Target className="w-5 h-5 text-primary" /> Vår riktning
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Kvartalsmål</p>
+          <CardTitle className="flex items-center gap-2 text-lg font-serif">
+            <Target className="w-5 h-5 text-primary" strokeWidth={1.5} /> Vår riktning
           </CardTitle>
-          <p className="text-xs text-muted-foreground">Kvartalsmål – Q{Math.floor(new Date().getMonth() / 3) + 1} {new Date().getFullYear()}</p>
+          <p className="text-xs text-muted-foreground">Q{Math.floor(new Date().getMonth() / 3) + 1} {new Date().getFullYear()}</p>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center gap-2">
