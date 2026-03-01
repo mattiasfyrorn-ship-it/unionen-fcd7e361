@@ -479,7 +479,7 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-2">
             <Checkbox checked={experienceDone} onCheckedChange={(v) => setExperienceDone(!!v)} />
-            <Input placeholder="Upplevelsemål" value={experienceGoal} onChange={(e) => setExperienceGoal(e.target.value)} className="bg-muted/50 border-border text-sm flex-1" />
+            <Input placeholder="Upplevelsemål" value={experienceGoal} onChange={(e) => setExperienceGoal(e.target.value)} className="rounded-lg border-border/30 bg-secondary/30 text-sm flex-1" />
           </div>
           <div className="flex items-center gap-2">
             <Checkbox checked={practicalDone} onCheckedChange={(v) => setPracticalDone(!!v)} />
