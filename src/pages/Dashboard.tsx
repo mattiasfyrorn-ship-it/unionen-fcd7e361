@@ -584,10 +584,13 @@ export default function Dashboard() {
 
       {/* Graph 2: Min näring över tid (mine only) */}
       {view === "mine" && (
-        <Card className="bg-card/80 border-border/50">
+        <Card className="rounded-xl border-none shadow-sm">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Min näring över tid</CardTitle>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Näring</p>
+                <CardTitle className="text-lg font-serif">Min näring över tid</CardTitle>
+              </div>
               <ToggleGroup type="single" value={naringPeriod} onValueChange={(v) => v && setNaringPeriod(v)} size="sm">
                 <ToggleGroupItem value="week" className="text-xs">Vecka</ToggleGroupItem>
                 <ToggleGroupItem value="month" className="text-xs">Månad</ToggleGroupItem>
