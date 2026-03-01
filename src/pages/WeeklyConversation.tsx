@@ -576,7 +576,7 @@ export default function WeeklyConversation() {
 
       {/* Actions */}
       <div className="flex gap-3">
-        <Button onClick={() => handleSave()} disabled={loading} variant="outline" className="flex-1">
+        <Button onClick={() => handleSave()} disabled={loading} variant="outline" className="flex-1 rounded-[12px]">
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Spara"}
         </Button>
         {ready ? (
