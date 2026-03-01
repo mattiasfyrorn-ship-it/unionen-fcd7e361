@@ -229,7 +229,7 @@ export default function Evaluate() {
         </CardContent>
       </Card>
 
-      <Button onClick={handleSubmit} disabled={loading} className="w-full rounded-xl" size="lg">
+      <Button onClick={handleSubmit} disabled={loading} className="w-full rounded-[12px]" size="lg">
         {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sparar...</> : hasExisting ? "Uppdatera utvärdering" : "Spara utvärdering"}
       </Button>
 
