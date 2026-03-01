@@ -475,7 +475,7 @@ export default function Dashboard() {
         <CardContent className="space-y-3">
           <div className="flex items-center gap-2">
             <Checkbox checked={relationshipDone} onCheckedChange={(v) => setRelationshipDone(!!v)} />
-            <Input placeholder="Relationsmål" value={relationshipGoal} onChange={(e) => setRelationshipGoal(e.target.value)} className="bg-muted/50 border-border text-sm flex-1" />
+            <Input placeholder="Relationsmål" value={relationshipGoal} onChange={(e) => setRelationshipGoal(e.target.value)} className="rounded-lg border-border/30 bg-secondary/30 text-sm flex-1" />
           </div>
           <div className="flex items-center gap-2">
             <Checkbox checked={experienceDone} onCheckedChange={(v) => setExperienceDone(!!v)} />
