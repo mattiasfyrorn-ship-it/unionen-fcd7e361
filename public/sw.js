@@ -19,12 +19,12 @@ self.addEventListener('push', (event) => {
     };
 
     event.waitUntil(
-      self.registration.showNotification(data.title || 'Unionen', options)
+      self.registration.showNotification(data.title || 'Hamnen', options)
     );
   } catch (e) {
     const text = event.data.text();
     event.waitUntil(
-      self.registration.showNotification('Unionen', { body: text })
+      self.registration.showNotification('Hamnen', { body: text })
     );
   }
 });

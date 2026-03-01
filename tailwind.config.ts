@@ -13,6 +13,10 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        serif: ["'Playfair Display'", "serif"],
+        sans: ["'Inter'", "sans-serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -54,6 +58,15 @@ export default {
         teal: {
           DEFAULT: "hsl(var(--teal))",
           foreground: "hsl(var(--teal-foreground))",
+        },
+        hamnen: {
+          sand: "hsl(var(--hamnen-sand))",
+          beige: "hsl(var(--hamnen-beige))",
+          text: "hsl(var(--hamnen-text))",
+          forest: "hsl(var(--hamnen-forest))",
+          ocean: "hsl(var(--hamnen-ocean))",
+          terracotta: "hsl(var(--hamnen-terracotta))",
+          sage: "hsl(var(--hamnen-sage))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
