@@ -494,7 +494,7 @@ export default function WeeklyConversation() {
       </Card>
 
       {/* Issues */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Frågor / Problem att ta upp</CardTitle>
         </CardHeader>
