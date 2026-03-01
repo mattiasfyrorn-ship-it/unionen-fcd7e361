@@ -1,6 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { format, subDays } from "date-fns";
 
+// Helper for the onboarding_steps table which isn't in generated types yet
+const onboardingTable = () => supabase.from("onboarding_steps" as any) as any;
+
 export interface StepStatus {
   userDone: boolean;
   partnerDone: boolean;

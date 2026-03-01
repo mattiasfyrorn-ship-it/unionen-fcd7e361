@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+
+const onboardingTable = () => supabase.from("onboarding_steps" as any) as any;
 import {
   ONBOARDING_STEPS,
   HABIT_POOL,
