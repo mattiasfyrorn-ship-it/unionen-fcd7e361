@@ -146,7 +146,7 @@ export default function Auth() {
                 ? inviterName
                   ? `Du har blivit inbjuden av ${inviterName}! Skapa ditt konto för att kopplas ihop.`
                   : "Du har blivit inbjuden! Skapa ditt konto för att kopplas ihop."
-                : isLogin ? "Välkommen tillbaka" : "Skapa ditt konto"}
+                : "Där relationell trygghet byggs."}
           </p>
         </div>
 
