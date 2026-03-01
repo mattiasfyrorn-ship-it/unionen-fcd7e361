@@ -1,61 +1,68 @@
 
+## Problem: Två service workers krockar och bryter push-notiser
 
-## Layout- och navigationsuppdateringar
+### Rotorsaken
 
-### 1. Logotyp -- storre, samma hojd som texten "Hamnen"
+Det finns en fundamental konflikt i hur service workers är uppsatta:
 
-**`src/components/AppLayout.tsx`**:
-- Mobil: Logga fran `w-6 h-6` till `w-8 h-8`, text fran `text-lg` till `text-xl`
-- Desktop: Logga fran `w-7 h-7` till `w-10 h-10`, text fran `text-xl` till `text-2xl`
-- Sakerstall att bild och text ar vertikalt centrerade (`items-center`)
+1. VitePWA-pluginen genererar en `sw.js` via Workbox vid build och skriver automatiskt över `public/sw.js`
+2. Vår anpassade `public/sw.js` med push-logik försvinner alltså i produktionsbygget
+3. Resultatet: `navigator.serviceWorker.ready` pekar på Workbox service worker som saknar push-hantering
+4. `reg.pushManager.subscribe(...)` kastar ett fel (t.ex. ogiltig VAPID-nyckel eller problem med workern) och fångas i `catch`-blocket → returnerar `false` → felmeddelandet visas
 
-### 2. Desktop -- meny under loggan, konto/utloggning pa samma rad som loggan
+Dessutom finns ett timeout-problem: `navigator.serviceWorker.ready` kan hänga länge i en vanlig webbläsarflik (inte installerad PWA) om service workern inte aktiveras direkt.
 
-**`src/components/AppLayout.tsx`** desktop-header:
+### Lösning: Slå samman till en enda service worker med `injectManifest`
 
-Nuvarande layout: en rad med logga | nav | konto.
+VitePWA stöder ett läge som heter `injectManifest` där vi skriver vår egen service worker och Workbox injicerar sina cache-definitioner i den. På så sätt har vi bara en service worker som gör allt.
 
-Ny layout:
-```text
-[ Logga + "Hamnen"               Konto + Logga ut ]   <-- rad 1
-[         Nav-lankar centrerade                    ]   <-- rad 2
+#### Konkreta ändringar
+
+**1. `vite.config.ts`** — Byt strategi från `generateSW` (default) till `injectManifest` och peka på vår custom service worker:
+
+```ts
+VitePWA({
+  strategies: 'injectManifest',
+  srcDir: 'public',
+  filename: 'sw.js',
+  registerType: 'autoUpdate',
+  // ...resten är samma
+})
 ```
 
-- Rad 1: `flex justify-between items-center`
-- Rad 2: `flex justify-center` med nav-lankarna
-- Hela headern `sticky top-0` som nu
+**2. `public/sw.js`** — Lägg till Workbox-injektionspunkt överst och behåll push/notificationclick-logiken:
 
-### 3. Desktop responsivitet
+```js
+// Workbox injicerar sitt precache-manifest här automatiskt vid build
+import { precacheAndRoute } from 'workbox-precaching';
+precacheAndRoute(self.__WB_MANIFEST);
 
-- Nav-lankar: `flex-wrap` sa de bryter vid smalare skarmar
-- Anvand `gap-2` istallet for `gap-1` for battre andning
-- Textstorlek pa nav: `text-sm` (behalls)
+// Push-logiken finns kvar nedan (oförändrad)
+self.addEventListener('push', ...);
+self.addEventListener('notificationclick', ...);
+```
 
-### 4. Mobil bottom nav -- "Samtal" istallet for "Vecka"
+**3. `src/lib/pushNotifications.ts`** — Lägg till timeout på `serviceWorker.ready` (max 5 sekunder) och bättre felhantering som loggar exakt vad som går fel, så att framtida problem är lättare att felsöka:
 
-**`src/components/AppLayout.tsx`** BOTTOM_NAV:
-- Andras `{ to: "/weekly", label: "Vecka" }` till `{ to: "/weekly", label: "Samtal" }`
+```ts
+const registration = await Promise.race([
+  navigator.serviceWorker.ready,
+  new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 5000))
+]);
+```
 
-### 5. Mobil -- logga stannar kvar vid scroll (sticky header med safe area)
+**4. `src/App.tsx`** — Ta bort den manuella registreringen av `/sw.js` i `PushInitializer` eftersom VitePWA sköter registreringen automatiskt. Dubbel-registrering kan orsaka problem.
 
-**`src/components/AppLayout.tsx`** mobil header:
-- Andras fran `sticky top-0` till att inkludera `pt-[env(safe-area-inset-top)]` pa headern
-- Ta bort `padding-top: env(safe-area-inset-top)` fran body i `src/index.css` och lagg det pa headern istallet
-- Header forblir `sticky top-0 z-50` -- innehallet scrollar bakom/under den
+### Tekniska detaljer
 
-### 6. Meddelanden -- input last langst ned
+- `injectManifest`-strategin kräver att service worker-filen innehåller `self.__WB_MANIFEST` — det är platsen Workbox injicerar sitt precache-manifest
+- I development-läge fungerar `self.__WB_MANIFEST` inte utan en speciell mock — vi lägger till `if (typeof self.__WB_MANIFEST !== 'undefined')` som guard
+- VAPID-nycklarna är korrekt konfigurerade som secrets, så det problemet är inte orsaken
+- Ingen databasändring behövs
 
-**`src/pages/Messages.tsx`**:
-- Andras layout fran `h-[calc(100vh-10rem)]` till `h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom))]` eller liknande for att fylla hela skarmhojden
-- Input-containern: `sticky bottom-0` med bakgrund och padding for bottom nav (mobil: `pb-[calc(3.5rem+env(safe-area-inset-bottom))]`)
-- Meddelandelistan: `flex-1 overflow-y-auto` (redan sa, men sakerstall att input alltid ar synlig)
+### Filer som ändras
 
-### Filer som andras
-
-| Fil | Andring |
-|---|---|
-| `src/components/AppLayout.tsx` | Storre logga, desktop 2-rads layout, "Samtal" i bottom nav |
-| `src/pages/Messages.tsx` | Input last langst ned, full hojd |
-| `src/index.css` | Flytta safe-area-inset fran body till header |
-
-Ingen text (utom "Vecka" -> "Samtal" i bottom nav) eller funktionalitet andras.
+- `vite.config.ts` — lägg till `strategies: 'injectManifest'`, `srcDir: 'public'`, `filename: 'sw.js'`
+- `public/sw.js` — lägg till Workbox precache-anrop överst med `__WB_MANIFEST`-guard
+- `src/lib/pushNotifications.ts` — lägg till timeout på `serviceWorker.ready` och förbättrad fellogning
+- `src/App.tsx` — ta bort manuell `navigator.serviceWorker.register('/sw.js')` i `PushInitializer`

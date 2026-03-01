@@ -70,7 +70,6 @@
   body {
     @apply bg-background text-foreground font-sans;
     font-family: 'Inter', sans-serif;
-    padding-top: env(safe-area-inset-top);
   }
 
   h1, h2, h3, h4 {

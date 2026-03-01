@@ -10,7 +10,7 @@ const BOTTOM_NAV = [
   { to: "/", label: "Översikt", icon: BarChart3 },
   { to: "/daily", label: "Konto", icon: Sun },
   { to: "/evaluate", label: "Närd", icon: Sparkles },
-  { to: "/weekly", label: "Vecka", icon: CalendarCheck },
+  { to: "/weekly", label: "Samtal", icon: CalendarCheck },
   { to: "/repair", label: "Reglering", icon: Shield },
 ];
 
@@ -31,12 +31,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Mobile: minimal top bar */}
       {isMobile ? (
-        <header className="bg-background sticky top-0 z-50 px-4 h-12 flex items-center justify-between">
+        /* Mobile: sticky header with safe area */
+        <header className="bg-background sticky top-0 z-50 px-4 h-12 flex items-center justify-between pt-[env(safe-area-inset-top)]">
           <Link to="/" className="flex items-center gap-2">
-            <img src={hamnenLogo} alt="Hamnen" className="w-6 h-6 object-contain" />
-            <span className="text-foreground font-medium text-lg font-serif">Hamnen</span>
+            <img src={hamnenLogo} alt="Hamnen" className="w-8 h-8 object-contain" />
+            <span className="text-foreground font-medium text-xl font-serif">Hamnen</span>
           </Link>
           <div className="flex items-center gap-2">
             <Link to="/messages" className="p-2 text-muted-foreground hover:text-foreground transition-colors">
@@ -48,38 +48,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
       ) : (
-        /* Desktop: airy top navigation */
+        /* Desktop: two-row header */
         <header className="sticky top-0 z-50 bg-background/80 backdrop-blur">
-          <div className="container mx-auto px-4 py-6 flex items-center justify-between">
+          <div className="container mx-auto px-4 pt-6 pb-2 flex items-center justify-between">
             <Link to="/" className="flex items-center gap-2">
-              <img src={hamnenLogo} alt="Hamnen" className="w-7 h-7 object-contain" />
-              <span className="text-foreground font-medium text-xl font-serif">Hamnen</span>
+              <img src={hamnenLogo} alt="Hamnen" className="w-10 h-10 object-contain" />
+              <span className="text-foreground font-medium text-2xl font-serif">Hamnen</span>
             </Link>
-            <nav className="flex items-center gap-1">
-              {DESKTOP_NAV.map((item) => {
-                const active = location.pathname === item.to;
-                const Icon = item.icon;
-                return (
-                  <Link key={item.to} to={item.to}>
-                    <button
-                      className={`px-3 py-2 text-sm font-sans transition-colors duration-300 relative ${
-                        active
-                          ? "text-primary"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <Icon className="w-4 h-4" strokeWidth={1.5} />
-                        {item.label}
-                      </span>
-                      {active && (
-                        <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-primary rounded-full" />
-                      )}
-                    </button>
-                  </Link>
-                );
-              })}
-            </nav>
             <div className="flex items-center gap-3">
               <Link to="/account" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <User className="w-4 h-4" strokeWidth={1.5} />
@@ -90,6 +65,31 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </Button>
             </div>
           </div>
+          <nav className="container mx-auto px-4 pb-4 flex justify-center flex-wrap gap-2">
+            {DESKTOP_NAV.map((item) => {
+              const active = location.pathname === item.to;
+              const Icon = item.icon;
+              return (
+                <Link key={item.to} to={item.to}>
+                  <button
+                    className={`px-3 py-2 text-sm font-sans transition-colors duration-300 relative ${
+                      active
+                        ? "text-primary"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Icon className="w-4 h-4" strokeWidth={1.5} />
+                      {item.label}
+                    </span>
+                    {active && (
+                      <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-primary rounded-full" />
+                    )}
+                  </button>
+                </Link>
+              );
+            })}
+          </nav>
         </header>
       )}
 

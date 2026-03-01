@@ -61,7 +61,6 @@ export default function Messages() {
         (payload) => {
           const newMsg = payload.new as Message;
           setMessages((prev) => [...prev, newMsg]);
-          // Auto-mark as read if from partner
           if (newMsg.sender_id !== user?.id) {
             supabase.from("messages").update({ read: true }).eq("id", newMsg.id).then(() => {});
           }
@@ -88,7 +87,6 @@ export default function Messages() {
     if (error) toast({ title: "Fel", description: error.message, variant: "destructive" });
     else {
       setInput("");
-      // Send push notification to partner
       sendPushToPartner(profile.couple_id, user.id, "Nytt meddelande", input.trim(), "message");
     }
     setLoading(false);
@@ -96,7 +94,6 @@ export default function Messages() {
 
   const handleQuickRepairResponse = async (messageId: string, content: string, response: string) => {
     if (!user || !profile?.couple_id) return;
-    // Find the quick_repair by matching the phrase in content
     const { data: qrs } = await supabase
       .from("quick_repairs")
       .select("id")
@@ -109,7 +106,6 @@ export default function Messages() {
       await supabase.from("quick_repairs").update({ partner_response: response }).eq("id", qrs[0].id);
     }
 
-    // Send response as message
     await supabase.from("messages").insert({
       couple_id: profile.couple_id,
       sender_id: user.id,
@@ -121,7 +117,7 @@ export default function Messages() {
   const hasPartner = messages.some(m => m.sender_id !== user?.id);
 
   return (
-    <div className="max-w-lg mx-auto flex flex-col h-[calc(100vh-10rem)]">
+    <div className="max-w-lg mx-auto flex flex-col h-[calc(100dvh-8rem)] md:h-[calc(100dvh-12rem)]">
       <h1 className="text-2xl text-primary mb-4">Meddelanden</h1>
 
       {/* Solo-läge banner */}
@@ -190,8 +186,8 @@ export default function Messages() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
-      <div className="flex gap-2 pt-2">
+      {/* Input – sticky at bottom */}
+      <div className="sticky bottom-0 flex gap-2 pt-2 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-2 bg-background">
         <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}
