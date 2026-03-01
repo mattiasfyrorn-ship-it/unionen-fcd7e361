@@ -461,23 +461,21 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
       partner_done_user_not: "Din partner öppnade sig – vågar du?",
     },
     checkCompletion: async (userId, coupleId) => {
-      const { data } = await supabase
-        .from("onboarding_steps" as any)
+      const { data } = await onboardingTable()
         .select("completed_at, metadata")
         .eq("user_id", userId)
         .eq("step_number", 16)
         .maybeSingle();
-      const userDone = !!(data?.metadata as any)?.vulnerability_shared;
+      const userDone = !!((data as any)?.metadata as any)?.vulnerability_shared;
       let partnerDone = false;
       const partnerId = await getPartnerUserId(coupleId, userId);
       if (partnerId) {
-        const { data: pd } = await supabase
-          .from("onboarding_steps" as any)
+        const { data: pd } = await onboardingTable()
           .select("metadata")
           .eq("user_id", partnerId)
           .eq("step_number", 16)
           .maybeSingle();
-        partnerDone = !!(pd?.metadata as any)?.vulnerability_shared;
+        partnerDone = !!((pd as any)?.metadata as any)?.vulnerability_shared;
       }
       return { userDone, partnerDone };
     },

@@ -100,15 +100,14 @@ export function useOnboarding(): OnboardingState {
 
       if (allMainDone) {
         // Get last completed habit step to avoid repeating
-        const { data: habitRows } = await supabase
-          .from("onboarding_steps" as any)
+        const { data: habitRows } = await onboardingTable()
           .select("step_number, metadata")
           .eq("user_id", userId)
           .gte("step_number", 100)
           .order("created_at", { ascending: false })
           .limit(1);
 
-        const lastHabitId = (habitRows?.[0]?.metadata as any)?.habit_id || "";
+        const lastHabitId = ((habitRows as any)?.[0]?.metadata as any)?.habit_id || "";
 
         // Pick based on activity level
         const recentDays = await getDaysInLast7(userId);
