@@ -475,7 +475,7 @@ export default function WeeklyConversation() {
       </Card>
 
       {/* Wins */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Vad gick bra?</CardTitle>
         </CardHeader>
