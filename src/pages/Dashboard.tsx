@@ -584,7 +584,7 @@ export default function Dashboard() {
 
       {/* Graph 2: Min näring över tid (mine only) */}
       {view === "mine" && (
-        <Card className="rounded-xl border-none shadow-sm">
+        <Card className="rounded-[10px] border-none shadow-hamnen">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div>
