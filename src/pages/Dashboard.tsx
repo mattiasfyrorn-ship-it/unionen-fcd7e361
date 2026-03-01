@@ -543,12 +543,15 @@ export default function Dashboard() {
       </ToggleGroup>
 
       {/* Relationskonto graph */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-xl border-none shadow-sm">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">
-              {view === "ours" ? "Relationskonto – vår utveckling" : "Relationskonto – min utveckling"}
-            </CardTitle>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Relationskonto</p>
+              <CardTitle className="text-lg font-serif">
+              {view === "ours" ? "Vår utveckling" : "Min utveckling"}
+              </CardTitle>
+            </div>
             <ToggleGroup type="single" value={graphPeriod} onValueChange={(v) => v && setGraphPeriod(v)} size="sm">
               <ToggleGroupItem value="week" className="text-xs">Vecka</ToggleGroupItem>
               <ToggleGroupItem value="month" className="text-xs">Månad</ToggleGroupItem>
