@@ -50,8 +50,7 @@ export function useOnboarding(): OnboardingState {
       const override = await checkOverrideTriggers(userId, coupleId);
 
       // Load completed steps from DB
-      const { data: completedRows } = await supabase
-        .from("onboarding_steps" as any)
+      const { data: completedRows } = await onboardingTable()
         .select("step_number, completed_at")
         .eq("user_id", userId);
 
