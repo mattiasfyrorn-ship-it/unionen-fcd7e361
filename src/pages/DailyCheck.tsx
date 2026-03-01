@@ -338,7 +338,7 @@ export default function DailyCheck() {
       </Button>
 
       {/* Graph */}
-      <Card className="rounded-xl border-none shadow-sm">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Utveckling</p>
           <CardTitle className="text-lg font-serif">Utveckling</CardTitle>
