@@ -509,10 +509,10 @@ export default function Dashboard() {
       </Card>
 
       {/* Relationskonto summary card */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-xl border-none shadow-sm">
         <CardContent className="pt-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-muted-foreground font-medium">Relationskonto</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Relationskonto</p>
             {hasPartner && (
               <ToggleGroup type="single" value={kontoView} onValueChange={(v) => v && setKontoView(v as any)} size="sm">
                 <ToggleGroupItem value="mine" className="text-xs">Mitt</ToggleGroupItem>
@@ -523,9 +523,12 @@ export default function Dashboard() {
           <div className="flex items-baseline gap-2">
             <span className="text-4xl font-bold text-primary">{Math.round(displayKonto)}</span>
             <span className="text-lg text-muted-foreground">/ 100</span>
-            <span className={`ml-auto text-sm font-medium ${kontoTrend >= 0 ? "text-teal" : "text-destructive"}`}>
+            <span className={`ml-auto text-sm font-medium ${kontoTrend >= 0 ? "text-primary" : "text-destructive"}`}>
               {kontoTrend >= 0 ? "+" : ""}{kontoTrend} senaste 7d
             </span>
+          </div>
+          <div className="w-full bg-secondary rounded-full h-2 mt-3">
+            <div className="bg-primary h-2 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, Math.max(0, displayKonto))}%` }} />
           </div>
           <p className="text-xs text-muted-foreground mt-2">
             Kontot bygger på dagliga insättningar och sjunker långsamt utan dem.
