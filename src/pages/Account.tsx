@@ -271,7 +271,7 @@ export default function Account() {
       </Card>
 
       {/* Password */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center gap-2">
             <Lock className="w-4 h-4 text-primary" /> Lösenord
