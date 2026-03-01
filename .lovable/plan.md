@@ -1,68 +1,76 @@
 
-## Problem: Två service workers krockar och bryter push-notiser
 
-### Rotorsaken
+## Designuppdatering + Namnbyte: Unionen -> Hamnen
 
-Det finns en fundamental konflikt i hur service workers är uppsatta:
+Samma designplan som tidigare (fargpalett, typografi, kortstyling, layout) PLUS namnbyte fran "Unionen" till "Hamnen" overallt i appen.
 
-1. VitePWA-pluginen genererar en `sw.js` via Workbox vid build och skriver automatiskt över `public/sw.js`
-2. Vår anpassade `public/sw.js` med push-logik försvinner alltså i produktionsbygget
-3. Resultatet: `navigator.serviceWorker.ready` pekar på Workbox service worker som saknar push-hantering
-4. `reg.pushManager.subscribe(...)` kastar ett fel (t.ex. ogiltig VAPID-nyckel eller problem med workern) och fångas i `catch`-blocket → returnerar `false` → felmeddelandet visas
+### 1. Namnbyte "Unionen" -> "Hamnen"
 
-Dessutom finns ett timeout-problem: `navigator.serviceWorker.ready` kan hänga länge i en vanlig webbläsarflik (inte installerad PWA) om service workern inte aktiveras direkt.
+Alla forekomster av "Unionen" byts till "Hamnen" i foljande filer:
 
-### Lösning: Slå samman till en enda service worker med `injectManifest`
+| Fil | Andring |
+|---|---|
+| `index.html` | Title, meta description, og:title, author |
+| `vite.config.ts` | PWA manifest name och short_name |
+| `src/components/AppLayout.tsx` | Logo-text i headern |
+| `src/pages/Account.tsx` | "Installera Hamnen pa din hemskarm..." |
+| `public/sw.js` | Push-notifikationstitlar |
+| `supabase/functions/send-invitation/index.ts` | Avsandarnamn, e-posttext, rubriker |
+| `supabase/functions/notify-partner-paired/index.ts` | Avsandarnamn, e-posttext, rubriker, lankar |
+| `supabase/functions/daily-reminder/index.ts` | Eventuella forekomster |
 
-VitePWA stöder ett läge som heter `injectManifest` där vi skriver vår egen service worker och Workbox injicerar sina cache-definitioner i den. På så sätt har vi bara en service worker som gör allt.
+### 2. Fargpalett (src/index.css)
 
-#### Konkreta ändringar
+Byt fran nuvarande varma orangebruna toner till Hamnen-paletten:
 
-**1. `vite.config.ts`** — Byt strategi från `generateSW` (default) till `injectManifest` och peka på vår custom service worker:
+- **Primary**: 30 50% 45% (brun) -> 150 24% 24% (skogsgroen)
+- **Accent**: 174 40% 38% -> 18 45% 56% (terrakotta)
+- **Background**: 35 40% 95% -> 30 26% 92% (sand)
+- **Card**: 30 35% 92% -> 30 20% 88%
+- **Radius**: 0.75rem -> 0.625rem
 
-```ts
-VitePWA({
-  strategies: 'injectManifest',
-  srcDir: 'public',
-  filename: 'sw.js',
-  registerType: 'autoUpdate',
-  // ...resten är samma
-})
-```
+Lagg till Playfair Display font-import och Hamnen-fargvariabler (sand, beige, forest, ocean, terracotta, sage).
 
-**2. `public/sw.js`** — Lägg till Workbox-injektionspunkt överst och behåll push/notificationclick-logiken:
+### 3. Tailwind-konfiguration (tailwind.config.ts)
 
-```js
-// Workbox injicerar sitt precache-manifest här automatiskt vid build
-import { precacheAndRoute } from 'workbox-precaching';
-precacheAndRoute(self.__WB_MANIFEST);
+- Lagg till `fontFamily` med serif (Playfair Display) och sans
+- Lagg till `hamnen`-fargvariabler
 
-// Push-logiken finns kvar nedan (oförändrad)
-self.addEventListener('push', ...);
-self.addEventListener('notificationclick', ...);
-```
+### 4. AppLayout (src/components/AppLayout.tsx)
 
-**3. `src/lib/pushNotifications.ts`** — Lägg till timeout på `serviceWorker.ready` (max 5 sekunder) och bättre felhantering som loggar exakt vad som går fel, så att framtida problem är lättare att felsöka:
+- Byt "Unionen" -> "Hamnen" i logotypen
+- Tunnare ikoner: `strokeWidth={1.5}`
+- Mjukare borders, `font-serif` for logotyp
 
-```ts
-const registration = await Promise.race([
-  navigator.serviceWorker.ready,
-  new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 5000))
-]);
-```
+### 5. Kortstyling over hela appen
 
-**4. `src/App.tsx`** — Ta bort den manuella registreringen av `/sw.js` i `PushInitializer` eftersom VitePWA sköter registreringen automatiskt. Dubbel-registrering kan orsaka problem.
+Genomgaende andringar pa alla sidor:
+- Kort: `rounded-xl border-none shadow-sm`
+- Rubriker: uppercase tracking-widest overlines (`text-[10px]`)
+- Inputs: `rounded-lg border-border/30 bg-secondary/30`
+- Knappar: `rounded-xl py-5 font-sans`
+- Ikoner: `strokeWidth={1.5}`
 
-### Tekniska detaljer
+**Filer som paverkas:**
+- `src/pages/Dashboard.tsx`
+- `src/pages/DailyCheck.tsx`
+- `src/pages/Evaluate.tsx`
+- `src/pages/WeeklyConversation.tsx`
+- `src/pages/Repair.tsx`
+- `src/pages/Messages.tsx`
+- `src/pages/Account.tsx`
 
-- `injectManifest`-strategin kräver att service worker-filen innehåller `self.__WB_MANIFEST` — det är platsen Workbox injicerar sitt precache-manifest
-- I development-läge fungerar `self.__WB_MANIFEST` inte utan en speciell mock — vi lägger till `if (typeof self.__WB_MANIFEST !== 'undefined')` som guard
-- VAPID-nycklarna är korrekt konfigurerade som secrets, så det problemet är inte orsaken
-- Ingen databasändring behövs
+### 6. Layout-ordning pa Oversikten
 
-### Filer som ändras
+Behalls som den ar (redan fixad i forra steget).
 
-- `vite.config.ts` — lägg till `strategies: 'injectManifest'`, `srcDir: 'public'`, `filename: 'sw.js'`
-- `public/sw.js` — lägg till Workbox precache-anrop överst med `__WB_MANIFEST`-guard
-- `src/lib/pushNotifications.ts` — lägg till timeout på `serviceWorker.ready` och förbättrad fellogning
-- `src/App.tsx` — ta bort manuell `navigator.serviceWorker.register('/sw.js')` i `PushInitializer`
+### Sammanfattning
+
+| Kategori | Filer |
+|---|---|
+| Namnbyte Unionen -> Hamnen | `index.html`, `vite.config.ts`, `AppLayout.tsx`, `Account.tsx`, `sw.js`, 3 edge functions |
+| Fargpalett + font | `src/index.css`, `tailwind.config.ts` |
+| Komponent-styling | `AppLayout.tsx`, `Dashboard.tsx`, `DailyCheck.tsx`, `Evaluate.tsx`, `WeeklyConversation.tsx`, `Repair.tsx`, `Messages.tsx`, `Account.tsx` |
+
+Inga funktioner eller datalogik andras. Charts behalls som line charts.
+
