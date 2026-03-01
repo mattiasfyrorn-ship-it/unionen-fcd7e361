@@ -78,12 +78,12 @@ export function useOnboarding(): OnboardingState {
 
         if (isComplete) {
           // Auto-mark as complete
-          await supabase.from("onboarding_steps" as any).upsert({
+          await onboardingTable().upsert({
             user_id: userId,
             couple_id: coupleId,
             step_number: step.number,
             completed_at: new Date().toISOString(),
-          } as any, { onConflict: "user_id,step_number" });
+          }, { onConflict: "user_id,step_number" });
           completedSet.add(step.number);
           continue;
         }
