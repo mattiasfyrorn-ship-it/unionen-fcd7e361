@@ -424,7 +424,7 @@ export default function Dashboard() {
     : myKonto;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-w-2xl mx-auto">
       {/* Solo-läge banner */}
       {!hasPartner && (
         <div className="flex items-center gap-3 rounded-[10px] border-none shadow-hamnen bg-card px-4 py-3 text-sm text-muted-foreground">
