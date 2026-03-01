@@ -133,8 +133,10 @@ export default function Auth() {
       <div className="w-full max-w-md">
         {/* Logo area */}
         <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-primary">
-            <Heart className="w-8 h-8 text-primary-foreground" strokeWidth={1.5} />
+          <div className="mx-auto w-16 h-16 flex items-center justify-center mb-4">
+            <svg width="48" height="48" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M50 88 C25 65, 2 45, 2 28 C2 14, 14 2, 28 2 C37 2, 45 7, 50 15 C55 7, 63 2, 72 2 C86 2, 98 14, 98 28 C98 45, 75 65, 50 88Z" stroke="hsl(106 16% 36%)" strokeWidth="3" fill="none"/>
+            </svg>
           </div>
           <h1 className="text-4xl font-light tracking-tight font-serif text-foreground">
             Hamnen
