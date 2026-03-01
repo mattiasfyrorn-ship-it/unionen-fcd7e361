@@ -534,7 +534,7 @@ export default function WeeklyConversation() {
       </Card>
 
       {/* Logistics */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <ClipboardList className="w-5 h-5 text-primary" />
