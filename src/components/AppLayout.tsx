@@ -2,8 +2,9 @@ import { ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Heart, BarChart3, Sparkles, MessageCircle, Link2, LogOut, User, CalendarCheck, Sun, Shield } from "lucide-react";
+import { BarChart3, Sparkles, MessageCircle, Link2, LogOut, User, CalendarCheck, Sun, Shield } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import hamnenLogo from "@/assets/hamnen-logo.png";
 
 const BOTTOM_NAV = [
   { to: "/", label: "Översikt", icon: BarChart3 },
@@ -34,9 +35,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       {isMobile ? (
         <header className="bg-background sticky top-0 z-50 px-4 h-12 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <svg width="20" height="20" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M50 88 C25 65, 2 45, 2 28 C2 14, 14 2, 28 2 C37 2, 45 7, 50 15 C55 7, 63 2, 72 2 C86 2, 98 14, 98 28 C98 45, 75 65, 50 88Z" stroke="currentColor" strokeWidth="1.5" fill="none" className="text-foreground" />
-            </svg>
+            <img src={hamnenLogo} alt="Hamnen" className="w-6 h-6 object-contain" />
             <span className="text-foreground font-medium text-lg font-serif">Hamnen</span>
           </Link>
           <div className="flex items-center gap-2">
@@ -53,9 +52,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <header className="sticky top-0 z-50 bg-background/80 backdrop-blur">
           <div className="container mx-auto px-4 py-6 flex items-center justify-between">
             <Link to="/" className="flex items-center gap-2">
-              <svg width="22" height="22" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M50 88 C25 65, 2 45, 2 28 C2 14, 14 2, 28 2 C37 2, 45 7, 50 15 C55 7, 63 2, 72 2 C86 2, 98 14, 98 28 C98 45, 75 65, 50 88Z" stroke="currentColor" strokeWidth="1.5" fill="none" className="text-foreground" />
-              </svg>
+              <img src={hamnenLogo} alt="Hamnen" className="w-7 h-7 object-contain" />
               <span className="text-foreground font-medium text-xl font-serif">Hamnen</span>
             </Link>
             <nav className="flex items-center gap-1">
