@@ -20,7 +20,6 @@ export default function DailyCheck() {
   const { toast } = useToast();
 
   const [selectedDate, setSelectedDate] = useState(new Date());
-
   const [question, setQuestion] = useState("");
   const [loveMapAnswer, setLoveMapAnswer] = useState("");
   const [loveMapCompleted, setLoveMapCompleted] = useState(false);
@@ -35,8 +34,6 @@ export default function DailyCheck() {
   const [existingId, setExistingId] = useState<string | null>(null);
   const [climate, setClimate] = useState(3);
   const [markedDates, setMarkedDates] = useState<string[]>([]);
-
-  // Graph state
   const [graphRange, setGraphRange] = useState("week");
   const [graphData, setGraphData] = useState<KontoPoint[]>([]);
 
@@ -63,7 +60,6 @@ export default function DailyCheck() {
     }
   };
 
-  // Load marked dates for current week
   const loadMarkedDates = useCallback(async () => {
     if (!user) return;
     const ws = startOfWeek(selectedDate, { weekStartsOn: 1 });
@@ -77,7 +73,6 @@ export default function DailyCheck() {
     if (data) setMarkedDates(data.map((d) => d.check_date));
   }, [user, selectedDate]);
 
-  // Load data for selected date
   const loadForDate = useCallback(async () => {
     if (!user) return;
     resetForm();
@@ -114,7 +109,6 @@ export default function DailyCheck() {
   useEffect(() => { loadForDate(); }, [loadForDate]);
   useEffect(() => { loadMarkedDates(); }, [loadMarkedDates]);
 
-  // Fetch graph data
   useEffect(() => {
     if (!user) return;
     const fetchGraph = async () => {
@@ -175,11 +169,10 @@ export default function DailyCheck() {
     setLoading(false);
   };
 
-
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
       <div>
-        <h1 className="text-3xl text-primary">Relationskontot</h1>
+        <h1 className="text-3xl text-primary font-serif">Relationskontot</h1>
         <p className="text-muted-foreground text-sm">3–5 minuter. Konsekvent handling stärker relationen.</p>
       </div>
 
@@ -190,10 +183,11 @@ export default function DailyCheck() {
       />
 
       {/* Card 1: Love Map */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-xl border-none shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Map className="w-5 h-5 text-primary" />
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Love Map</p>
+          <CardTitle className="flex items-center gap-2 text-base font-serif">
+            <Map className="w-5 h-5 text-primary" strokeWidth={1.5} />
             Love Map
           </CardTitle>
         </CardHeader>
@@ -201,7 +195,7 @@ export default function DailyCheck() {
           <div className="flex items-start gap-2">
             <p className="text-sm text-foreground flex-1 italic">"{question}"</p>
             <Button variant="ghost" size="icon" className="shrink-0" onClick={loadQuestion}>
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className="w-4 h-4" strokeWidth={1.5} />
             </Button>
           </div>
           <div className="flex items-center gap-2">
@@ -213,16 +207,17 @@ export default function DailyCheck() {
             maxLength={120}
             value={loveMapAnswer}
             onChange={(e) => setLoveMapAnswer(e.target.value)}
-            className="bg-muted/50 border-border text-sm"
+            className="rounded-lg border-border/30 bg-secondary/30 text-sm"
           />
         </CardContent>
       </Card>
 
       {/* Card 2: Appreciation & Presence */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-xl border-none shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Heart className="w-5 h-5 text-primary" />
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Uppskattning</p>
+          <CardTitle className="flex items-center gap-2 text-base font-serif">
+            <Heart className="w-5 h-5 text-primary" strokeWidth={1.5} />
             Uppskattning & Närvaro
           </CardTitle>
         </CardHeader>
@@ -239,16 +234,17 @@ export default function DailyCheck() {
             placeholder="Vad såg jag i min partner idag?"
             value={appreciationNote}
             onChange={(e) => setAppreciationNote(e.target.value)}
-            className="bg-muted/50 border-border text-sm"
+            className="rounded-lg border-border/30 bg-secondary/30 text-sm"
           />
         </CardContent>
       </Card>
 
       {/* Card 3: Turn Toward */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-xl border-none shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <ArrowRightLeft className="w-5 h-5 text-primary" />
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Turn Toward</p>
+          <CardTitle className="flex items-center gap-2 text-base font-serif">
+            <ArrowRightLeft className="w-5 h-5 text-primary" strokeWidth={1.5} />
             Turn Toward
           </CardTitle>
         </CardHeader>
@@ -284,16 +280,17 @@ export default function DailyCheck() {
             placeholder="Exempel (1 mening)"
             value={turnTowardExample}
             onChange={(e) => setTurnTowardExample(e.target.value)}
-            className="bg-muted/50 border-border text-sm"
+            className="rounded-lg border-border/30 bg-secondary/30 text-sm"
           />
         </CardContent>
       </Card>
 
       {/* Card 4: Let Partner Influence */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-xl border-none shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Handshake className="w-5 h-5 text-primary" />
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Påverkan</p>
+          <CardTitle className="flex items-center gap-2 text-base font-serif">
+            <Handshake className="w-5 h-5 text-primary" strokeWidth={1.5} />
             Låt partner påverka
           </CardTitle>
         </CardHeader>
@@ -306,16 +303,17 @@ export default function DailyCheck() {
             placeholder="Vad ändrade jag?"
             value={adjustedNote}
             onChange={(e) => setAdjustedNote(e.target.value)}
-            className="bg-muted/50 border-border text-sm"
+            className="rounded-lg border-border/30 bg-secondary/30 text-sm"
           />
         </CardContent>
       </Card>
 
       {/* Card 5: Climate */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-xl border-none shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <CloudSun className="w-5 h-5 text-primary" />
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Klimat</p>
+          <CardTitle className="flex items-center gap-2 text-base font-serif">
+            <CloudSun className="w-5 h-5 text-primary" strokeWidth={1.5} />
             Klimat
           </CardTitle>
         </CardHeader>
@@ -335,14 +333,15 @@ export default function DailyCheck() {
         </CardContent>
       </Card>
 
-      <Button onClick={handleSave} disabled={loading} className="w-full" size="lg">
+      <Button onClick={handleSave} disabled={loading} className="w-full rounded-xl" size="lg">
         {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sparar...</> : existingId ? "Uppdatera" : "Spara dagens check"}
       </Button>
 
       {/* Graph */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-xl border-none shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg">Utveckling</CardTitle>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Utveckling</p>
+          <CardTitle className="text-lg font-serif">Utveckling</CardTitle>
         </CardHeader>
         <CardContent>
           <ToggleGroup type="single" value={graphRange} onValueChange={(v) => v && setGraphRange(v)} className="mb-4">
@@ -357,9 +356,9 @@ export default function DailyCheck() {
                 Relationskonto: p.value,
                 Klimat: p.climate,
               }))}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(30 20% 82%)" />
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(25 15% 45%)" />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} stroke="hsl(25 15% 45%)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
                 <Tooltip />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Line type="monotone" dataKey="Relationskonto" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 2 }} />

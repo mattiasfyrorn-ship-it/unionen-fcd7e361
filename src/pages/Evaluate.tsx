@@ -39,14 +39,10 @@ export default function Evaluate() {
   const [loading, setLoading] = useState(false);
   const [hasExisting, setHasExisting] = useState(false);
   const [markedDates, setMarkedDates] = useState<string[]>([]);
-
-  // Graph state
   const [graphRange, setGraphRange] = useState("week");
   const [graphData, setGraphData] = useState<{ week: string; total: number }[]>([]);
 
-  // Per-day date string (used for loading/saving)
   const checkDate = format(selectedDate, "yyyy-MM-dd");
-  // Week start (used only for the graph grouping and as a stored field)
   const weekStart = getWeekStartFromDate(selectedDate);
 
   const resetForm = () => {
@@ -57,7 +53,6 @@ export default function Evaluate() {
     setHasExisting(false);
   };
 
-  // Load marked days (one dot per day that has data)
   const loadMarkedDates = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase
@@ -70,11 +65,9 @@ export default function Evaluate() {
     }
   }, [user]);
 
-  // Load data for the selected day
   const loadForDay = useCallback(async () => {
     if (!user) return;
     resetForm();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const query = supabase.from("evaluations").select("*").eq("user_id", user.id);
     const { data } = await (query as any).eq("check_date", checkDate);
 
@@ -82,7 +75,6 @@ export default function Evaluate() {
       setHasExisting(true);
       const newScores: Record<string, number> = { ...DEFAULT_SCORES };
       const newComments: Record<string, string> = { ...DEFAULT_COMMENTS };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       data.forEach((row: any) => {
         newScores[row.area] = row.score;
         newComments[row.area] = row.comment || "";
@@ -97,7 +89,6 @@ export default function Evaluate() {
   useEffect(() => { loadForDay(); }, [loadForDay]);
   useEffect(() => { loadMarkedDates(); }, [loadMarkedDates]);
 
-  // Fetch graph data (grouped by week_start)
   useEffect(() => {
     if (!user) return;
     const fetchGraph = async () => {
@@ -161,8 +152,8 @@ export default function Evaluate() {
     <div className="space-y-6 max-w-2xl mx-auto">
       <div>
         <div className="flex items-center gap-2 mb-1">
-          <Sparkles className="w-6 h-6 text-primary" />
-          <h1 className="text-3xl text-primary">Närd</h1>
+          <Sparkles className="w-6 h-6 text-primary" strokeWidth={1.5} />
+          <h1 className="text-3xl text-primary font-serif">Närd</h1>
         </div>
         <p className="text-muted-foreground text-sm max-w-lg">
           För en djup meningsfull relation behöver du leva närd. Annars blir du inte relaterbar. 
@@ -179,10 +170,11 @@ export default function Evaluate() {
       {AREAS.map((area) => {
         const Icon = area.icon;
         return (
-          <Card key={area.key} className="bg-card/80 border-border/50">
+          <Card key={area.key} className="rounded-xl border-none shadow-sm">
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Icon className="w-5 h-5 text-primary" />
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{area.label}</p>
+              <CardTitle className="flex items-center gap-2 text-lg font-serif">
+                <Icon className="w-5 h-5 text-primary" strokeWidth={1.5} />
                 {area.label}
               </CardTitle>
               <p className="text-sm text-muted-foreground">{area.description}</p>
@@ -205,7 +197,7 @@ export default function Evaluate() {
                 placeholder="Valfri kommentar..."
                 value={comments[area.key]}
                 onChange={(e) => setComments((c) => ({ ...c, [area.key]: e.target.value }))}
-                className="bg-muted/50 border-border resize-none"
+                className="rounded-lg border-border/30 bg-secondary/30 resize-none"
                 rows={2}
               />
             </CardContent>
@@ -214,9 +206,10 @@ export default function Evaluate() {
       })}
 
       {/* Need & Want */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-xl border-none shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg">Idag</CardTitle>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Idag</p>
+          <CardTitle className="text-lg font-serif">Idag</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <Input
@@ -224,26 +217,27 @@ export default function Evaluate() {
             maxLength={120}
             value={needToday}
             onChange={(e) => setNeedToday(e.target.value)}
-            className="bg-muted/50 border-border text-sm"
+            className="rounded-lg border-border/30 bg-secondary/30 text-sm"
           />
           <Input
             placeholder="Vad vill jag idag? (max 120 tecken)"
             maxLength={120}
             value={wantToday}
             onChange={(e) => setWantToday(e.target.value)}
-            className="bg-muted/50 border-border text-sm"
+            className="rounded-lg border-border/30 bg-secondary/30 text-sm"
           />
         </CardContent>
       </Card>
 
-      <Button onClick={handleSubmit} disabled={loading} className="w-full" size="lg">
+      <Button onClick={handleSubmit} disabled={loading} className="w-full rounded-xl" size="lg">
         {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sparar...</> : hasExisting ? "Uppdatera utvärdering" : "Spara utvärdering"}
       </Button>
 
       {/* Graph */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-xl border-none shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg">Total näring över tid</CardTitle>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Näring</p>
+          <CardTitle className="text-lg font-serif">Total näring över tid</CardTitle>
         </CardHeader>
         <CardContent>
           <ToggleGroup type="single" value={graphRange} onValueChange={(v) => v && setGraphRange(v)} className="mb-4">
@@ -254,11 +248,11 @@ export default function Evaluate() {
           {graphData.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={graphData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(30 20% 82%)" />
-                <XAxis dataKey="week" tick={{ fontSize: 11 }} stroke="hsl(25 15% 45%)" />
-                <YAxis domain={[0, 40]} tick={{ fontSize: 11 }} stroke="hsl(25 15% 45%)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="week" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                <YAxis domain={[0, 40]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                 <Tooltip />
-                <Line type="monotone" dataKey="total" stroke="hsl(174 40% 38%)" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="total" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
