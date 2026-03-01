@@ -59,6 +59,8 @@ export default function WeeklyConversation() {
 
   const [partnerEntry, setPartnerEntry] = useState<any>(null);
   const [meetingStarted, setMeetingStarted] = useState(false);
+  const [meetingConfirmed, setMeetingConfirmed] = useState(false);
+  const [vulnerabilityShared, setVulnerabilityShared] = useState<boolean | null>(null);
 
   const [archive, setArchive] = useState<any[]>([]);
   const [expandedArchive, setExpandedArchive] = useState<string | null>(null);
@@ -133,6 +135,7 @@ export default function WeeklyConversation() {
         setIntention((myEntry as any).intention || "");
         setCheckoutFeeling((myEntry as any).checkout_feeling || "");
         setPartnerLearning((myEntry as any).partner_learning || "");
+        setMeetingConfirmed((myEntry as any).meeting_confirmed || false);
       }
 
       const { data: pEntry } = await supabase
@@ -352,6 +355,50 @@ export default function WeeklyConversation() {
             <CardTitle className="text-base">Efter samtalet</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={meetingConfirmed}
+                onChange={async (e) => {
+                  setMeetingConfirmed(e.target.checked);
+                  if (entryId) {
+                    await supabase.from("weekly_entries").update({ meeting_confirmed: e.target.checked } as any).eq("id", entryId);
+                  }
+                }}
+                className="rounded border-border"
+              />
+              <label className="text-sm text-foreground">Markera att mötet är genomfört</label>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">Hände det idag att du delade något svårt eller sårbart?</p>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant={vulnerabilityShared === true ? "default" : "outline"}
+                  onClick={async () => {
+                    setVulnerabilityShared(true);
+                    await supabase.from("onboarding_steps" as any).upsert({
+                      user_id: user!.id,
+                      couple_id: profile?.couple_id || null,
+                      step_number: 16,
+                      completed_at: new Date().toISOString(),
+                      metadata: { vulnerability_shared: true },
+                    } as any, { onConflict: "user_id,step_number" });
+                  }}
+                  className="rounded-[12px] text-xs"
+                >
+                  Ja
+                </Button>
+                <Button
+                  size="sm"
+                  variant={vulnerabilityShared === false ? "default" : "outline"}
+                  onClick={() => setVulnerabilityShared(false)}
+                  className="rounded-[12px] text-xs"
+                >
+                  Nej
+                </Button>
+              </div>
+            </div>
             <Textarea
               placeholder="Vad fick jag ut av detta samtal?"
               value={takeaway}

@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
+import OnboardingBanner from "@/components/OnboardingBanner";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -425,6 +426,9 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8 max-w-2xl mx-auto">
+      {/* Onboarding progression */}
+      <OnboardingBanner />
+
       {/* Solo-läge banner */}
       {!hasPartner && (
         <div className="flex items-center gap-3 rounded-[10px] border-none shadow-hamnen bg-card px-4 py-3 text-sm text-muted-foreground">

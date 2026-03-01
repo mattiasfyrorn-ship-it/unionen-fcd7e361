@@ -225,6 +225,36 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_steps: {
+        Row: {
+          completed_at: string | null
+          couple_id: string | null
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          step_number: number
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          couple_id?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          step_number: number
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          couple_id?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          step_number?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       partner_invitations: {
         Row: {
           couple_id: string
@@ -646,6 +676,7 @@ export type Database = {
           intention: string | null
           issues: Json | null
           logistics: Json | null
+          meeting_confirmed: boolean | null
           meeting_notes: Json | null
           partner_learning: string | null
           ready: boolean | null
@@ -662,6 +693,7 @@ export type Database = {
           intention?: string | null
           issues?: Json | null
           logistics?: Json | null
+          meeting_confirmed?: boolean | null
           meeting_notes?: Json | null
           partner_learning?: string | null
           ready?: boolean | null
@@ -678,6 +710,7 @@ export type Database = {
           intention?: string | null
           issues?: Json | null
           logistics?: Json | null
+          meeting_confirmed?: boolean | null
           meeting_notes?: Json | null
           partner_learning?: string | null
           ready?: boolean | null
