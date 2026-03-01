@@ -170,7 +170,7 @@ export default function Evaluate() {
       {AREAS.map((area) => {
         const Icon = area.icon;
         return (
-          <Card key={area.key} className="rounded-xl border-none shadow-sm">
+          <Card key={area.key} className="rounded-[10px] border-none shadow-hamnen">
             <CardHeader className="pb-2">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{area.label}</p>
               <CardTitle className="flex items-center gap-2 text-lg font-serif">
