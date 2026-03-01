@@ -543,7 +543,7 @@ export default function Dashboard() {
       </ToggleGroup>
 
       {/* Relationskonto graph */}
-      <Card className="rounded-xl border-none shadow-sm">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div>
