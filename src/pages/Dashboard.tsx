@@ -427,11 +427,11 @@ export default function Dashboard() {
     <div className="space-y-8">
       {/* Solo-läge banner */}
       {!hasPartner && (
-        <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-          <Heart className="w-4 h-4 shrink-0 text-primary" />
+        <div className="flex items-center gap-3 rounded-xl border-none shadow-sm bg-card px-4 py-3 text-sm text-muted-foreground">
+          <Heart className="w-4 h-4 shrink-0 text-primary" strokeWidth={1.5} />
           <span>
             Din partner har inte registrerat sig ännu.{" "}
-            <Link to="/pairing" className="text-primary underline-offset-2 hover:underline">
+            <Link to="/pairing" className="text-accent underline-offset-2 hover:underline">
               Bjud in dem via Parkoppling.
             </Link>
           </span>
@@ -441,18 +441,18 @@ export default function Dashboard() {
       {/* Trend insights – first */}
       {trends.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-medium text-muted-foreground">Trendinsikter</h3>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Trendinsikter</p>
           {trends.map((trend, i) => (
             <div
               key={i}
-              className={`flex items-center gap-3 p-4 rounded-lg border ${
+              className={`flex items-center gap-3 p-4 rounded-xl border-none shadow-sm ${
                 trend.positive
-                  ? "bg-teal/5 border-teal/20 text-teal"
-                  : "bg-gold/5 border-gold/20 text-gold"
+                  ? "bg-primary/5 text-primary"
+                  : "bg-accent/5 text-accent"
               }`}
             >
               <div className="shrink-0">
-                {trend.positive ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+                {trend.positive ? <TrendingUp className="w-5 h-5" strokeWidth={1.5} /> : <TrendingDown className="w-5 h-5" strokeWidth={1.5} />}
               </div>
               <div className="flex items-center gap-2 flex-1">
                 {trend.icon}
@@ -464,25 +464,26 @@ export default function Dashboard() {
       )}
 
       {/* Quarterly goals – Vår riktning (moved up) */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-xl border-none shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Target className="w-5 h-5 text-primary" /> Vår riktning
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Kvartalsmål</p>
+          <CardTitle className="flex items-center gap-2 text-lg font-serif">
+            <Target className="w-5 h-5 text-primary" strokeWidth={1.5} /> Vår riktning
           </CardTitle>
-          <p className="text-xs text-muted-foreground">Kvartalsmål – Q{Math.floor(new Date().getMonth() / 3) + 1} {new Date().getFullYear()}</p>
+          <p className="text-xs text-muted-foreground">Q{Math.floor(new Date().getMonth() / 3) + 1} {new Date().getFullYear()}</p>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center gap-2">
             <Checkbox checked={relationshipDone} onCheckedChange={(v) => setRelationshipDone(!!v)} />
-            <Input placeholder="Relationsmål" value={relationshipGoal} onChange={(e) => setRelationshipGoal(e.target.value)} className="bg-muted/50 border-border text-sm flex-1" />
+            <Input placeholder="Relationsmål" value={relationshipGoal} onChange={(e) => setRelationshipGoal(e.target.value)} className="rounded-lg border-border/30 bg-secondary/30 text-sm flex-1" />
           </div>
           <div className="flex items-center gap-2">
             <Checkbox checked={experienceDone} onCheckedChange={(v) => setExperienceDone(!!v)} />
-            <Input placeholder="Upplevelsemål" value={experienceGoal} onChange={(e) => setExperienceGoal(e.target.value)} className="bg-muted/50 border-border text-sm flex-1" />
+            <Input placeholder="Upplevelsemål" value={experienceGoal} onChange={(e) => setExperienceGoal(e.target.value)} className="rounded-lg border-border/30 bg-secondary/30 text-sm flex-1" />
           </div>
           <div className="flex items-center gap-2">
             <Checkbox checked={practicalDone} onCheckedChange={(v) => setPracticalDone(!!v)} />
-            <Input placeholder="Praktiskt mål" value={practicalGoal} onChange={(e) => setPracticalGoal(e.target.value)} className="bg-muted/50 border-border text-sm flex-1" />
+            <Input placeholder="Praktiskt mål" value={practicalGoal} onChange={(e) => setPracticalGoal(e.target.value)} className="rounded-lg border-border/30 bg-secondary/30 text-sm flex-1" />
           </div>
           <Button size="sm" variant="outline" onClick={saveGoals}>Spara mål</Button>
           {pastGoals.length > 0 && (
@@ -508,10 +509,10 @@ export default function Dashboard() {
       </Card>
 
       {/* Relationskonto summary card */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-xl border-none shadow-sm">
         <CardContent className="pt-6">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-muted-foreground font-medium">Relationskonto</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Relationskonto</p>
             {hasPartner && (
               <ToggleGroup type="single" value={kontoView} onValueChange={(v) => v && setKontoView(v as any)} size="sm">
                 <ToggleGroupItem value="mine" className="text-xs">Mitt</ToggleGroupItem>
@@ -522,9 +523,12 @@ export default function Dashboard() {
           <div className="flex items-baseline gap-2">
             <span className="text-4xl font-bold text-primary">{Math.round(displayKonto)}</span>
             <span className="text-lg text-muted-foreground">/ 100</span>
-            <span className={`ml-auto text-sm font-medium ${kontoTrend >= 0 ? "text-teal" : "text-destructive"}`}>
+            <span className={`ml-auto text-sm font-medium ${kontoTrend >= 0 ? "text-primary" : "text-destructive"}`}>
               {kontoTrend >= 0 ? "+" : ""}{kontoTrend} senaste 7d
             </span>
+          </div>
+          <div className="w-full bg-secondary rounded-full h-2 mt-3">
+            <div className="bg-primary h-2 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, Math.max(0, displayKonto))}%` }} />
           </div>
           <p className="text-xs text-muted-foreground mt-2">
             Kontot bygger på dagliga insättningar och sjunker långsamt utan dem.
@@ -539,12 +543,15 @@ export default function Dashboard() {
       </ToggleGroup>
 
       {/* Relationskonto graph */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-xl border-none shadow-sm">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">
-              {view === "ours" ? "Relationskonto – vår utveckling" : "Relationskonto – min utveckling"}
-            </CardTitle>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Relationskonto</p>
+              <CardTitle className="text-lg font-serif">
+              {view === "ours" ? "Vår utveckling" : "Min utveckling"}
+              </CardTitle>
+            </div>
             <ToggleGroup type="single" value={graphPeriod} onValueChange={(v) => v && setGraphPeriod(v)} size="sm">
               <ToggleGroupItem value="week" className="text-xs">Vecka</ToggleGroupItem>
               <ToggleGroupItem value="month" className="text-xs">Månad</ToggleGroupItem>
@@ -577,10 +584,13 @@ export default function Dashboard() {
 
       {/* Graph 2: Min näring över tid (mine only) */}
       {view === "mine" && (
-        <Card className="bg-card/80 border-border/50">
+        <Card className="rounded-xl border-none shadow-sm">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Min näring över tid</CardTitle>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Näring</p>
+                <CardTitle className="text-lg font-serif">Min näring över tid</CardTitle>
+              </div>
               <ToggleGroup type="single" value={naringPeriod} onValueChange={(v) => v && setNaringPeriod(v)} size="sm">
                 <ToggleGroupItem value="week" className="text-xs">Vecka</ToggleGroupItem>
                 <ToggleGroupItem value="month" className="text-xs">Månad</ToggleGroupItem>

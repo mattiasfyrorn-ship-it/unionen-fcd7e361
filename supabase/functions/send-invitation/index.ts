@@ -31,28 +31,28 @@ async function sendInviteEmail(to: string, inviterName: string, inviteUrl: strin
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Unionen <noreply@mail1.fyrorn.se>",
+      from: "Hamnen <noreply@mail1.fyrorn.se>",
       to: [to],
-      subject: `${escapeHtml(inviterName)} vill koppla ihop med dig på Unionen 💕`,
+      subject: `${escapeHtml(inviterName)} vill koppla ihop med dig på Hamnen 💕`,
       html: `
         <div style="font-family: 'Georgia', serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
           <div style="text-align: center; margin-bottom: 32px;">
-            <h1 style="color: hsl(25, 30%, 25%); font-size: 28px; font-weight: 300;">Unionen</h1>
+            <h1 style="color: hsl(24, 14%, 20%); font-size: 28px; font-weight: 300;">Hamnen</h1>
           </div>
-          <p style="color: hsl(25, 20%, 35%); font-size: 16px; line-height: 1.6;">
+          <p style="color: hsl(24, 10%, 35%); font-size: 16px; line-height: 1.6;">
             Hej! 👋
           </p>
-          <p style="color: hsl(25, 20%, 35%); font-size: 16px; line-height: 1.6;">
-            <strong>${escapeHtml(inviterName)}</strong> har bjudit in dig att koppla ihop på Unionen – en app för att stärka er relation.
+          <p style="color: hsl(24, 10%, 35%); font-size: 16px; line-height: 1.6;">
+            <strong>${escapeHtml(inviterName)}</strong> har bjudit in dig att koppla ihop på Hamnen – en app för att stärka er relation.
           </p>
           <div style="text-align: center; margin: 32px 0;">
-            <a href="${inviteUrl}" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, hsl(43, 60%, 55%), hsl(30, 50%, 48%)); color: white; text-decoration: none; border-radius: 12px; font-size: 16px; font-weight: 500;">
+            <a href="${inviteUrl}" style="display: inline-block; padding: 14px 32px; background: hsl(150, 24%, 24%); color: hsl(30, 26%, 92%); text-decoration: none; border-radius: 12px; font-size: 16px; font-weight: 500;">
               Acceptera inbjudan
             </a>
           </div>
-          <p style="color: hsl(25, 15%, 55%); font-size: 13px; line-height: 1.5;">
+          <p style="color: hsl(24, 10%, 55%); font-size: 13px; line-height: 1.5;">
             Eller kopiera länken: <br/>
-            <a href="${inviteUrl}" style="color: hsl(30, 50%, 40%); word-break: break-all;">${inviteUrl}</a>
+            <a href="${inviteUrl}" style="color: hsl(18, 45%, 56%); word-break: break-all;">${inviteUrl}</a>
           </p>
         </div>
       `,
@@ -132,7 +132,7 @@ Deno.serve(async (req) => {
 
     if (existing && existing.length > 0) {
       const existingToken = existing[0].token;
-      const inviteUrl = `https://unionen.fyrorn.se/auth?invite=${existingToken}`;
+      const inviteUrl = `https://hamnen.fyrorn.se/auth?invite=${existingToken}`;
 
       // Re-send the email even for existing invitations
       await sendInviteEmail(email, sanitizedInviterName, inviteUrl);
@@ -153,10 +153,8 @@ Deno.serve(async (req) => {
     let coupleId: string;
 
     if (inviterProfile?.couple_id) {
-      // Reuse existing couple so we don't create orphaned records
       coupleId = inviterProfile.couple_id;
     } else {
-      // Only create a new couple when the inviter has none
       const { data: couple, error: coupleErr } = await adminClient
         .from("couples")
         .insert({})
@@ -193,7 +191,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const inviteUrl = `https://unionen.fyrorn.se/auth?invite=${token}`;
+    const inviteUrl = `https://hamnen.fyrorn.se/auth?invite=${token}`;
 
     // Send the invitation email
     const emailSent = await sendInviteEmail(email, sanitizedInviterName, inviteUrl);

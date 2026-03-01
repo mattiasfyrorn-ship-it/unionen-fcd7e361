@@ -239,7 +239,7 @@ export default function Account() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground mb-3">Installera Unionen på din hemskärm för att använda den som en vanlig app.</p>
+          <p className="text-sm text-muted-foreground mb-3">Installera Hamnen på din hemskärm för att använda den som en vanlig app.</p>
           <Button size="sm" variant="outline" onClick={() => navigate("/install")}>Instruktioner</Button>
         </CardContent>
       </Card>

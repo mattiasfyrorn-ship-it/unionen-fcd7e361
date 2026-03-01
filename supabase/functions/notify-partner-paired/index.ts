@@ -17,7 +17,7 @@ async function sendEmail(to: string, subject: string, html: string) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Unionen <noreply@mail1.fyrorn.se>",
+      from: "Hamnen <noreply@mail1.fyrorn.se>",
       to: [to],
       subject,
       html,
@@ -35,15 +35,15 @@ function buildEmail(heading: string, body: string): string {
   return `
     <div style="font-family: 'Georgia', serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
       <div style="text-align: center; margin-bottom: 32px;">
-        <h1 style="color: hsl(25, 30%, 25%); font-size: 28px; font-weight: 300;">Unionen</h1>
+        <h1 style="color: hsl(24, 14%, 20%); font-size: 28px; font-weight: 300;">Hamnen</h1>
       </div>
-      <h2 style="color: hsl(25, 20%, 30%); font-size: 20px; font-weight: 400; text-align: center;">${heading}</h2>
-      <p style="color: hsl(25, 20%, 35%); font-size: 16px; line-height: 1.6; text-align: center; margin-top: 16px;">
+      <h2 style="color: hsl(24, 10%, 30%); font-size: 20px; font-weight: 400; text-align: center;">${heading}</h2>
+      <p style="color: hsl(24, 10%, 35%); font-size: 16px; line-height: 1.6; text-align: center; margin-top: 16px;">
         ${body}
       </p>
       <div style="text-align: center; margin-top: 32px;">
-        <a href="https://unionen.fyrorn.se/" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, hsl(43, 60%, 55%), hsl(30, 50%, 48%)); color: white; text-decoration: none; border-radius: 12px; font-size: 16px;">
-          Öppna Unionen
+        <a href="https://hamnen.fyrorn.se/" style="display: inline-block; padding: 14px 32px; background: hsl(150, 24%, 24%); color: hsl(30, 26%, 92%); text-decoration: none; border-radius: 12px; font-size: 16px;">
+          Öppna Hamnen
         </a>
       </div>
     </div>
@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
         `Välkommen ${safeName}! Ni är nu ihopkopplade 💕`,
         buildEmail(
           `Välkommen ${safeName}! 💕`,
-          `Du är nu ihopkopplad med <strong>${safeInviterName}</strong> på Unionen. Börja utforska appen tillsammans!`
+          `Du är nu ihopkopplad med <strong>${safeInviterName}</strong> på Hamnen. Börja utforska appen tillsammans!`
         )
       );
     }
@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
         `${safeName} har registrerat sig! Ni är ihopkopplade 💕`,
         buildEmail(
           `${safeName} är här! 🎉`,
-          `<strong>${safeName}</strong> har registrerat sig och ni är nu ihopkopplade på Unionen. Börja utforska appen tillsammans!`
+          `<strong>${safeName}</strong> har registrerat sig och ni är nu ihopkopplade på Hamnen. Börja utforska appen tillsammans!`
         )
       );
     }

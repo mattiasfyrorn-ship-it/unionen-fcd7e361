@@ -91,7 +91,6 @@ export default function Auth() {
       if (error) {
         toast({ title: "Fel vid inloggning", description: error.message, variant: "destructive" });
       }
-      // If inviteToken exists, the useEffect above will handle accept_invitation after user state updates
     } else {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -120,36 +119,27 @@ export default function Auth() {
   // If already logged in and accepting invite, show a loading state
   if (user && inviteToken) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{
-        background: "linear-gradient(135deg, hsl(35, 40%, 95%) 0%, hsl(30, 35%, 90%) 30%, hsl(25, 30%, 87%) 60%, hsl(20, 25%, 85%) 100%)"
-      }}>
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p style={{ color: "hsl(25, 15%, 50%)" }}>Kopplar ihop er...</p>
+          <p className="text-muted-foreground">Kopplar ihop er...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{
-      background: "linear-gradient(135deg, hsl(35, 40%, 95%) 0%, hsl(30, 35%, 90%) 30%, hsl(25, 30%, 87%) 60%, hsl(20, 25%, 85%) 100%)"
-    }}>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <div className="w-full max-w-md">
         {/* Logo area */}
         <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{
-            background: "linear-gradient(135deg, hsl(43, 60%, 60%), hsl(30, 50%, 50%))"
-          }}>
-            <Heart className="w-8 h-8 text-white" />
+          <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-primary">
+            <Heart className="w-8 h-8 text-primary-foreground" strokeWidth={1.5} />
           </div>
-          <h1 className="text-4xl font-light tracking-tight" style={{
-            fontFamily: "'Cormorant Garamond', serif",
-            color: "hsl(25, 30%, 25%)"
-          }}>
-            Unionen
+          <h1 className="text-4xl font-light tracking-tight font-serif text-foreground">
+            Hamnen
           </h1>
-          <p className="mt-2 text-sm" style={{ color: "hsl(25, 15%, 50%)" }}>
+          <p className="mt-2 text-sm text-muted-foreground">
             {forgotPassword
               ? "Ange din e-postadress så skickar vi en länk för att återställa ditt lösenord"
               : inviteToken
@@ -161,23 +151,16 @@ export default function Auth() {
         </div>
 
         {/* Form card */}
-        <div className="rounded-2xl p-8 shadow-lg" style={{
-          background: "hsla(0, 0%, 100%, 0.75)",
-          backdropFilter: "blur(12px)",
-          border: "1px solid hsla(30, 30%, 80%, 0.5)"
-        }}>
+        <div className="rounded-2xl p-8 shadow-sm bg-card border-none">
           {inviteToken && (
-            <div className="mb-4 p-3 rounded-lg text-sm text-center" style={{
-              background: "hsla(43, 60%, 60%, 0.15)",
-              color: "hsl(30, 50%, 35%)"
-            }}>
+            <div className="mb-4 p-3 rounded-lg text-sm text-center bg-accent/10 text-accent">
               💌 {inviterName ? `Du har en inbjudan från ${inviterName}!` : "Du har en inbjudan från din partner!"}
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && !forgotPassword && (
               <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: "hsl(25, 20%, 40%)" }}>
+                <label className="block text-xs font-medium mb-1.5 text-muted-foreground">
                   Ditt namn
                 </label>
                 <Input
@@ -185,12 +168,12 @@ export default function Auth() {
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   required
-                  className="border-0 bg-white/60 text-gray-800 placeholder:text-gray-400 focus-visible:ring-amber-400/50"
+                  className="rounded-lg border-border/30 bg-secondary/30 focus-visible:ring-primary/50"
                 />
               </div>
             )}
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: "hsl(25, 20%, 40%)" }}>
+              <label className="block text-xs font-medium mb-1.5 text-muted-foreground">
                 E-post
               </label>
               <Input
@@ -199,12 +182,12 @@ export default function Auth() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="border-0 bg-white/60 text-gray-800 placeholder:text-gray-400 focus-visible:ring-amber-400/50"
+                className="rounded-lg border-border/30 bg-secondary/30 focus-visible:ring-primary/50"
               />
             </div>
             {!forgotPassword && (
               <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: "hsl(25, 20%, 40%)" }}>
+                <label className="block text-xs font-medium mb-1.5 text-muted-foreground">
                   Lösenord
                 </label>
                 <Input
@@ -214,17 +197,14 @@ export default function Auth() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
-                  className="border-0 bg-white/60 text-gray-800 placeholder:text-gray-400 focus-visible:ring-amber-400/50"
+                  className="rounded-lg border-border/30 bg-secondary/30 focus-visible:ring-primary/50"
                 />
               </div>
             )}
             <Button
               type="submit"
-              className="w-full h-12 text-white font-medium rounded-xl shadow-md"
+              className="w-full h-12 font-medium rounded-xl"
               disabled={loading}
-              style={{
-                background: "linear-gradient(135deg, hsl(43, 60%, 55%), hsl(30, 50%, 48%))",
-              }}
             >
               {loading ? "Laddar..." : forgotPassword ? "Skicka återställningslänk" : isLogin ? "Logga in" : "Registrera"}
             </Button>
@@ -233,19 +213,17 @@ export default function Auth() {
             <p className="text-center text-sm mt-4">
               <button
                 onClick={() => setForgotPassword(true)}
-                className="font-medium hover:underline"
-                style={{ color: "hsl(30, 50%, 40%)" }}
+                className="font-medium hover:underline text-accent"
               >
                 Glömt lösenord?
               </button>
             </p>
           )}
-          <p className="text-center text-sm mt-4" style={{ color: "hsl(25, 15%, 50%)" }}>
+          <p className="text-center text-sm mt-4 text-muted-foreground">
             {forgotPassword ? (
               <button
                 onClick={() => setForgotPassword(false)}
-                className="font-medium hover:underline"
-                style={{ color: "hsl(30, 50%, 40%)" }}
+                className="font-medium hover:underline text-accent"
               >
                 Tillbaka till inloggning
               </button>
@@ -254,8 +232,7 @@ export default function Auth() {
                 {isLogin ? "Inget konto?" : "Har redan konto?"}{" "}
                 <button
                   onClick={() => setIsLogin(!isLogin)}
-                  className="font-medium hover:underline"
-                  style={{ color: "hsl(30, 50%, 40%)" }}
+                  className="font-medium hover:underline text-accent"
                 >
                   {isLogin ? "Registrera dig" : "Logga in"}
                 </button>
