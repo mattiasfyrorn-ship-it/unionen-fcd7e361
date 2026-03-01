@@ -54,9 +54,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <div className="container mx-auto px-4 py-6 flex items-center justify-between">
             <Link to="/" className="flex items-center gap-2">
               <svg width="22" height="22" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M50 88 C25 65, 2 45, 2 28 C2 14, 14 2, 28 2 C37 2, 45 7, 50 15 C55 7, 63 2, 72 2 C86 2, 98 14, 98 28 C98 45, 75 65, 50 88Z" stroke="currentColor" strokeWidth="5" className="text-primary" />
+                <path d="M50 88 C25 65, 2 45, 2 28 C2 14, 14 2, 28 2 C37 2, 45 7, 50 15 C55 7, 63 2, 72 2 C86 2, 98 14, 98 28 C98 45, 75 65, 50 88Z" stroke="currentColor" strokeWidth="1.5" fill="none" className="text-foreground" />
               </svg>
-              <span className="text-primary font-medium text-xl font-serif">Hamnen</span>
+              <span className="text-foreground font-medium text-xl font-serif">Hamnen</span>
             </Link>
             <nav className="flex items-center gap-1">
               {DESKTOP_NAV.map((item) => {
