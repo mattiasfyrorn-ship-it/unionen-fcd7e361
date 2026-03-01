@@ -153,7 +153,7 @@ export default function Auth() {
         </div>
 
         {/* Form card */}
-        <div className="rounded-2xl p-8 shadow-sm bg-card border-none">
+        <div className="rounded-[12px] p-8 shadow-hamnen bg-card border-none">
           {inviteToken && (
             <div className="mb-4 p-3 rounded-lg text-sm text-center bg-accent/10 text-accent">
               💌 {inviterName ? `Du har en inbjudan från ${inviterName}!` : "Du har en inbjudan från din partner!"}

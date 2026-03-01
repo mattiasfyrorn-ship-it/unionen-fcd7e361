@@ -446,7 +446,7 @@ export default function Dashboard() {
             <div
               key={i}
               className={`flex items-center gap-3 p-4 rounded-xl border-none shadow-sm ${
-                trend.positive
+               trend.positive
                   ? "bg-primary/5 text-primary"
                   : "bg-accent/5 text-accent"
               }`}
