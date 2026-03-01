@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import webpush from "npm:web-push@3";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,6 +23,18 @@ serve(async (req) => {
   }
 
   try {
+    const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY');
+    const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
+
+    if (!vapidPublicKey || !vapidPrivateKey) {
+      return new Response(JSON.stringify({ error: 'VAPID keys not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    webpush.setVapidDetails('mailto:noreply@mail1.fyrorn.se', vapidPublicKey, vapidPrivateKey);
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -45,15 +58,13 @@ serve(async (req) => {
       });
     }
 
-    const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY');
-    const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
-
-    if (!vapidPublicKey || !vapidPrivateKey) {
-      return new Response(JSON.stringify({ error: 'VAPID keys not configured' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    const payload = JSON.stringify({
+      title: 'Relationskontot',
+      body: 'Dags att fylla i Relationskontot! ❤️',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      data: { type: 'daily_reminder', url: '/daily' },
+    });
 
     let totalSent = 0;
 
@@ -65,33 +76,15 @@ serve(async (req) => {
 
       if (!subs || subs.length === 0) continue;
 
-      const payload = JSON.stringify({
-        title: 'Relationskontot',
-        body: 'Dags att fylla i Relationskontot! ❤️',
-        icon: '/icon-192.png',
-        badge: '/icon-192.png',
-        data: { type: 'daily_reminder', url: '/daily' },
-      });
-
       for (const sub of subs) {
         try {
-          const endpoint = sub.subscription.endpoint;
-          const res = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/octet-stream',
-              'TTL': '86400',
-            },
-            body: new TextEncoder().encode(payload),
-          });
-
-          if (res.ok || res.status === 201) {
-            totalSent++;
-          } else if (res.status === 404 || res.status === 410) {
-            await supabase.from('push_subscriptions').delete().eq('subscription', sub.subscription);
+          await webpush.sendNotification(sub.subscription, payload);
+          totalSent++;
+        } catch (e: any) {
+          console.error('Push error:', e.statusCode, e.body);
+          if (e.statusCode === 404 || e.statusCode === 410) {
+            await supabase.from('push_subscriptions').delete().eq('user_id', pref.user_id);
           }
-        } catch (e) {
-          console.error('Push error:', e);
         }
       }
     }
