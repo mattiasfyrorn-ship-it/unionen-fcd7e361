@@ -59,7 +59,7 @@ export default function Install() {
         <Smartphone className="w-12 h-12 text-primary mx-auto" />
         <h1 className="text-3xl text-primary">Installera appen</h1>
         <p className="text-muted-foreground">
-          Installera Unionen på din hemskärm för att använda den som en vanlig app.
+          Installera Hamnen på din hemskärm för att använda den som en vanlig app.
         </p>
       </div>
 

@@ -2,68 +2,69 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
 
 @layer base {
   :root {
-    --background: 30 26% 92%;
-    --foreground: 24 14% 20%;
+    --background: 37 25% 92%;
+    --foreground: 28 13% 20%;
 
-    --card: 30 20% 88%;
-    --card-foreground: 24 14% 20%;
+    --card: 34 22% 88%;
+    --card-foreground: 28 13% 20%;
 
-    --popover: 30 26% 92%;
-    --popover-foreground: 24 14% 20%;
+    --popover: 37 25% 92%;
+    --popover-foreground: 28 13% 20%;
 
-    --primary: 150 24% 24%;
-    --primary-foreground: 30 26% 92%;
+    --primary: 106 16% 36%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 30 20% 88%;
-    --secondary-foreground: 24 14% 20%;
+    --secondary: 34 22% 88%;
+    --secondary-foreground: 28 13% 20%;
 
-    --muted: 30 15% 85%;
-    --muted-foreground: 24 10% 45%;
+    --muted: 34 15% 85%;
+    --muted-foreground: 28 10% 45%;
 
-    --accent: 18 45% 56%;
-    --accent-foreground: 30 26% 95%;
+    --accent: 18 48% 56%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 30 15% 82%;
-    --input: 30 15% 82%;
-    --ring: 150 24% 24%;
+    --border: 34 15% 82%;
+    --input: 34 15% 82%;
+    --ring: 106 16% 36%;
 
     --radius: 0.625rem;
 
-    --sidebar-background: 30 20% 90%;
-    --sidebar-foreground: 24 14% 20%;
-    --sidebar-primary: 150 24% 24%;
-    --sidebar-primary-foreground: 30 26% 92%;
-    --sidebar-accent: 30 15% 85%;
-    --sidebar-accent-foreground: 24 14% 20%;
-    --sidebar-border: 30 15% 82%;
-    --sidebar-ring: 150 24% 24%;
+    --sidebar-background: 34 20% 90%;
+    --sidebar-foreground: 28 13% 20%;
+    --sidebar-primary: 106 16% 36%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 34 15% 85%;
+    --sidebar-accent-foreground: 28 13% 20%;
+    --sidebar-border: 34 15% 82%;
+    --sidebar-ring: 106 16% 36%;
 
-    --gold: 18 45% 56%;
-    --gold-foreground: 30 26% 95%;
-    --teal: 150 24% 24%;
-    --teal-foreground: 30 26% 92%;
+    --gold: 100 10% 67%;
+    --gold-foreground: 28 13% 20%;
+    --teal: 106 16% 36%;
+    --teal-foreground: 0 0% 100%;
 
     /* Hamnen tokens */
-    --hamnen-sand: 30 26% 92%;
-    --hamnen-beige: 30 20% 88%;
-    --hamnen-text: 24 14% 20%;
-    --hamnen-forest: 150 24% 24%;
+    --hamnen-sand: 37 25% 92%;
+    --hamnen-beige: 34 22% 88%;
+    --hamnen-text: 28 13% 20%;
+    --hamnen-forest: 106 16% 36%;
     --hamnen-ocean: 200 30% 35%;
-    --hamnen-terracotta: 18 45% 56%;
-    --hamnen-sage: 140 15% 65%;
+    --hamnen-terracotta: 18 48% 56%;
+    --hamnen-sage: 100 10% 67%;
   }
 }
 
 @layer base {
   * {
     @apply border-border;
+    transition-timing-function: ease-in-out;
   }
 
   body {
@@ -73,6 +74,11 @@
   }
 
   h1, h2, h3, h4 {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Cormorant Garamond', serif;
   }
+
+  h1 { font-size: 48px; }
+  h2 { font-size: 30px; }
+  h3 { font-size: 24px; }
+  h4 { font-size: 20px; }
 }
