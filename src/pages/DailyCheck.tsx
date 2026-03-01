@@ -361,8 +361,8 @@ export default function DailyCheck() {
                 <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
                 <Tooltip />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line type="monotone" dataKey="Relationskonto" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 2 }} />
-                <Line type="monotone" dataKey="Klimat" stroke="hsl(var(--gold))" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                <Line type="monotone" dataKey="Relationskonto" stroke="hsl(var(--primary))" strokeWidth={1.5} dot={{ r: 2 }} />
+                <Line type="monotone" dataKey="Klimat" stroke="hsl(var(--gold))" strokeWidth={1.5} dot={{ r: 2 }} connectNulls />
               </LineChart>
             </ResponsiveContainer>
           ) : (

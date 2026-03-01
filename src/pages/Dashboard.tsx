@@ -607,8 +607,8 @@ export default function Dashboard() {
                   <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
                   <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Line type="monotone" dataKey="Näring" stroke="hsl(var(--teal))" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="Regleringar" stroke="hsl(var(--gold))" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="Näring" stroke="hsl(var(--teal))" strokeWidth={1.5} dot={false} />
+                  <Line type="monotone" dataKey="Regleringar" stroke="hsl(var(--gold))" strokeWidth={1.5} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             ) : (

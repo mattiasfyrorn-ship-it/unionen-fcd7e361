@@ -584,7 +584,7 @@ export default function WeeklyConversation() {
             <Unlock className="w-4 h-4 mr-1" /> Lås upp
           </Button>
         ) : (
-          <Button onClick={() => handleSave(true)} disabled={loading} className="flex-1">
+          <Button onClick={() => handleSave(true)} disabled={loading} className="flex-1 rounded-[12px]">
             ✔ Klar för samtal
           </Button>
         )}
