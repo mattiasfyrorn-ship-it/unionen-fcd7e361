@@ -1,68 +1,49 @@
 
-## Problem: Två service workers krockar och bryter push-notiser
 
-### Rotorsaken
+## Analys: Varfor loggan ar for liten overallt
 
-Det finns en fundamental konflikt i hur service workers är uppsatta:
+### Rotorsak
 
-1. VitePWA-pluginen genererar en `sw.js` via Workbox vid build och skriver automatiskt över `public/sw.js`
-2. Vår anpassade `public/sw.js` med push-logik försvinner alltså i produktionsbygget
-3. Resultatet: `navigator.serviceWorker.ready` pekar på Workbox service worker som saknar push-hantering
-4. `reg.pushManager.subscribe(...)` kastar ett fel (t.ex. ogiltig VAPID-nyckel eller problem med workern) och fångas i `catch`-blocket → returnerar `false` → felmeddelandet visas
+Logotypens PNG-fil (`hamnen-logo.png`) innehaller sannolikt mycket whitespace/padding runt sjalva ikonen. Nar bilden renderas med `object-contain` behalles proportionerna, men det synliga motivet (hjartat med blad) tar bara upp en brakdel av den tilldelade ytan. Aven om du satter `w-16 h-16` sa ar den synliga ikonen kanske bara 30-40% av den storleken.
 
-Dessutom finns ett timeout-problem: `navigator.serviceWorker.ready` kan hänga länge i en vanlig webbläsarflik (inte installerad PWA) om service workern inte aktiveras direkt.
+Dessutom: favicon.svg har en viewBox (`5 5 90 88`) som klipper bort delar av hjartat (paths gar fran x=2 till x=98), vilket gor att ikonen inte fyller fliken ordentligt.
 
-### Lösning: Slå samman till en enda service worker med `injectManifest`
+### Losning
 
-VitePWA stöder ett läge som heter `injectManifest` där vi skriver vår egen service worker och Workbox injicerar sina cache-definitioner i den. På så sätt har vi bara en service worker som gör allt.
+#### 1. Favicon -- fixa viewBox sa ikonen fyller hela ytan
 
-#### Konkreta ändringar
+Uppdatera `public/favicon.svg` sa att viewBox omfattar hela innehallet: `viewBox="0 0 100 90"`. Det gor att hjartat fyller favicon-ytan istallet for att klippas.
 
-**1. `vite.config.ts`** — Byt strategi från `generateSW` (default) till `injectManifest` och peka på vår custom service worker:
+Uppdatera ocksa `index.html` till att anvanda PNG som favicon istallet, via den uppladdade hogupplosta bilden kopierad till `public/favicon.png`. PNG fungerar battre som favicon i de flesta webblasare.
 
-```ts
-VitePWA({
-  strategies: 'injectManifest',
-  srcDir: 'public',
-  filename: 'sw.js',
-  registerType: 'autoUpdate',
-  // ...resten är samma
-})
+#### 2. Auth-sidan -- storre logga
+
+I `src/pages/Auth.tsx`:
+- Containern fran `w-16 h-16` till `w-28 h-28`
+- Bilden fran `w-14 h-14` till `w-28 h-28`
+- Detta kompenserar for whitespace i PNG:en och gor loggan tydligt synlig
+
+#### 3. App-header -- storre logga med overflow
+
+I `src/components/AppLayout.tsx`:
+- **Desktop**: Fran `w-16 h-16 -my-3` till `w-20 h-20 -my-4` (storre ikon, negativ marginal sa headern inte vaxer)
+- **Mobil**: Fran `w-10 h-10 -my-2` till `w-14 h-14 -my-3`
+
+#### 4. Favicon som PNG (backup)
+
+Kopiera den hogupplosta loggan till `public/favicon.png` och uppdatera `index.html` att referera till bade SVG och PNG:
+```text
+<link rel="icon" type="image/png" href="/favicon.png" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 ```
 
-**2. `public/sw.js`** — Lägg till Workbox-injektionspunkt överst och behåll push/notificationclick-logiken:
+### Filer som andras
 
-```js
-// Workbox injicerar sitt precache-manifest här automatiskt vid build
-import { precacheAndRoute } from 'workbox-precaching';
-precacheAndRoute(self.__WB_MANIFEST);
+| Fil | Andring |
+|---|---|
+| `src/components/AppLayout.tsx` | Storre logga: desktop w-20, mobil w-14, med negativa marginaler |
+| `src/pages/Auth.tsx` | Logga-container och bild till w-28 h-28 |
+| `public/favicon.svg` | Fixa viewBox till `0 0 100 90` |
+| `public/favicon.png` | Kopiera hogupplost logga hit |
+| `index.html` | Dubbla favicon-lankar (PNG + SVG) |
 
-// Push-logiken finns kvar nedan (oförändrad)
-self.addEventListener('push', ...);
-self.addEventListener('notificationclick', ...);
-```
-
-**3. `src/lib/pushNotifications.ts`** — Lägg till timeout på `serviceWorker.ready` (max 5 sekunder) och bättre felhantering som loggar exakt vad som går fel, så att framtida problem är lättare att felsöka:
-
-```ts
-const registration = await Promise.race([
-  navigator.serviceWorker.ready,
-  new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 5000))
-]);
-```
-
-**4. `src/App.tsx`** — Ta bort den manuella registreringen av `/sw.js` i `PushInitializer` eftersom VitePWA sköter registreringen automatiskt. Dubbel-registrering kan orsaka problem.
-
-### Tekniska detaljer
-
-- `injectManifest`-strategin kräver att service worker-filen innehåller `self.__WB_MANIFEST` — det är platsen Workbox injicerar sitt precache-manifest
-- I development-läge fungerar `self.__WB_MANIFEST` inte utan en speciell mock — vi lägger till `if (typeof self.__WB_MANIFEST !== 'undefined')` som guard
-- VAPID-nycklarna är korrekt konfigurerade som secrets, så det problemet är inte orsaken
-- Ingen databasändring behövs
-
-### Filer som ändras
-
-- `vite.config.ts` — lägg till `strategies: 'injectManifest'`, `srcDir: 'public'`, `filename: 'sw.js'`
-- `public/sw.js` — lägg till Workbox precache-anrop överst med `__WB_MANIFEST`-guard
-- `src/lib/pushNotifications.ts` — lägg till timeout på `serviceWorker.ready` och förbättrad fellogning
-- `src/App.tsx` — ta bort manuell `navigator.serviceWorker.register('/sw.js')` i `PushInitializer`
