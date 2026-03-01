@@ -528,7 +528,7 @@ export default function Dashboard() {
             </span>
           </div>
           <div className="w-full bg-secondary rounded-full h-2 mt-3">
-            <div className="bg-primary h-2 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, Math.max(0, displayKonto))}%` }} />
+            <div className="bg-gold h-2 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, Math.max(0, displayKonto))}%` }} />
           </div>
           <p className="text-xs text-muted-foreground mt-2">
             Kontot bygger på dagliga insättningar och sjunker långsamt utan dem.
