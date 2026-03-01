@@ -309,7 +309,7 @@ export default function DailyCheck() {
       </Card>
 
       {/* Card 5: Climate */}
-      <Card className="rounded-xl border-none shadow-sm">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Klimat</p>
           <CardTitle className="flex items-center gap-2 text-base font-serif">
