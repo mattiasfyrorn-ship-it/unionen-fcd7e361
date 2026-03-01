@@ -2,8 +2,9 @@ import { ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Heart, BarChart3, Sparkles, MessageCircle, Link2, LogOut, User, CalendarCheck, Sun, Shield } from "lucide-react";
+import { BarChart3, Sparkles, MessageCircle, Link2, LogOut, User, CalendarCheck, Sun, Shield } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import hamnenLogo from "@/assets/hamnen-logo.png";
 
 const BOTTOM_NAV = [
   { to: "/", label: "Översikt", icon: BarChart3 },
