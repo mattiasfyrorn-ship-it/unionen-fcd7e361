@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Heart } from "lucide-react";
+import hamnenLogo from "@/assets/hamnen-logo.png";
 
 const DUMMY_USER_ID = "00000000-0000-0000-0000-000000000000";
 
