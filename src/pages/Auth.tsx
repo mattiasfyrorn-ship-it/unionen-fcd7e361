@@ -133,8 +133,8 @@ export default function Auth() {
       <div className="w-full max-w-md">
         {/* Logo area */}
         <div className="text-center mb-8">
-          <div className="mx-auto w-28 h-28 flex items-center justify-center mb-4">
-            <img src={hamnenLogo} alt="Hamnen" className="w-28 h-28 object-contain" />
+          <div className="mx-auto w-20 h-20 flex items-center justify-center mb-4">
+            <img src={hamnenLogo} alt="Hamnen" className="w-20 h-20 object-contain" />
           </div>
           <h1 className="text-4xl font-light tracking-tight font-serif text-foreground">
             Hamnen

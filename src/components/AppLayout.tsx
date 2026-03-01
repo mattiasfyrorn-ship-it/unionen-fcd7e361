@@ -35,7 +35,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         /* Mobile: sticky header with safe area */
         <header className="bg-background sticky top-0 z-50 px-4 h-12 flex items-center justify-between pt-[env(safe-area-inset-top)]">
           <Link to="/" className="flex items-center gap-2">
-            <img src={hamnenLogo} alt="Hamnen" className="w-14 h-14 -my-3 object-contain" />
+            <img src={hamnenLogo} alt="Hamnen" className="w-8 h-8 object-contain" />
             <span className="text-foreground font-medium text-2xl font-serif">Hamnen</span>
           </Link>
           <div className="flex items-center gap-2">
@@ -52,7 +52,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <header className="sticky top-0 z-50 bg-background/80 backdrop-blur">
           <div className="container mx-auto px-4 pt-6 pb-2 flex items-center justify-between">
             <Link to="/" className="flex items-center gap-2">
-              <img src={hamnenLogo} alt="Hamnen" className="w-20 h-20 -my-4 object-contain" />
+              <img src={hamnenLogo} alt="Hamnen" className="w-10 h-10 object-contain" />
               <span className="text-foreground font-medium text-3xl font-serif">Hamnen</span>
             </Link>
             <div className="flex items-center gap-3">
