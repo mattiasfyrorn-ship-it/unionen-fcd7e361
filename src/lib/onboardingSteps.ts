@@ -440,13 +440,12 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     },
     checkCompletion: async (userId) => {
       // Check onboarding_steps for manual completion
-      const { data } = await supabase
-        .from("onboarding_steps" as any)
+      const { data } = await onboardingTable()
         .select("completed_at")
         .eq("user_id", userId)
         .eq("step_number", 14)
         .maybeSingle();
-      return { userDone: !!data?.completed_at, partnerDone: false };
+      return { userDone: !!(data as any)?.completed_at, partnerDone: false };
     },
   },
   {
