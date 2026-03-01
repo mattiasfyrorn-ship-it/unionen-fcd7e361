@@ -52,7 +52,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <header className="sticky top-0 z-50 bg-background/80 backdrop-blur">
           <div className="container mx-auto px-4 pt-6 pb-2 flex items-center justify-between">
             <Link to="/" className="flex items-center gap-2">
-              <img src={hamnenLogo} alt="Hamnen" className="w-16 h-16 -my-3 object-contain" />
+              <img src={hamnenLogo} alt="Hamnen" className="w-20 h-20 -my-4 object-contain" />
               <span className="text-foreground font-medium text-3xl font-serif">Hamnen</span>
             </Link>
             <div className="flex items-center gap-3">
