@@ -386,13 +386,12 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     checkCompletion: async (userId) => {
       // Check if any day has gave_appreciation=true AND appreciation_note is filled
       // We check via onboarding_steps metadata for simplicity
-      const { data } = await supabase
-        .from("onboarding_steps" as any)
+      const { data } = await onboardingTable()
         .select("completed_at")
         .eq("user_id", userId)
         .eq("step_number", 12)
         .maybeSingle();
-      return { userDone: !!data?.completed_at, partnerDone: false };
+      return { userDone: !!(data as any)?.completed_at, partnerDone: false };
     },
   },
   {
