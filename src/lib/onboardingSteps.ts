@@ -407,23 +407,21 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
       partner_done_user_not: "Din partner har reflekterat – skriv din!",
     },
     checkCompletion: async (userId, coupleId) => {
-      const { data } = await supabase
-        .from("onboarding_steps" as any)
+      const { data } = await onboardingTable()
         .select("completed_at, metadata")
         .eq("user_id", userId)
         .eq("step_number", 13)
         .maybeSingle();
-      const userDone = !!data?.completed_at;
+      const userDone = !!(data as any)?.completed_at;
       let partnerDone = false;
       const partnerId = await getPartnerUserId(coupleId, userId);
       if (partnerId) {
-        const { data: pd } = await supabase
-          .from("onboarding_steps" as any)
+        const { data: pd } = await onboardingTable()
           .select("completed_at")
           .eq("user_id", partnerId)
           .eq("step_number", 13)
           .maybeSingle();
-        partnerDone = !!pd?.completed_at;
+        partnerDone = !!(pd as any)?.completed_at;
       }
       return { userDone, partnerDone };
     },
