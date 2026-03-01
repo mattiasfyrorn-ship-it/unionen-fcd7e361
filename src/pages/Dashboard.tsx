@@ -427,11 +427,11 @@ export default function Dashboard() {
     <div className="space-y-8">
       {/* Solo-läge banner */}
       {!hasPartner && (
-        <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-          <Heart className="w-4 h-4 shrink-0 text-primary" />
+        <div className="flex items-center gap-3 rounded-xl border-none shadow-sm bg-card px-4 py-3 text-sm text-muted-foreground">
+          <Heart className="w-4 h-4 shrink-0 text-primary" strokeWidth={1.5} />
           <span>
             Din partner har inte registrerat sig ännu.{" "}
-            <Link to="/pairing" className="text-primary underline-offset-2 hover:underline">
+            <Link to="/pairing" className="text-accent underline-offset-2 hover:underline">
               Bjud in dem via Parkoppling.
             </Link>
           </span>
