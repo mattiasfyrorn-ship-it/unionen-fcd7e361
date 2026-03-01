@@ -170,7 +170,7 @@ export default function Evaluate() {
       {AREAS.map((area) => {
         const Icon = area.icon;
         return (
-          <Card key={area.key} className="rounded-xl border-none shadow-sm">
+          <Card key={area.key} className="rounded-[10px] border-none shadow-hamnen">
             <CardHeader className="pb-2">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{area.label}</p>
               <CardTitle className="flex items-center gap-2 text-lg font-serif">
@@ -206,7 +206,7 @@ export default function Evaluate() {
       })}
 
       {/* Need & Want */}
-      <Card className="rounded-xl border-none shadow-sm">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Idag</p>
           <CardTitle className="text-lg font-serif">Idag</CardTitle>
@@ -229,12 +229,12 @@ export default function Evaluate() {
         </CardContent>
       </Card>
 
-      <Button onClick={handleSubmit} disabled={loading} className="w-full rounded-xl" size="lg">
+      <Button onClick={handleSubmit} disabled={loading} className="w-full rounded-[12px]" size="lg">
         {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sparar...</> : hasExisting ? "Uppdatera utvärdering" : "Spara utvärdering"}
       </Button>
 
       {/* Graph */}
-      <Card className="rounded-xl border-none shadow-sm">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Näring</p>
           <CardTitle className="text-lg font-serif">Total näring över tid</CardTitle>
@@ -248,11 +248,11 @@ export default function Evaluate() {
           {graphData.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={graphData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.3} />
                 <XAxis dataKey="week" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                 <YAxis domain={[0, 40]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                 <Tooltip />
-                <Line type="monotone" dataKey="total" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="total" stroke="hsl(var(--primary))" strokeWidth={1.5} dot={{ r: 2 }} />
               </LineChart>
             </ResponsiveContainer>
           ) : (

@@ -427,7 +427,7 @@ export default function Dashboard() {
     <div className="space-y-8">
       {/* Solo-läge banner */}
       {!hasPartner && (
-        <div className="flex items-center gap-3 rounded-xl border-none shadow-sm bg-card px-4 py-3 text-sm text-muted-foreground">
+        <div className="flex items-center gap-3 rounded-[10px] border-none shadow-hamnen bg-card px-4 py-3 text-sm text-muted-foreground">
           <Heart className="w-4 h-4 shrink-0 text-primary" strokeWidth={1.5} />
           <span>
             Din partner har inte registrerat sig ännu.{" "}
@@ -446,7 +446,7 @@ export default function Dashboard() {
             <div
               key={i}
               className={`flex items-center gap-3 p-4 rounded-xl border-none shadow-sm ${
-                trend.positive
+               trend.positive
                   ? "bg-primary/5 text-primary"
                   : "bg-accent/5 text-accent"
               }`}
@@ -464,7 +464,7 @@ export default function Dashboard() {
       )}
 
       {/* Quarterly goals – Vår riktning (moved up) */}
-      <Card className="rounded-xl border-none shadow-sm">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Kvartalsmål</p>
           <CardTitle className="flex items-center gap-2 text-lg font-serif">
@@ -509,7 +509,7 @@ export default function Dashboard() {
       </Card>
 
       {/* Relationskonto summary card */}
-      <Card className="rounded-xl border-none shadow-sm">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardContent className="pt-6">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Relationskonto</p>
@@ -528,7 +528,7 @@ export default function Dashboard() {
             </span>
           </div>
           <div className="w-full bg-secondary rounded-full h-2 mt-3">
-            <div className="bg-primary h-2 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, Math.max(0, displayKonto))}%` }} />
+            <div className="bg-gold h-2 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, Math.max(0, displayKonto))}%` }} />
           </div>
           <p className="text-xs text-muted-foreground mt-2">
             Kontot bygger på dagliga insättningar och sjunker långsamt utan dem.
@@ -543,7 +543,7 @@ export default function Dashboard() {
       </ToggleGroup>
 
       {/* Relationskonto graph */}
-      <Card className="rounded-xl border-none shadow-sm">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div>
@@ -567,13 +567,13 @@ export default function Dashboard() {
                 Relationskonto: p.value,
                 Klimat: p.climate,
               }))}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.3} />
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
                 <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line type="monotone" dataKey="Relationskonto" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="Klimat" stroke="hsl(var(--gold))" strokeWidth={2} dot={false} connectNulls />
+                <Line type="monotone" dataKey="Relationskonto" stroke="hsl(var(--primary))" strokeWidth={1.5} dot={false} />
+                <Line type="monotone" dataKey="Klimat" stroke="hsl(var(--gold))" strokeWidth={1.5} dot={false} connectNulls />
               </LineChart>
             </ResponsiveContainer>
           ) : (
@@ -584,7 +584,7 @@ export default function Dashboard() {
 
       {/* Graph 2: Min näring över tid (mine only) */}
       {view === "mine" && (
-        <Card className="rounded-xl border-none shadow-sm">
+        <Card className="rounded-[10px] border-none shadow-hamnen">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div>
@@ -602,13 +602,13 @@ export default function Dashboard() {
             {naringGraph.length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <LineChart data={naringGraph}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.3} />
                   <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
                   <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
                   <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Line type="monotone" dataKey="Näring" stroke="hsl(var(--teal))" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="Regleringar" stroke="hsl(var(--gold))" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="Näring" stroke="hsl(var(--teal))" strokeWidth={1.5} dot={false} />
+                  <Line type="monotone" dataKey="Regleringar" stroke="hsl(var(--gold))" strokeWidth={1.5} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             ) : (

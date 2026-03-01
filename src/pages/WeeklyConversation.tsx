@@ -452,7 +452,7 @@ export default function WeeklyConversation() {
       </div>
 
       {/* Appreciations */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <MessageCircle className="w-5 h-5 text-primary" />
@@ -475,7 +475,7 @@ export default function WeeklyConversation() {
       </Card>
 
       {/* Wins */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Vad gick bra?</CardTitle>
         </CardHeader>
@@ -494,7 +494,7 @@ export default function WeeklyConversation() {
       </Card>
 
       {/* Issues */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Frågor / Problem att ta upp</CardTitle>
         </CardHeader>
@@ -534,7 +534,7 @@ export default function WeeklyConversation() {
       </Card>
 
       {/* Logistics */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <ClipboardList className="w-5 h-5 text-primary" />
@@ -549,7 +549,7 @@ export default function WeeklyConversation() {
       </Card>
 
       {/* Positive intention */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
@@ -562,7 +562,7 @@ export default function WeeklyConversation() {
       </Card>
 
       {/* Checkout feeling */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <SmilePlus className="w-5 h-5 text-primary" />
@@ -576,15 +576,15 @@ export default function WeeklyConversation() {
 
       {/* Actions */}
       <div className="flex gap-3">
-        <Button onClick={() => handleSave()} disabled={loading} variant="outline" className="flex-1">
+        <Button onClick={() => handleSave()} disabled={loading} variant="outline" className="flex-1 rounded-[12px]">
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Spara"}
         </Button>
         {ready ? (
-          <Button onClick={() => handleSave(false)} disabled={loading} variant="outline" className="flex-1">
+          <Button onClick={() => handleSave(false)} disabled={loading} variant="outline" className="flex-1 rounded-[12px]">
             <Unlock className="w-4 h-4 mr-1" /> Lås upp
           </Button>
         ) : (
-          <Button onClick={() => handleSave(true)} disabled={loading} className="flex-1">
+          <Button onClick={() => handleSave(true)} disabled={loading} className="flex-1 rounded-[12px]">
             ✔ Klar för samtal
           </Button>
         )}

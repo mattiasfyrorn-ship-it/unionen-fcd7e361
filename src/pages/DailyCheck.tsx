@@ -183,7 +183,7 @@ export default function DailyCheck() {
       />
 
       {/* Card 1: Love Map */}
-      <Card className="rounded-xl border-none shadow-sm">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Love Map</p>
           <CardTitle className="flex items-center gap-2 text-base font-serif">
@@ -213,7 +213,7 @@ export default function DailyCheck() {
       </Card>
 
       {/* Card 2: Appreciation & Presence */}
-      <Card className="rounded-xl border-none shadow-sm">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Uppskattning</p>
           <CardTitle className="flex items-center gap-2 text-base font-serif">
@@ -240,7 +240,7 @@ export default function DailyCheck() {
       </Card>
 
       {/* Card 3: Turn Toward */}
-      <Card className="rounded-xl border-none shadow-sm">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Turn Toward</p>
           <CardTitle className="flex items-center gap-2 text-base font-serif">
@@ -286,7 +286,7 @@ export default function DailyCheck() {
       </Card>
 
       {/* Card 4: Let Partner Influence */}
-      <Card className="rounded-xl border-none shadow-sm">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Påverkan</p>
           <CardTitle className="flex items-center gap-2 text-base font-serif">
@@ -309,7 +309,7 @@ export default function DailyCheck() {
       </Card>
 
       {/* Card 5: Climate */}
-      <Card className="rounded-xl border-none shadow-sm">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Klimat</p>
           <CardTitle className="flex items-center gap-2 text-base font-serif">
@@ -333,12 +333,12 @@ export default function DailyCheck() {
         </CardContent>
       </Card>
 
-      <Button onClick={handleSave} disabled={loading} className="w-full rounded-xl" size="lg">
+      <Button onClick={handleSave} disabled={loading} className="w-full rounded-[12px]" size="lg">
         {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sparar...</> : existingId ? "Uppdatera" : "Spara dagens check"}
       </Button>
 
       {/* Graph */}
-      <Card className="rounded-xl border-none shadow-sm">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Utveckling</p>
           <CardTitle className="text-lg font-serif">Utveckling</CardTitle>
@@ -356,13 +356,13 @@ export default function DailyCheck() {
                 Relationskonto: p.value,
                 Klimat: p.climate,
               }))}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.3} />
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
                 <Tooltip />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line type="monotone" dataKey="Relationskonto" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 2 }} />
-                <Line type="monotone" dataKey="Klimat" stroke="hsl(var(--gold))" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                <Line type="monotone" dataKey="Relationskonto" stroke="hsl(var(--primary))" strokeWidth={1.5} dot={{ r: 2 }} />
+                <Line type="monotone" dataKey="Klimat" stroke="hsl(var(--gold))" strokeWidth={1.5} dot={{ r: 2 }} connectNulls />
               </LineChart>
             </ResponsiveContainer>
           ) : (

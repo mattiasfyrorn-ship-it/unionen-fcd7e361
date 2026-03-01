@@ -156,8 +156,8 @@ export default function Messages() {
                     : isRepairQuick
                     ? "bg-primary/10 border border-primary/20"
                     : isMine
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-foreground"
+                    ? "bg-primary/10 text-foreground"
+                    : "bg-card text-foreground"
                 }`}
               >
                 {isRepairQuick && !isMine && (
@@ -191,12 +191,12 @@ export default function Messages() {
       </div>
 
       {/* Input */}
-      <div className="flex gap-2 pt-2 border-t border-border/50">
+      <div className="flex gap-2 pt-2">
         <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Skriv ett meddelande..."
-          className="bg-muted/50"
+          className="bg-card rounded-full border-border/30"
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
         />
         <Button size="icon" onClick={sendMessage} disabled={loading || !input.trim()}>

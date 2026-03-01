@@ -178,7 +178,7 @@ export default function Account() {
 
       {/* Push Notifications */}
       {pushSupported && (
-        <Card className="bg-card/80 border-border/50">
+        <Card className="rounded-[10px] border-none shadow-hamnen">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center gap-2">
               <Bell className="w-4 h-4 text-primary" /> Notiser
@@ -232,7 +232,7 @@ export default function Account() {
       )}
 
       {/* Install app */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center gap-2">
             <Download className="w-4 h-4 text-primary" /> Installera appen
@@ -245,7 +245,7 @@ export default function Account() {
       </Card>
 
       {/* Name */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center gap-2">
             <User className="w-4 h-4 text-primary" /> Namn
@@ -258,7 +258,7 @@ export default function Account() {
       </Card>
 
       {/* Email */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center gap-2">
             <Mail className="w-4 h-4 text-primary" /> E-post
@@ -271,7 +271,7 @@ export default function Account() {
       </Card>
 
       {/* Password */}
-      <Card className="bg-card/80 border-border/50">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center gap-2">
             <Lock className="w-4 h-4 text-primary" /> Lösenord
@@ -292,7 +292,7 @@ export default function Account() {
 
       {/* Disconnect partner */}
       {profile?.couple_id && (
-        <Card className="bg-card/80 border-border/50">
+        <Card className="rounded-[10px] border-none shadow-hamnen">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center gap-2">
               <Unlink className="w-4 h-4 text-primary" /> Partner
