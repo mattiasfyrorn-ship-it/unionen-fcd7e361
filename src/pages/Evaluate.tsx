@@ -234,7 +234,7 @@ export default function Evaluate() {
       </Button>
 
       {/* Graph */}
-      <Card className="rounded-xl border-none shadow-sm">
+      <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Näring</p>
           <CardTitle className="text-lg font-serif">Total näring över tid</CardTitle>
