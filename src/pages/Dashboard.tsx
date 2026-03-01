@@ -441,18 +441,18 @@ export default function Dashboard() {
       {/* Trend insights – first */}
       {trends.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-medium text-muted-foreground">Trendinsikter</h3>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Trendinsikter</p>
           {trends.map((trend, i) => (
             <div
               key={i}
-              className={`flex items-center gap-3 p-4 rounded-lg border ${
+              className={`flex items-center gap-3 p-4 rounded-xl border-none shadow-sm ${
                 trend.positive
-                  ? "bg-teal/5 border-teal/20 text-teal"
-                  : "bg-gold/5 border-gold/20 text-gold"
+                  ? "bg-primary/5 text-primary"
+                  : "bg-accent/5 text-accent"
               }`}
             >
               <div className="shrink-0">
-                {trend.positive ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+                {trend.positive ? <TrendingUp className="w-5 h-5" strokeWidth={1.5} /> : <TrendingDown className="w-5 h-5" strokeWidth={1.5} />}
               </div>
               <div className="flex items-center gap-2 flex-1">
                 {trend.icon}
