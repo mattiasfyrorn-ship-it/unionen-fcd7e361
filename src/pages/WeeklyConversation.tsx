@@ -59,6 +59,8 @@ export default function WeeklyConversation() {
 
   const [partnerEntry, setPartnerEntry] = useState<any>(null);
   const [meetingStarted, setMeetingStarted] = useState(false);
+  const [meetingConfirmed, setMeetingConfirmed] = useState(false);
+  const [vulnerabilityShared, setVulnerabilityShared] = useState<boolean | null>(null);
 
   const [archive, setArchive] = useState<any[]>([]);
   const [expandedArchive, setExpandedArchive] = useState<string | null>(null);
