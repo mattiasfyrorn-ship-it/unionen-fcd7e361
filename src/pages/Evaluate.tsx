@@ -248,7 +248,7 @@ export default function Evaluate() {
           {graphData.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={graphData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.3} />
                 <XAxis dataKey="week" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                 <YAxis domain={[0, 40]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                 <Tooltip />
