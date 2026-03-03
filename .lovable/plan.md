@@ -1,4 +1,49 @@
 
+## GHL-webhook-integration + stängd registrering
+
+### Flöde
+
+```text
+GHL (kund betalar)
+  |
+  POST /functions/v1/ghl-webhook  (X-HAMNEN-SECRET + X-HAMNEN-EVENT)
+  --> Skapar User 1 (kontohavaren) via auth.admin.createUser
+  --> Skickar "Välj lösenord"-mail via Resend
+
+User 1 loggar in --> Bjuder in partner via appen
+  |
+  Partner får inbjudningslänk (/auth?invite=TOKEN)
+  --> Registreringsformuläret visas BARA med invite-token
+  --> Partner skapar konto och kopplas ihop
+```
+
+### Tabeller
+
+- **webhook_events** — idempotens (webhook_id UNIQUE), RLS utan client-policies
+- **ghl_links** — user_id ↔ ghl_contact_id mapping, RLS utan client-policies
+
+### Edge function: ghl-webhook
+
+- Validerar X-HAMNEN-SECRET
+- Validerar X-HAMNEN-EVENT matchar body.event
+- Idempotenskoll via webhook_events
+- Skapar användare eller uppdaterar befintlig
+- Upsert i ghl_links
+- Genererar recovery-länk och skickar välkomstmail via Resend
+- Loggar event_type, email, resultat (aldrig secrets)
+
+### Auth.tsx: Villkorad registrering
+
+- Utan invite-token: Bara login + glömt lösenord + "Kontakta oss"
+- Med invite-token: Registreringsformulär (namn + email + lösenord)
+
+### Secrets
+
+- GHL_WEBHOOK_SECRET
+- RESEND_API_KEY (redan konfigurerad)
+
+---
+
 ## Problem: Två service workers krockar och bryter push-notiser
 
 ### Rotorsaken

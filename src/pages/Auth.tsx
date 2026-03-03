@@ -227,16 +227,20 @@ export default function Auth() {
               >
                 Tillbaka till inloggning
               </button>
-            ) : (
+            ) : inviteToken ? (
               <>
-                {isLogin ? "Inget konto?" : "Har redan konto?"}{" "}
+                Har redan konto?{" "}
                 <button
-                  onClick={() => setIsLogin(!isLogin)}
+                  onClick={() => setIsLogin(true)}
                   className="font-medium hover:underline text-accent"
                 >
-                  {isLogin ? "Registrera dig" : "Logga in"}
+                  Logga in
                 </button>
               </>
+            ) : (
+              <span className="text-muted-foreground">
+                Inget konto? Kontakta oss för att komma igång.
+              </span>
             )}
           </p>
         </div>
