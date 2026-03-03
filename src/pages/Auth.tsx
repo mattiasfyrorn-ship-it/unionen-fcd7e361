@@ -40,6 +40,8 @@ export default function Auth() {
   const { user } = useAuth();
 
   const [isLogin, setIsLogin] = useState(!inviteToken);
+  // Without invite token, force login-only mode
+  const showSignup = !isLogin && !!inviteToken;
   const [forgotPassword, setForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
