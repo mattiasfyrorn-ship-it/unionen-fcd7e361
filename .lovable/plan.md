@@ -1,113 +1,54 @@
 
-## GHL-webhook-integration + stängd registrering
 
-### Flöde
+## Plan: Couple Paired → GHL Webhook
 
-```text
-GHL (kund betalar)
-  |
-  POST /functions/v1/ghl-webhook  (X-HAMNEN-SECRET + X-HAMNEN-EVENT)
-  --> Skapar User 1 (kontohavaren) via auth.admin.createUser
-  --> Skickar "Välj lösenord"-mail via Resend
+### Overview
+When two users become paired, send a webhook to GHL with both users' details so GHL can start the Day 1 email sequence. This will be implemented as an enhancement to the existing `notify-partner-paired` Edge Function (which already runs at the exact right moment).
 
-User 1 loggar in --> Bjuder in partner via appen
-  |
-  Partner får inbjudningslänk (/auth?invite=TOKEN)
-  --> Registreringsformuläret visas BARA med invite-token
-  --> Partner skapar konto och kopplas ihop
-```
+### Database Changes
 
-### Tabeller
+1. **Add `ghl_day1_started_at` column to `couples` table** — timestamp, nullable, default null. Used for idempotency (only send webhook once per couple).
 
-- **webhook_events** — idempotens (webhook_id UNIQUE), RLS utan client-policies
-- **ghl_links** — user_id ↔ ghl_contact_id mapping, RLS utan client-policies
+2. **Add `phone` column to `profiles` table** — text, nullable. Currently profiles don't store phone numbers but the webhook payload requires it.
 
-### Edge function: ghl-webhook
+### Secret to Add
 
-- Validerar X-HAMNEN-SECRET
-- Validerar X-HAMNEN-EVENT matchar body.event
-- Idempotenskoll via webhook_events
-- Skapar användare eller uppdaterar befintlig
-- Upsert i ghl_links
-- Genererar recovery-länk och skickar välkomstmail via Resend
-- Loggar event_type, email, resultat (aldrig secrets)
+- `GHL_COUPLE_PAIRED_WEBHOOK_URL` — value: `https://services.leadconnectorhq.com/hooks/4tOGnrR93KwicWUuAMjo/webhook-trigger/40e13ea2-6299-49de-a1d5-951727b8ec65`
 
-### Auth.tsx: Villkorad registrering
+The existing `GHL_WEBHOOK_SECRET` secret can be reused as the outbound secret header.
 
-- Utan invite-token: Bara login + glömt lösenord + "Kontakta oss"
-- Med invite-token: Registreringsformulär (namn + email + lösenord)
+### Edge Function Changes
 
-### Secrets
+**Modify `notify-partner-paired/index.ts`** to add GHL webhook logic after the existing email notifications:
 
-- GHL_WEBHOOK_SECRET
-- RESEND_API_KEY (redan konfigurerad)
+1. After sending confirmation emails, look up the `couple_id` for the paired users
+2. Check `couples.ghl_day1_started_at` — if already set, skip (idempotency)
+3. Fetch both users' profiles, emails, and `ghl_links` data
+4. Determine buyer vs partner: the user with a `ghl_links` entry is the "buyer" (came from GHL), the other is the "partner"
+5. POST the webhook payload to `GHL_COUPLE_PAIRED_WEBHOOK_URL` with:
+   - `X-HAMNEN-SECRET` header (from `GHL_WEBHOOK_SECRET`)
+   - Full JSON body with `event`, `pair_id`, `paired_at`, `buyer`, `partner` objects
+6. If webhook returns 200: update `couples.ghl_day1_started_at = now()`
+7. Log couple_id, emails, status code (no secrets)
 
----
+### Trigger Points
 
-## Problem: Två service workers krockar och bryter push-notiser
+The webhook is already called from two places (no changes needed):
+- **`Auth.tsx`** line 22: after `accept_invitation` RPC succeeds (invite flow)
+- **`Pairing.tsx`** line 97: after `pair_with_partner` RPC succeeds (code flow)
 
-### Rotorsaken
+Both pass through `notify-partner-paired`, so the GHL webhook will fire regardless of pairing method.
 
-Det finns en fundamental konflikt i hur service workers är uppsatta:
+### Additional: `pair_with_partner` RPC path
 
-1. VitePWA-pluginen genererar en `sw.js` via Workbox vid build och skriver automatiskt över `public/sw.js`
-2. Vår anpassade `public/sw.js` med push-logik försvinner alltså i produktionsbygget
-3. Resultatet: `navigator.serviceWorker.ready` pekar på Workbox service worker som saknar push-hantering
-4. `reg.pushManager.subscribe(...)` kastar ett fel (t.ex. ogiltig VAPID-nyckel eller problem med workern) och fångas i `catch`-blocket → returnerar `false` → felmeddelandet visas
+The `pair_with_partner` flow in `Pairing.tsx` calls `notify-partner-paired` but passes an empty `inviteToken`. The Edge Function currently requires the invite token to look up the couple. We need to update the function to also accept a `coupleId` parameter directly, so it works for both pairing methods (invite-based and code-based).
 
-Dessutom finns ett timeout-problem: `navigator.serviceWorker.ready` kan hänga länge i en vanlig webbläsarflik (inte installerad PWA) om service workern inte aktiveras direkt.
+### Summary of Changes
 
-### Lösning: Slå samman till en enda service worker med `injectManifest`
+| Component | Change |
+|---|---|
+| DB migration | Add `ghl_day1_started_at` to `couples`, `phone` to `profiles` |
+| Secret | Add `GHL_COUPLE_PAIRED_WEBHOOK_URL` |
+| `notify-partner-paired` | Add GHL webhook POST + idempotency check; support `coupleId` param |
+| `Pairing.tsx` | Pass `coupleId` from `refreshProfile` result to notify function |
 
-VitePWA stöder ett läge som heter `injectManifest` där vi skriver vår egen service worker och Workbox injicerar sina cache-definitioner i den. På så sätt har vi bara en service worker som gör allt.
-
-#### Konkreta ändringar
-
-**1. `vite.config.ts`** — Byt strategi från `generateSW` (default) till `injectManifest` och peka på vår custom service worker:
-
-```ts
-VitePWA({
-  strategies: 'injectManifest',
-  srcDir: 'public',
-  filename: 'sw.js',
-  registerType: 'autoUpdate',
-  // ...resten är samma
-})
-```
-
-**2. `public/sw.js`** — Lägg till Workbox-injektionspunkt överst och behåll push/notificationclick-logiken:
-
-```js
-// Workbox injicerar sitt precache-manifest här automatiskt vid build
-import { precacheAndRoute } from 'workbox-precaching';
-precacheAndRoute(self.__WB_MANIFEST);
-
-// Push-logiken finns kvar nedan (oförändrad)
-self.addEventListener('push', ...);
-self.addEventListener('notificationclick', ...);
-```
-
-**3. `src/lib/pushNotifications.ts`** — Lägg till timeout på `serviceWorker.ready` (max 5 sekunder) och bättre felhantering som loggar exakt vad som går fel, så att framtida problem är lättare att felsöka:
-
-```ts
-const registration = await Promise.race([
-  navigator.serviceWorker.ready,
-  new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 5000))
-]);
-```
-
-**4. `src/App.tsx`** — Ta bort den manuella registreringen av `/sw.js` i `PushInitializer` eftersom VitePWA sköter registreringen automatiskt. Dubbel-registrering kan orsaka problem.
-
-### Tekniska detaljer
-
-- `injectManifest`-strategin kräver att service worker-filen innehåller `self.__WB_MANIFEST` — det är platsen Workbox injicerar sitt precache-manifest
-- I development-läge fungerar `self.__WB_MANIFEST` inte utan en speciell mock — vi lägger till `if (typeof self.__WB_MANIFEST !== 'undefined')` som guard
-- VAPID-nycklarna är korrekt konfigurerade som secrets, så det problemet är inte orsaken
-- Ingen databasändring behövs
-
-### Filer som ändras
-
-- `vite.config.ts` — lägg till `strategies: 'injectManifest'`, `srcDir: 'public'`, `filename: 'sw.js'`
-- `public/sw.js` — lägg till Workbox precache-anrop överst med `__WB_MANIFEST`-guard
-- `src/lib/pushNotifications.ts` — lägg till timeout på `serviceWorker.ready` och förbättrad fellogning
-- `src/App.tsx` — ta bort manuell `navigator.serviceWorker.register('/sw.js')` i `PushInitializer`
