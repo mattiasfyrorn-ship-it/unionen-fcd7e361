@@ -121,7 +121,10 @@ export default function ResetPassword() {
             </form>
           ) : (
             <p className="text-center text-sm" style={{ color: "hsl(25, 15%, 50%)" }}>
-              Länken verkar vara ogiltig eller har redan använts. Försök begära en ny återställningslänk.
+              Den här länken är ogiltig eller har redan använts. Om du inte har ett konto, registrera dig på{" "}
+              <a href="https://fyrorn.se/hamnen" className="underline font-medium" style={{ color: "hsl(25, 30%, 35%)" }}>
+                fyrorn.se/hamnen
+              </a>.
             </p>
           )}
         </div>
