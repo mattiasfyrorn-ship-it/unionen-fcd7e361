@@ -17,14 +17,17 @@ export type Database = {
       couples: {
         Row: {
           created_at: string
+          ghl_day1_started_at: string | null
           id: string
         }
         Insert: {
           created_at?: string
+          ghl_day1_started_at?: string | null
           id?: string
         }
         Update: {
           created_at?: string
+          ghl_day1_started_at?: string | null
           id?: string
         }
         Relationships: []
@@ -366,6 +369,7 @@ export type Database = {
           display_name: string
           id: string
           pairing_code: string | null
+          phone: string | null
           share_development: boolean | null
           updated_at: string
           user_id: string
@@ -377,6 +381,7 @@ export type Database = {
           display_name?: string
           id?: string
           pairing_code?: string | null
+          phone?: string | null
           share_development?: boolean | null
           updated_at?: string
           user_id: string
@@ -388,6 +393,7 @@ export type Database = {
           display_name?: string
           id?: string
           pairing_code?: string | null
+          phone?: string | null
           share_development?: boolean | null
           updated_at?: string
           user_id?: string
