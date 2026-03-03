@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Heart } from "lucide-react";
+import hamnenLogo from "@/assets/hamnen-logo.png";
 
 export default function ResetPassword() {
   const [password, setPassword] = useState("");
@@ -46,7 +46,6 @@ export default function ResetPassword() {
     const hash = window.location.hash;
     if (hash.includes("type=recovery")) {
       handled = true;
-      // Supabase client will pick this up via onAuthStateChange
     }
 
     // If no token found at all, stop verifying
@@ -83,23 +82,20 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{
-      background: "linear-gradient(135deg, hsl(35, 40%, 95%) 0%, hsl(30, 35%, 90%) 30%, hsl(25, 30%, 87%) 60%, hsl(20, 25%, 85%) 100%)"
-    }}>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{
-            background: "linear-gradient(135deg, hsl(43, 60%, 60%), hsl(30, 50%, 50%))"
-          }}>
-            <Heart className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-4xl font-light tracking-tight" style={{
+          <img
+            src={hamnenLogo}
+            alt="Hamnen"
+            className="mx-auto h-16 w-auto mb-4"
+          />
+          <h1 className="text-4xl font-light tracking-tight text-foreground" style={{
             fontFamily: "'Cormorant Garamond', serif",
-            color: "hsl(25, 30%, 25%)"
           }}>
             Nytt lösenord
           </h1>
-          <p className="mt-2 text-sm" style={{ color: "hsl(25, 15%, 50%)" }}>
+          <p className="mt-2 text-sm text-muted-foreground">
             {verifying
               ? "Verifierar din återställningslänk…"
               : recoveryReady
@@ -108,19 +104,15 @@ export default function ResetPassword() {
           </p>
         </div>
 
-        <div className="rounded-2xl p-8 shadow-lg" style={{
-          background: "hsla(0, 0%, 100%, 0.75)",
-          backdropFilter: "blur(12px)",
-          border: "1px solid hsla(30, 30%, 80%, 0.5)"
-        }}>
+        <div className="rounded-[10px] p-8 shadow-hamnen bg-card border border-border">
           {verifying ? (
             <div className="flex justify-center py-4">
-              <div className="w-8 h-8 border-2 border-amber-600 border-t-transparent rounded-full animate-spin" />
+              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
           ) : recoveryReady ? (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: "hsl(25, 20%, 40%)" }}>
+                <label className="block text-xs font-medium mb-1.5 text-muted-foreground">
                   Nytt lösenord
                 </label>
                 <Input
@@ -130,11 +122,11 @@ export default function ResetPassword() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
-                  className="border-0 bg-white/60 text-gray-800 placeholder:text-gray-400 focus-visible:ring-amber-400/50"
+                  className="rounded-[8px]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: "hsl(25, 20%, 40%)" }}>
+                <label className="block text-xs font-medium mb-1.5 text-muted-foreground">
                   Bekräfta lösenord
                 </label>
                 <Input
@@ -144,24 +136,21 @@ export default function ResetPassword() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   minLength={6}
-                  className="border-0 bg-white/60 text-gray-800 placeholder:text-gray-400 focus-visible:ring-amber-400/50"
+                  className="rounded-[8px]"
                 />
               </div>
               <Button
                 type="submit"
-                className="w-full h-12 text-white font-medium rounded-xl shadow-md"
+                className="w-full h-12 font-medium rounded-[12px]"
                 disabled={loading}
-                style={{
-                  background: "linear-gradient(135deg, hsl(43, 60%, 55%), hsl(30, 50%, 48%))",
-                }}
               >
                 {loading ? "Sparar…" : "Spara nytt lösenord"}
               </Button>
             </form>
           ) : (
-            <p className="text-center text-sm" style={{ color: "hsl(25, 15%, 50%)" }}>
+            <p className="text-center text-sm text-muted-foreground">
               Den här länken är ogiltig eller har redan använts. Om du inte har ett konto, registrera dig på{" "}
-              <a href="https://fyrorn.se/hamnen" className="underline font-medium" style={{ color: "hsl(25, 30%, 35%)" }}>
+              <a href="https://fyrorn.se/hamnen" className="underline font-medium text-foreground">
                 fyrorn.se/hamnen
               </a>.
             </p>
