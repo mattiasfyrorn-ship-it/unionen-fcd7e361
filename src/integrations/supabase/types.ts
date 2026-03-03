@@ -147,6 +147,27 @@ export type Database = {
           },
         ]
       }
+      ghl_links: {
+        Row: {
+          created_at: string | null
+          ghl_contact_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          ghl_contact_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          ghl_contact_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       love_map_questions: {
         Row: {
           category: string | null
@@ -630,6 +651,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      webhook_events: {
+        Row: {
+          created_at: string | null
+          event_type: string | null
+          id: string
+          payload: Json | null
+          webhook_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_type?: string | null
+          id?: string
+          payload?: Json | null
+          webhook_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_type?: string | null
+          id?: string
+          payload?: Json | null
+          webhook_id?: string
+        }
+        Relationships: []
       }
       weekly_conversations: {
         Row: {

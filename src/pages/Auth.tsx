@@ -40,6 +40,8 @@ export default function Auth() {
   const { user } = useAuth();
 
   const [isLogin, setIsLogin] = useState(!inviteToken);
+  // Without invite token, force login-only mode
+  const showSignup = !isLogin && !!inviteToken;
   const [forgotPassword, setForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -158,7 +160,7 @@ export default function Auth() {
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && !forgotPassword && (
+            {showSignup && !forgotPassword && (
               <div>
                 <label className="block text-xs font-medium mb-1.5 text-muted-foreground">
                   Ditt namn
@@ -206,7 +208,7 @@ export default function Auth() {
               className="w-full h-12 font-medium rounded-xl"
               disabled={loading}
             >
-              {loading ? "Laddar..." : forgotPassword ? "Skicka återställningslänk" : isLogin ? "Logga in" : "Registrera"}
+              {loading ? "Laddar..." : forgotPassword ? "Skicka återställningslänk" : showSignup ? "Registrera" : "Logga in"}
             </Button>
           </form>
           {isLogin && !forgotPassword && (
@@ -227,16 +229,20 @@ export default function Auth() {
               >
                 Tillbaka till inloggning
               </button>
-            ) : (
+            ) : inviteToken ? (
               <>
-                {isLogin ? "Inget konto?" : "Har redan konto?"}{" "}
+                Har redan konto?{" "}
                 <button
-                  onClick={() => setIsLogin(!isLogin)}
+                  onClick={() => setIsLogin(true)}
                   className="font-medium hover:underline text-accent"
                 >
-                  {isLogin ? "Registrera dig" : "Logga in"}
+                  Logga in
                 </button>
               </>
+            ) : (
+              <span className="text-muted-foreground">
+                Inget konto? Kontakta oss för att komma igång.
+              </span>
             )}
           </p>
         </div>
