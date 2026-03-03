@@ -160,7 +160,7 @@ export default function Auth() {
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && !forgotPassword && (
+            {showSignup && !forgotPassword && (
               <div>
                 <label className="block text-xs font-medium mb-1.5 text-muted-foreground">
                   Ditt namn
