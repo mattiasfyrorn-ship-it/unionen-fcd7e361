@@ -128,8 +128,10 @@ Deno.serve(async (req) => {
         } else {
           const resendKey = Deno.env.get("RESEND_API_KEY");
           if (resendKey) {
-            const actionLink = (linkData.properties?.action_link || "")
-              .replace(/redirect_to=https?:\/\/[^\s&]*/g, "redirect_to=https://hamnen.fyrorn.se/reset-password");
+            // Extract token and build direct link (bypasses Supabase redirect allowlist)
+            const verifyUrl = new URL(linkData.properties?.action_link || "");
+            const tokenHash = verifyUrl.searchParams.get("token");
+            const actionLink = `https://hamnen.fyrorn.se/reset-password?token_hash=${tokenHash}&type=recovery`;
             const emailHtml = `
               <div style="font-family: Georgia, serif; max-width: 500px; margin: 0 auto; padding: 40px 20px;">
                 <h1 style="font-size: 28px; font-weight: 300; color: #1a1a1a; margin-bottom: 24px;">
@@ -214,8 +216,10 @@ Deno.serve(async (req) => {
         // 11. Send welcome email via Resend
         const resendKey = Deno.env.get("RESEND_API_KEY");
         if (resendKey) {
-          const actionLink = (linkData.properties?.action_link || "")
-            .replace(/redirect_to=https?:\/\/[^\s&]*/g, "redirect_to=https://hamnen.fyrorn.se/reset-password");
+          // Extract token and build direct link (bypasses Supabase redirect allowlist)
+          const verifyUrl = new URL(linkData.properties?.action_link || "");
+          const tokenHash = verifyUrl.searchParams.get("token");
+          const actionLink = `https://hamnen.fyrorn.se/reset-password?token_hash=${tokenHash}&type=recovery`;
           const emailHtml = `
             <div style="font-family: Georgia, serif; max-width: 500px; margin: 0 auto; padding: 40px 20px;">
               <h1 style="font-size: 28px; font-weight: 300; color: #1a1a1a; margin-bottom: 24px;">
