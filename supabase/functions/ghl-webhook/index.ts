@@ -110,6 +110,68 @@ Deno.serve(async (req) => {
           .update({ display_name: displayName })
           .eq("user_id", userId);
       }
+
+      // Re-send welcome email if user has never signed in
+      if (!existingUser.last_sign_in_at) {
+        console.log("User never signed in, re-sending welcome email", { email });
+        const { data: linkData, error: linkError } =
+          await supabaseAdmin.auth.admin.generateLink({
+            type: "recovery",
+            email,
+            options: {
+              redirectTo: "https://hamnen.fyrorn.se/reset-password",
+            },
+          });
+
+        if (linkError || !linkData) {
+          console.error("Failed to generate recovery link for existing user", linkError);
+        } else {
+          const resendKey = Deno.env.get("RESEND_API_KEY");
+          if (resendKey) {
+            const actionLink = linkData.properties?.action_link;
+            const emailHtml = `
+              <div style="font-family: Georgia, serif; max-width: 500px; margin: 0 auto; padding: 40px 20px;">
+                <h1 style="font-size: 28px; font-weight: 300; color: #1a1a1a; margin-bottom: 24px;">
+                  Välkommen till Hamnen, ${sanitize(firstName || displayName, 50)}!
+                </h1>
+                <p style="color: #555; line-height: 1.6; font-size: 16px;">
+                  Ditt konto har skapats. Klicka på knappen nedan för att välja ditt lösenord och komma igång.
+                </p>
+                <div style="margin: 32px 0; text-align: center;">
+                  <a href="${actionLink}" 
+                     style="display: inline-block; background: #7c6f5b; color: white; padding: 14px 32px; 
+                            border-radius: 8px; text-decoration: none; font-size: 16px;">
+                    Välj ditt lösenord
+                  </a>
+                </div>
+                <p style="color: #888; font-size: 13px; margin-top: 32px;">
+                  Om du inte förväntar dig detta mail kan du ignorera det.
+                </p>
+              </div>
+            `;
+
+            try {
+              const resendRes = await fetch("https://api.resend.com/emails", {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${resendKey}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  from: "Hamnen <noreply@mail1.fyrorn.se>",
+                  to: [email],
+                  subject: "Välkommen till Hamnen – välj ditt lösenord",
+                  html: emailHtml,
+                }),
+              });
+              const resendResult = await resendRes.json();
+              console.log("Re-sent welcome email", { resendResult });
+            } catch (emailErr) {
+              console.error("Resend email error (re-send)", emailErr);
+            }
+          }
+        }
+      }
     } else {
       // 9. Create new user
       const tempPassword = crypto.randomUUID() + "!Aa1";
