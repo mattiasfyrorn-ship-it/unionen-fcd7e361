@@ -1,5 +1,9 @@
 {
   "rewrites": [
+    {
+      "source": "/api/ghl-webhook",
+      "destination": "https://ucgarzkamhrcihmcfsul.supabase.co/functions/v1/ghl-webhook"
+    },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
