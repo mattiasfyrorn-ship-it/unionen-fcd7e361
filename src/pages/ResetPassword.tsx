@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,25 +10,56 @@ export default function ResetPassword() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(true);
   const [recoveryReady, setRecoveryReady] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
+    let handled = false;
+
+    // Method 1: token_hash in query params (direct link from our edge function)
+    const tokenHash = searchParams.get("token_hash");
+    const type = searchParams.get("type");
+
+    if (tokenHash && type === "recovery") {
+      handled = true;
+      supabase.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" })
+        .then(({ error }) => {
+          if (!error) {
+            setRecoveryReady(true);
+          }
+          setVerifying(false);
+        });
+    }
+
+    // Method 2: Supabase auth state change (fallback for standard flow)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
         setRecoveryReady(true);
+        setVerifying(false);
       }
     });
 
-    // Check if we already have a recovery session from the URL hash
+    // Method 3: Hash fragment from Supabase redirect
     const hash = window.location.hash;
     if (hash.includes("type=recovery")) {
-      setRecoveryReady(true);
+      handled = true;
+      // Supabase client will pick this up via onAuthStateChange
+    }
+
+    // If no token found at all, stop verifying
+    if (!handled) {
+      const timer = setTimeout(() => setVerifying(false), 2000);
+      return () => {
+        clearTimeout(timer);
+        subscription.unsubscribe();
+      };
     }
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,7 +100,11 @@ export default function ResetPassword() {
             Nytt lösenord
           </h1>
           <p className="mt-2 text-sm" style={{ color: "hsl(25, 15%, 50%)" }}>
-            {recoveryReady ? "Ange ditt nya lösenord nedan" : "Verifierar din återställningslänk…"}
+            {verifying
+              ? "Verifierar din återställningslänk…"
+              : recoveryReady
+                ? "Ange ditt nya lösenord nedan"
+                : "Länken är ogiltig eller har redan använts."}
           </p>
         </div>
 
@@ -78,7 +113,11 @@ export default function ResetPassword() {
           backdropFilter: "blur(12px)",
           border: "1px solid hsla(30, 30%, 80%, 0.5)"
         }}>
-          {recoveryReady ? (
+          {verifying ? (
+            <div className="flex justify-center py-4">
+              <div className="w-8 h-8 border-2 border-amber-600 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : recoveryReady ? (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-medium mb-1.5" style={{ color: "hsl(25, 20%, 40%)" }}>
