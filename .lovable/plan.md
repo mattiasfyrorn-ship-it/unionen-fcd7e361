@@ -1,68 +1,61 @@
 
-## Problem: Två service workers krockar och bryter push-notiser
 
-### Rotorsaken
+## Implementationsplan: GHL-webhook + stängd registrering
 
-Det finns en fundamental konflikt i hur service workers är uppsatta:
+### 1. Konfigurera secret
+Spara `GHL_WEBHOOK_SECRET` med värdet `hamnen_2026_03__p9K6w8rT2nV4aQ7xY1mD3sF5gH9jK4567sdgfGF` i Lovable Cloud.
 
-1. VitePWA-pluginen genererar en `sw.js` via Workbox vid build och skriver automatiskt över `public/sw.js`
-2. Vår anpassade `public/sw.js` med push-logik försvinner alltså i produktionsbygget
-3. Resultatet: `navigator.serviceWorker.ready` pekar på Workbox service worker som saknar push-hantering
-4. `reg.pushManager.subscribe(...)` kastar ett fel (t.ex. ogiltig VAPID-nyckel eller problem med workern) och fångas i `catch`-blocket → returnerar `false` → felmeddelandet visas
+### 2. Databasmigration
+Skapa två nya tabeller:
 
-Dessutom finns ett timeout-problem: `navigator.serviceWorker.ready` kan hänga länge i en vanlig webbläsarflik (inte installerad PWA) om service workern inte aktiveras direkt.
+**`webhook_events`** — idempotens
+- `id` uuid PK, `webhook_id` text UNIQUE NOT NULL, `event_type` text, `payload` jsonb, `created_at` timestamptz default now()
+- RLS enabled, inga client-policies (bara service role)
 
-### Lösning: Slå samman till en enda service worker med `injectManifest`
+**`ghl_links`** — koppling user ↔ GHL-kontakt
+- `id` uuid PK, `user_id` uuid NOT NULL, `ghl_contact_id` text UNIQUE NOT NULL, `created_at` timestamptz default now()
+- RLS enabled, inga client-policies
 
-VitePWA stöder ett läge som heter `injectManifest` där vi skriver vår egen service worker och Workbox injicerar sina cache-definitioner i den. På så sätt har vi bara en service worker som gör allt.
+### 3. Edge function: `ghl-webhook`
+Ny fil `supabase/functions/ghl-webhook/index.ts`:
 
-#### Konkreta ändringar
+- CORS-headers + OPTIONS-hantering
+- Validera `X-HAMNEN-SECRET` header
+- Validera `X-HAMNEN-EVENT` = `body.event`
+- Validera att email finns och har giltigt format
+- Bygg `webhook_id` (från body eller `event:ghl_contact_id:timestamp`)
+- Kolla `webhook_events` — om redan processad, returnera 200 direkt
+- Kolla om användare redan finns (via email) — om ja, uppdatera namn/telefon, upsert ghl_links, returnera 200
+- Skapa användare via `supabase.auth.admin.createUser({ email, email_confirm: true })`
+- Upsert i `ghl_links`
+- Generera recovery-länk via `supabase.auth.admin.generateLink({ type: 'recovery', email })`
+- Skicka välkomstmail via Resend med länk till `https://hamnen.fyrorn.se/reset-password`
+- Spara i `webhook_events`
+- Returnera `{ ok: true }`
+- Logga event_type, ghl_contact_id, email, resultat (aldrig secreten)
 
-**1. `vite.config.ts`** — Byt strategi från `generateSW` (default) till `injectManifest` och peka på vår custom service worker:
-
-```ts
-VitePWA({
-  strategies: 'injectManifest',
-  srcDir: 'public',
-  filename: 'sw.js',
-  registerType: 'autoUpdate',
-  // ...resten är samma
-})
+### 4. Config
+Lägg till i `supabase/config.toml`:
+```toml
+[functions.ghl-webhook]
+verify_jwt = false
 ```
 
-**2. `public/sw.js`** — Lägg till Workbox-injektionspunkt överst och behåll push/notificationclick-logiken:
+### 5. Auth.tsx: Villkorad registrering
+- **Utan invite-token:** Visa bara login (email + lösenord) + "Glömt lösenord" + text "Inget konto? Kontakta oss."
+- **Med invite-token:** Visa registreringsformulär (namn + email + lösenord) som idag
+- Ta bort möjligheten att växla till registrering utan invite-token
 
-```js
-// Workbox injicerar sitt precache-manifest här automatiskt vid build
-import { precacheAndRoute } from 'workbox-precaching';
-precacheAndRoute(self.__WB_MANIFEST);
-
-// Push-logiken finns kvar nedan (oförändrad)
-self.addEventListener('push', ...);
-self.addEventListener('notificationclick', ...);
-```
-
-**3. `src/lib/pushNotifications.ts`** — Lägg till timeout på `serviceWorker.ready` (max 5 sekunder) och bättre felhantering som loggar exakt vad som går fel, så att framtida problem är lättare att felsöka:
-
-```ts
-const registration = await Promise.race([
-  navigator.serviceWorker.ready,
-  new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 5000))
-]);
-```
-
-**4. `src/App.tsx`** — Ta bort den manuella registreringen av `/sw.js` i `PushInitializer` eftersom VitePWA sköter registreringen automatiskt. Dubbel-registrering kan orsaka problem.
-
-### Tekniska detaljer
-
-- `injectManifest`-strategin kräver att service worker-filen innehåller `self.__WB_MANIFEST` — det är platsen Workbox injicerar sitt precache-manifest
-- I development-läge fungerar `self.__WB_MANIFEST` inte utan en speciell mock — vi lägger till `if (typeof self.__WB_MANIFEST !== 'undefined')` som guard
-- VAPID-nycklarna är korrekt konfigurerade som secrets, så det problemet är inte orsaken
-- Ingen databasändring behövs
+### 6. Uppdatera plan.md
+Dokumentera GHL-integrationen i projektplanen.
 
 ### Filer som ändras
+| Fil | Ändring |
+|-----|---------|
+| **Ny** `supabase/functions/ghl-webhook/index.ts` | Webhook-endpoint |
+| **Migration** | `webhook_events` + `ghl_links` tabeller |
+| `supabase/config.toml` | `[functions.ghl-webhook]` |
+| `src/pages/Auth.tsx` | Registrering bara med invite-token |
+| `.lovable/plan.md` | Dokumentation |
+| **Secret** | `GHL_WEBHOOK_SECRET` |
 
-- `vite.config.ts` — lägg till `strategies: 'injectManifest'`, `srcDir: 'public'`, `filename: 'sw.js'`
-- `public/sw.js` — lägg till Workbox precache-anrop överst med `__WB_MANIFEST`-guard
-- `src/lib/pushNotifications.ts` — lägg till timeout på `serviceWorker.ready` och förbättrad fellogning
-- `src/App.tsx` — ta bort manuell `navigator.serviceWorker.register('/sw.js')` i `PushInitializer`
