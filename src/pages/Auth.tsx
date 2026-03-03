@@ -208,7 +208,7 @@ export default function Auth() {
               className="w-full h-12 font-medium rounded-xl"
               disabled={loading}
             >
-              {loading ? "Laddar..." : forgotPassword ? "Skicka återställningslänk" : isLogin ? "Logga in" : "Registrera"}
+              {loading ? "Laddar..." : forgotPassword ? "Skicka återställningslänk" : showSignup ? "Registrera" : "Logga in"}
             </Button>
           </form>
           {isLogin && !forgotPassword && (
