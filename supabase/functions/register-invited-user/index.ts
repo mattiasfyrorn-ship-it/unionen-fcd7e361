@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
 
     // Return user info - client will sign in with password
     return new Response(
-      JSON.stringify({ success: true, userId }),
+      JSON.stringify({ success: true, userId, couple_id: invitation.couple_id }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
