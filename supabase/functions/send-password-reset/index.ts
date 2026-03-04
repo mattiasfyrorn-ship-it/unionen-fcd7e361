@@ -40,18 +40,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Extract token_hash from the generated link
-    const actionLink = linkData?.properties?.action_link;
-    if (!actionLink) {
-      console.error("No action link generated");
+    // Extract hashed_token directly from the response properties
+    const tokenHash = linkData?.properties?.hashed_token;
+    if (!tokenHash) {
+      console.error("No hashed_token in generateLink response:", JSON.stringify(linkData?.properties));
       return new Response(
         JSON.stringify({ success: true }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const url = new URL(actionLink);
-    const tokenHash = url.searchParams.get("token_hash") || url.hash?.match(/token_hash=([^&]+)/)?.[1];
 
     const resetUrl = `https://hamnen.fyrorn.se/reset-password?token_hash=${tokenHash}&type=recovery`;
 

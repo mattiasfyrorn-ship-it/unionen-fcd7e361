@@ -110,6 +110,15 @@ export default function Auth() {
           const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
           if (signInErr) {
             toast({ title: "Konto skapat!", description: "Logga in med dina uppgifter.", variant: "destructive" });
+          } else {
+            // Trigger GHL webhook + confirmation emails
+            try {
+              await supabase.functions.invoke("notify-partner-paired", {
+                body: { inviteToken, inviteeName: displayName, coupleId: fnData.couple_id },
+              });
+            } catch (notifyErr) {
+              console.error("notify-partner-paired error:", notifyErr);
+            }
           }
           // onAuthStateChange will redirect to home
         }
