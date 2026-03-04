@@ -20,7 +20,7 @@ async function acceptAndNotify(inviteToken: string, inviteeName: string, toast: 
       toast({ title: "Välkommen! 💕", description: "Du är nu ihopkopplad med din partner." });
       try {
         await supabase.functions.invoke("notify-partner-paired", {
-          body: { inviteToken, inviteeName },
+          body: { inviteToken, inviteeName, coupleId: resultObj.couple_id },
         });
       } catch (e) {
         console.error("Notify error:", e);
