@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.daily-reminder]
 verify_jwt = false
+
+[functions.notify-partner-paired]
+verify_jwt = false

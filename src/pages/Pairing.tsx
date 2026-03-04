@@ -85,10 +85,16 @@ export default function Pairing() {
       } else {
         await refreshProfile();
         toast({ title: "Ihopkopplade! 💕" });
-        // Send notification emails (best-effort, don't block navigation)
+        // Send notification emails + GHL webhook (best-effort, don't block navigation)
         try {
+          // Get the couple_id from the refreshed profile
+          const { data: updatedProfile } = await supabase
+            .from("profiles")
+            .select("couple_id")
+            .eq("user_id", user.id)
+            .single();
           await supabase.functions.invoke("notify-partner-paired", {
-            body: { inviteToken: "", inviteeName: profile?.display_name || "" },
+            body: { inviteToken: "", inviteeName: profile?.display_name || "", coupleId: updatedProfile?.couple_id },
           });
         } catch (notifyErr) {
           console.error("Notify error:", notifyErr);
