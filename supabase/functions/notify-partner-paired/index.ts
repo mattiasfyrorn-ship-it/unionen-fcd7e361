@@ -192,10 +192,13 @@ Deno.serve(async (req) => {
     const buyerName = splitName(buyerProfile.display_name);
     const partnerName = splitName(partnerProfile.display_name);
 
+    const ghlSecret = Deno.env.get("GHL_WEBHOOK_SECRET");
+
     const webhookBody = {
       event: "couple_paired",
       pair_id: resolvedCoupleId,
       paired_at: new Date().toISOString(),
+      secret: ghlSecret || null,
       buyer: {
         user_id: buyerProfile.user_id,
         email: userEmails[buyerProfile.user_id] || "",
@@ -222,7 +225,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const ghlSecret = Deno.env.get("GHL_WEBHOOK_SECRET");
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (ghlSecret) headers["X-HAMNEN-SECRET"] = ghlSecret;
 
