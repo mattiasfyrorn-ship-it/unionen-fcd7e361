@@ -225,7 +225,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const ghlSecret = Deno.env.get("GHL_WEBHOOK_SECRET");
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (ghlSecret) headers["X-HAMNEN-SECRET"] = ghlSecret;
 
