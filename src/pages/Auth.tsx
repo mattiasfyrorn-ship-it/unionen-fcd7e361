@@ -76,13 +76,17 @@ export default function Auth() {
     setLoading(true);
 
     if (forgotPassword) {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      if (error) {
-        toast({ title: "Fel", description: error.message, variant: "destructive" });
-      } else {
-        toast({ title: "Kolla din e-post!", description: "Vi har skickat en länk för att återställa ditt lösenord." });
+      try {
+        const { data, error } = await supabase.functions.invoke("send-password-reset", {
+          body: { email },
+        });
+        if (error) {
+          toast({ title: "Fel", description: "Kunde inte skicka återställningslänk.", variant: "destructive" });
+        } else {
+          toast({ title: "Kolla din e-post!", description: "Vi har skickat en länk för att återställa ditt lösenord." });
+        }
+      } catch {
+        toast({ title: "Fel", description: "Något gick fel. Försök igen.", variant: "destructive" });
       }
       setLoading(false);
       return;
