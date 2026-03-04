@@ -1,113 +1,44 @@
 
-## GHL-webhook-integration + stängd registrering
 
-### Flöde
+## Problem
+
+When a partner registers via an invite link, the app calls `supabase.auth.signUp()` on the client side. This triggers the built-in email confirmation flow, but the default confirmation emails from the authentication system are not being delivered (no custom email domain or templates are configured for auth emails).
+
+The partner has already proven email ownership by clicking the invite link, so requiring a second email verification is redundant.
+
+## Solution
+
+Create a new Edge Function `register-invited-user` that creates the partner account server-side with email already confirmed (same pattern as the GHL webhook). This skips the verification email entirely.
+
+### Flow Change
 
 ```text
-GHL (kund betalar)
-  |
-  POST /functions/v1/ghl-webhook  (X-HAMNEN-SECRET + X-HAMNEN-EVENT)
-  --> Skapar User 1 (kontohavaren) via auth.admin.createUser
-  --> Skickar "Välj lösenord"-mail via Resend
+Current:
+  Partner clicks invite link → fills form → supabase.auth.signUp() → "check email" → ❌ no email arrives
 
-User 1 loggar in --> Bjuder in partner via appen
-  |
-  Partner får inbjudningslänk (/auth?invite=TOKEN)
-  --> Registreringsformuläret visas BARA med invite-token
-  --> Partner skapar konto och kopplas ihop
+New:
+  Partner clicks invite link → fills form → Edge Function creates user (pre-confirmed) → auto-login → paired
 ```
 
-### Tabeller
+### Changes
 
-- **webhook_events** — idempotens (webhook_id UNIQUE), RLS utan client-policies
-- **ghl_links** — user_id ↔ ghl_contact_id mapping, RLS utan client-policies
+**1. New Edge Function: `supabase/functions/register-invited-user/index.ts`**
+- Accepts `{ email, password, displayName, inviteToken }`
+- Validates the invite token is pending (via `partner_invitations` table)
+- Creates user via `auth.admin.createUser` with `email_confirm: true`
+- Signs in the user and returns the session
+- The existing `handle_new_user` trigger + `handle_invitation_on_signup` trigger will handle profile creation and pairing automatically
 
-### Edge function: ghl-webhook
+**2. Update `src/pages/Auth.tsx`**
+- When signing up with an invite token, call the `register-invited-user` Edge Function instead of `supabase.auth.signUp()`
+- On success, set the session directly and navigate to home (pairing happens via DB triggers)
+- Remove the "check your email" toast for invite signups
 
-- Validerar X-HAMNEN-SECRET
-- Validerar X-HAMNEN-EVENT matchar body.event
-- Idempotenskoll via webhook_events
-- Skapar användare eller uppdaterar befintlig
-- Upsert i ghl_links
-- Genererar recovery-länk och skickar välkomstmail via Resend
-- Loggar event_type, email, resultat (aldrig secrets)
+**3. Config: `supabase/config.toml`**
+- Add `[functions.register-invited-user]` with `verify_jwt = false` (user doesn't have a JWT yet)
 
-### Auth.tsx: Villkorad registrering
+### Security
+- The Edge Function validates the invite token before creating the account
+- Only pending invitations are accepted
+- The invite token acts as authorization (same as clicking a magic link)
 
-- Utan invite-token: Bara login + glömt lösenord + "Kontakta oss"
-- Med invite-token: Registreringsformulär (namn + email + lösenord)
-
-### Secrets
-
-- GHL_WEBHOOK_SECRET
-- RESEND_API_KEY (redan konfigurerad)
-
----
-
-## Problem: Två service workers krockar och bryter push-notiser
-
-### Rotorsaken
-
-Det finns en fundamental konflikt i hur service workers är uppsatta:
-
-1. VitePWA-pluginen genererar en `sw.js` via Workbox vid build och skriver automatiskt över `public/sw.js`
-2. Vår anpassade `public/sw.js` med push-logik försvinner alltså i produktionsbygget
-3. Resultatet: `navigator.serviceWorker.ready` pekar på Workbox service worker som saknar push-hantering
-4. `reg.pushManager.subscribe(...)` kastar ett fel (t.ex. ogiltig VAPID-nyckel eller problem med workern) och fångas i `catch`-blocket → returnerar `false` → felmeddelandet visas
-
-Dessutom finns ett timeout-problem: `navigator.serviceWorker.ready` kan hänga länge i en vanlig webbläsarflik (inte installerad PWA) om service workern inte aktiveras direkt.
-
-### Lösning: Slå samman till en enda service worker med `injectManifest`
-
-VitePWA stöder ett läge som heter `injectManifest` där vi skriver vår egen service worker och Workbox injicerar sina cache-definitioner i den. På så sätt har vi bara en service worker som gör allt.
-
-#### Konkreta ändringar
-
-**1. `vite.config.ts`** — Byt strategi från `generateSW` (default) till `injectManifest` och peka på vår custom service worker:
-
-```ts
-VitePWA({
-  strategies: 'injectManifest',
-  srcDir: 'public',
-  filename: 'sw.js',
-  registerType: 'autoUpdate',
-  // ...resten är samma
-})
-```
-
-**2. `public/sw.js`** — Lägg till Workbox-injektionspunkt överst och behåll push/notificationclick-logiken:
-
-```js
-// Workbox injicerar sitt precache-manifest här automatiskt vid build
-import { precacheAndRoute } from 'workbox-precaching';
-precacheAndRoute(self.__WB_MANIFEST);
-
-// Push-logiken finns kvar nedan (oförändrad)
-self.addEventListener('push', ...);
-self.addEventListener('notificationclick', ...);
-```
-
-**3. `src/lib/pushNotifications.ts`** — Lägg till timeout på `serviceWorker.ready` (max 5 sekunder) och bättre felhantering som loggar exakt vad som går fel, så att framtida problem är lättare att felsöka:
-
-```ts
-const registration = await Promise.race([
-  navigator.serviceWorker.ready,
-  new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 5000))
-]);
-```
-
-**4. `src/App.tsx`** — Ta bort den manuella registreringen av `/sw.js` i `PushInitializer` eftersom VitePWA sköter registreringen automatiskt. Dubbel-registrering kan orsaka problem.
-
-### Tekniska detaljer
-
-- `injectManifest`-strategin kräver att service worker-filen innehåller `self.__WB_MANIFEST` — det är platsen Workbox injicerar sitt precache-manifest
-- I development-läge fungerar `self.__WB_MANIFEST` inte utan en speciell mock — vi lägger till `if (typeof self.__WB_MANIFEST !== 'undefined')` som guard
-- VAPID-nycklarna är korrekt konfigurerade som secrets, så det problemet är inte orsaken
-- Ingen databasändring behövs
-
-### Filer som ändras
-
-- `vite.config.ts` — lägg till `strategies: 'injectManifest'`, `srcDir: 'public'`, `filename: 'sw.js'`
-- `public/sw.js` — lägg till Workbox precache-anrop överst med `__WB_MANIFEST`-guard
-- `src/lib/pushNotifications.ts` — lägg till timeout på `serviceWorker.ready` och förbättrad fellogning
-- `src/App.tsx` — ta bort manuell `navigator.serviceWorker.register('/sw.js')` i `PushInitializer`
