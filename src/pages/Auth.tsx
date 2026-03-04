@@ -93,27 +93,28 @@ export default function Auth() {
       if (error) {
         toast({ title: "Fel vid inloggning", description: error.message, variant: "destructive" });
       }
-    } else {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: inviteToken
-            ? `${window.location.origin}/auth?invite=${inviteToken}`
-            : window.location.origin,
-          data: {
-            display_name: displayName,
-            ...(inviteToken ? { invite_token: inviteToken } : {}),
-          },
-        },
-      });
-      if (error) {
-        toast({ title: "Fel vid registrering", description: error.message, variant: "destructive" });
-      } else if (data.user && inviteToken && data.session) {
-        // Session exists immediately — useEffect will handle pairing
-      } else {
-        toast({ title: "Kolla din e-post!", description: "Vi har skickat en verifieringslänk." });
+    } else if (inviteToken) {
+      // Use edge function — creates pre-confirmed user and pairs with partner
+      try {
+        const { data: fnData, error: fnError } = await supabase.functions.invoke("register-invited-user", {
+          body: { email, password, displayName, inviteToken },
+        });
+        if (fnError || !fnData?.success) {
+          toast({ title: "Fel vid registrering", description: fnData?.error || fnError?.message || "Något gick fel", variant: "destructive" });
+        } else {
+          // User created & paired — sign in with password
+          const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
+          if (signInErr) {
+            toast({ title: "Konto skapat!", description: "Logga in med dina uppgifter.", variant: "destructive" });
+          }
+          // onAuthStateChange will redirect to home
+        }
+      } catch (err) {
+        toast({ title: "Fel vid registrering", description: "Kunde inte skapa konto. Försök igen.", variant: "destructive" });
       }
+    } else {
+      // No invite token — should not happen (signup disabled without invite)
+      toast({ title: "Fel", description: "Registrering kräver en inbjudningslänk.", variant: "destructive" });
     }
     setLoading(false);
   };
