@@ -118,19 +118,56 @@ export default function DailyCheck() {
       const calcStart = format(subDays(new Date(), numDays + 60), "yyyy-MM-dd");
       const displayStart = format(subDays(new Date(), numDays), "yyyy-MM-dd");
 
-      const { data } = await supabase
+      // My checks
+      const { data: myChecks } = await supabase
         .from("daily_checks")
         .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted, climate")
         .eq("user_id", user.id)
         .gte("check_date", calcStart)
         .order("check_date", { ascending: true });
 
-      const points = computeRelationskonto(data || [], calcStart, endDate)
+      const myPoints = computeRelationskonto(myChecks || [], calcStart, endDate)
         .filter(p => p.date >= displayStart);
-      setGraphData(points);
+
+      // Partner checks (if coupled)
+      if (profile?.couple_id) {
+        const { data: partnerChecks } = await supabase
+          .from("daily_checks")
+          .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted, climate")
+          .eq("couple_id", profile.couple_id!)
+          .neq("user_id", user.id)
+          .gte("check_date", calcStart)
+          .order("check_date", { ascending: true });
+
+        if (partnerChecks && partnerChecks.length > 0) {
+          const partnerPoints = computeRelationskonto(partnerChecks, calcStart, endDate)
+            .filter(p => p.date >= displayStart);
+
+          // Merge: average konto + average climate
+          const merged = myPoints.map((mp, i) => {
+            const pp = partnerPoints[i];
+            const ourVal = pp ? Math.round(((mp.value + pp.value) / 2) * 10) / 10 : mp.value;
+            const myClim = mp.climate;
+            const ppClim = pp?.climate;
+            let ourClimate: number | undefined;
+            if (myClim != null && ppClim != null) {
+              ourClimate = Math.round(((myClim + ppClim) / 2) * 10) / 10;
+            } else if (myClim != null) {
+              ourClimate = myClim;
+            } else if (ppClim != null) {
+              ourClimate = ppClim;
+            }
+            return { date: mp.date, value: ourVal, climate: ourClimate };
+          });
+          setGraphData(merged);
+          return;
+        }
+      }
+
+      setGraphData(myPoints);
     };
     fetchGraph();
-  }, [user, graphRange]);
+  }, [user, graphRange, profile?.couple_id]);
 
   const handleSave = async () => {
     if (!user || !profile) return;
