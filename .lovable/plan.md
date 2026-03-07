@@ -1,113 +1,90 @@
 
-## GHL-webhook-integration + stängd registrering
 
-### Flöde
+# Designuppdatering – Hamnen App
 
-```text
-GHL (kund betalar)
-  |
-  POST /functions/v1/ghl-webhook  (X-HAMNEN-SECRET + X-HAMNEN-EVENT)
-  --> Skapar User 1 (kontohavaren) via auth.admin.createUser
-  --> Skickar "Välj lösenord"-mail via Resend
-
-User 1 loggar in --> Bjuder in partner via appen
-  |
-  Partner får inbjudningslänk (/auth?invite=TOKEN)
-  --> Registreringsformuläret visas BARA med invite-token
-  --> Partner skapar konto och kopplas ihop
-```
-
-### Tabeller
-
-- **webhook_events** — idempotens (webhook_id UNIQUE), RLS utan client-policies
-- **ghl_links** — user_id ↔ ghl_contact_id mapping, RLS utan client-policies
-
-### Edge function: ghl-webhook
-
-- Validerar X-HAMNEN-SECRET
-- Validerar X-HAMNEN-EVENT matchar body.event
-- Idempotenskoll via webhook_events
-- Skapar användare eller uppdaterar befintlig
-- Upsert i ghl_links
-- Genererar recovery-länk och skickar välkomstmail via Resend
-- Loggar event_type, email, resultat (aldrig secrets)
-
-### Auth.tsx: Villkorad registrering
-
-- Utan invite-token: Bara login + glömt lösenord + "Kontakta oss"
-- Med invite-token: Registreringsformulär (namn + email + lösenord)
-
-### Secrets
-
-- GHL_WEBHOOK_SECRET
-- RESEND_API_KEY (redan konfigurerad)
+En genomgripande visuell uppgradering baserad på designguiden för att skapa en varm, lugn och taktil upplevelse.
 
 ---
 
-## Problem: Två service workers krockar och bryter push-notiser
+## Sammanfattning
 
-### Rotorsaken
+Uppdateringen berör CSS-variabler, komponentfiler och sidorna för att appen ska kännas som "ett rum, inte ett verktyg". Fokus: färgjusteringar, mjukare kort, terrakotta-accenter på relationella ikoner, mjukare progress bars, subtil bakgrundstextur, mer luft och varm input-fokus.
 
-Det finns en fundamental konflikt i hur service workers är uppsatta:
+---
 
-1. VitePWA-pluginen genererar en `sw.js` via Workbox vid build och skriver automatiskt över `public/sw.js`
-2. Vår anpassade `public/sw.js` med push-logik försvinner alltså i produktionsbygget
-3. Resultatet: `navigator.serviceWorker.ready` pekar på Workbox service worker som saknar push-hantering
-4. `reg.pushManager.subscribe(...)` kastar ett fel (t.ex. ogiltig VAPID-nyckel eller problem med workern) och fångas i `catch`-blocket → returnerar `false` → felmeddelandet visas
+## Ändringar
 
-Dessutom finns ett timeout-problem: `navigator.serviceWorker.ready` kan hänga länge i en vanlig webbläsarflik (inte installerad PWA) om service workern inte aktiveras direkt.
+### 1. Färger & CSS-variabler (`src/index.css`)
+- Uppdatera `--card` till `#E8E1D8` (HSL ~34 15% 85%)
+- Uppdatera `--hamnen-terracotta` och `--accent` till `#C17A50` (HSL ~18 52% 54%)
+- Lägg till `--hamnen-terracotta-raw: 18 52% 54%` för enkel referens
+- Lägg till subtil bakgrundstextur via CSS (radial-gradient med mycket låg opacitet) på `body`
 
-### Lösning: Slå samman till en enda service worker med `injectManifest`
+### 2. Kort – mjukare (`src/components/ui/card.tsx`)
+- Ändra `rounded-lg` → `rounded-xl` (12px)
+- Ta bort `border` och ersätt med `border-none`
+- Uppdatera shadow till `0 4px 12px rgba(0,0,0,0.05)`
 
-VitePWA stöder ett läge som heter `injectManifest` där vi skriver vår egen service worker och Workbox injicerar sina cache-definitioner i den. På så sätt har vi bara en service worker som gör allt.
+### 3. Progress bars (`src/components/ui/progress.tsx`)
+- Ändra höjd från `h-4` → `h-1.5` (6px)
+- Lägg till gradient-bakgrund (olivgrön → ljusare grön) på indikatorn
+- Rundade hörn `rounded-full` (redan finns)
 
-#### Konkreta ändringar
+### 4. Input-fält – varm fokus (`src/components/ui/input.tsx` + `src/components/ui/textarea.tsx`)
+- Ändra `focus-visible:ring-ring` → `focus-visible:ring-[hsl(var(--hamnen-terracotta))]`
+- Ändra `focus-visible:ring-offset-2` → `focus-visible:ring-offset-1` för subtilare effekt
 
-**1. `vite.config.ts`** — Byt strategi från `generateSW` (default) till `injectManifest` och peka på vår custom service worker:
+### 5. Ikonfärgstrategi – terrakotta för relationella ikoner
+Alla sidor uppdateras enligt principen:
+- **Olivgrön** (`text-primary`): struktur/system (navigation, grafer, sparaknappar)
+- **Terrakotta** (`text-accent`): relation/känsla
 
-```ts
-VitePWA({
-  strategies: 'injectManifest',
-  srcDir: 'public',
-  filename: 'sw.js',
-  registerType: 'autoUpdate',
-  // ...resten är samma
-})
-```
+Sidor som berörs:
+- **Dashboard.tsx**: Trendinsikter-ikon, Vår riktning, ikoner i trendkort → terrakotta. Byt label "Trendinsikter" → "Relationsinsikter"
+- **DailyCheck.tsx**: Love Map, Uppskattning & Närvaro, Turn Toward, Klimat-ikoner → terrakotta
+- **Evaluate.tsx**: Kropp, Sinne, Relationer, Mission-ikoner → terrakotta
+- **Repair.tsx**: Hjärt-ikon, Shield ("Jag är triggad"), Handshake (Reparation) → terrakotta
+- **WeeklyConversation.tsx**: Hjärt/dialog-ikoner → terrakotta
 
-**2. `public/sw.js`** — Lägg till Workbox-injektionspunkt överst och behåll push/notificationclick-logiken:
+### 6. Spacing – mer luft
+- Ändra `space-y-8` / `space-y-6` / `space-y-4` till `space-y-10` eller `space-y-12` på sidnivå för huvudsektioner
+- Lägg till `py-8` på huvudcontainer i `AppLayout.tsx` (mobil)
 
-```js
-// Workbox injicerar sitt precache-manifest här automatiskt vid build
-import { precacheAndRoute } from 'workbox-precaching';
-precacheAndRoute(self.__WB_MANIFEST);
+### 7. Navigation – inaktiv färg
+- Ändra inaktiva ikoner från `text-muted-foreground/60` till salviagrön `#A8B4A2` (via `text-hamnen-sage`)
 
-// Push-logiken finns kvar nedan (oförändrad)
-self.addEventListener('push', ...);
-self.addEventListener('notificationclick', ...);
-```
+### 8. Transitions
+- Redan konfigurerade till ease-in-out. Verifiera att `transition-all duration-300` finns på interaktiva element
 
-**3. `src/lib/pushNotifications.ts`** — Lägg till timeout på `serviceWorker.ready` (max 5 sekunder) och bättre felhantering som loggar exakt vad som går fel, så att framtida problem är lättare att felsöka:
+### 9. Subtil bakgrundstextur
+- Lägg till en `::before` pseudo-element på `body` med en radial-gradient i sandtoner vid extremt låg opacitet för att bryta platthet
 
-```ts
-const registration = await Promise.race([
-  navigator.serviceWorker.ready,
-  new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 5000))
-]);
-```
+### 10. Tailwind-config (`tailwind.config.ts`)
+- Uppdatera `shadow-hamnen` till `0 4px 12px rgba(0,0,0,0.05)`
 
-**4. `src/App.tsx`** — Ta bort den manuella registreringen av `/sw.js` i `PushInitializer` eftersom VitePWA sköter registreringen automatiskt. Dubbel-registrering kan orsaka problem.
+---
 
-### Tekniska detaljer
+## Filer som ändras
 
-- `injectManifest`-strategin kräver att service worker-filen innehåller `self.__WB_MANIFEST` — det är platsen Workbox injicerar sitt precache-manifest
-- I development-läge fungerar `self.__WB_MANIFEST` inte utan en speciell mock — vi lägger till `if (typeof self.__WB_MANIFEST !== 'undefined')` som guard
-- VAPID-nycklarna är korrekt konfigurerade som secrets, så det problemet är inte orsaken
-- Ingen databasändring behövs
+| Fil | Typ av ändring |
+|-----|---------------|
+| `src/index.css` | Färgvariabler, bakgrundstextur |
+| `tailwind.config.ts` | Shadow-värde |
+| `src/components/ui/card.tsx` | Border-radius, border, shadow |
+| `src/components/ui/progress.tsx` | Höjd, gradient |
+| `src/components/ui/input.tsx` | Fokus-ring terrakotta |
+| `src/components/ui/textarea.tsx` | Fokus-ring terrakotta |
+| `src/components/AppLayout.tsx` | Nav inaktiv färg, spacing |
+| `src/pages/Dashboard.tsx` | Ikonfärger, labels, spacing |
+| `src/pages/DailyCheck.tsx` | Ikonfärger, spacing |
+| `src/pages/Evaluate.tsx` | Ikonfärger, spacing |
+| `src/pages/Repair.tsx` | Ikonfärger, spacing |
+| `src/pages/WeeklyConversation.tsx` | Ikonfärger, spacing |
 
-### Filer som ändras
+---
 
-- `vite.config.ts` — lägg till `strategies: 'injectManifest'`, `srcDir: 'public'`, `filename: 'sw.js'`
-- `public/sw.js` — lägg till Workbox precache-anrop överst med `__WB_MANIFEST`-guard
-- `src/lib/pushNotifications.ts` — lägg till timeout på `serviceWorker.ready` och förbättrad fellogning
-- `src/App.tsx` — ta bort manuell `navigator.serviceWorker.register('/sw.js')` i `PushInitializer`
+## Vad ändras INTE
+- Ingen ny funktionalitet eller databasändring
+- Inga nya dependencies
+- Befintlig navigationsstruktur bibehålls
+
