@@ -55,8 +55,30 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    const { inviteToken, inviteeName, coupleId } = await req.json();
+    const body = await req.json();
+
+    // Direct-to-GHL passthrough mode
+    if (body.directToGhl && body.payload) {
+      const webhookUrl = Deno.env.get("GHL_COUPLE_PAIRED_WEBHOOK_URL");
+      if (!webhookUrl) {
+        return new Response(JSON.stringify({ success: false, error: "no_webhook_url" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const ghlSecret = Deno.env.get("GHL_WEBHOOK_SECRET");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (ghlSecret) headers["X-HAMNEN-SECRET"] = ghlSecret;
+
+      console.log("Direct GHL passthrough, payload:", JSON.stringify(body.payload));
+      const res = await fetch(webhookUrl, { method: "POST", headers, body: JSON.stringify(body.payload) });
+      console.log("GHL response:", res.status);
+      const resBody = await res.text();
+      return new Response(JSON.stringify({ success: res.ok, ghl_status: res.status, ghl_body: resBody }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { inviteToken, inviteeName, coupleId } = body;
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
