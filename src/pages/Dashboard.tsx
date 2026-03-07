@@ -419,6 +419,7 @@ export default function Dashboard() {
     );
   };
 
+  const hasPartner = !!partnerName;
   const displayKonto = partnerKonto !== null
     ? Math.round(((myKonto + partnerKonto) / 2) * 10) / 10
     : myKonto;
