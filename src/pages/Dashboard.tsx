@@ -435,14 +435,14 @@ export default function Dashboard() {
     : myKonto;
 
   return (
-    <div className="space-y-8 max-w-2xl mx-auto">
+    <div className="space-y-10 max-w-2xl mx-auto">
       {/* Onboarding progression */}
       <OnboardingBanner />
 
       {/* Solo-läge banner */}
       {!hasPartner && (
         <div className="flex items-center gap-3 rounded-[10px] border-none shadow-hamnen bg-card px-4 py-3 text-sm text-muted-foreground">
-          <Heart className="w-4 h-4 shrink-0 text-primary" strokeWidth={1.5} />
+          <Heart className="w-4 h-4 shrink-0 text-accent" strokeWidth={1.5} />
           <span>
             Din partner har inte registrerat sig ännu.{" "}
             <Link to="/pairing" className="text-accent underline-offset-2 hover:underline">
@@ -455,13 +455,13 @@ export default function Dashboard() {
       {/* Trend insights – first */}
       {trends.length > 0 && (
         <div className="space-y-3">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Trendinsikter</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Relationsinsikter</p>
           {trends.map((trend, i) => (
             <div
               key={i}
               className={`flex items-center gap-3 p-4 rounded-xl border-none shadow-sm ${
                trend.positive
-                  ? "bg-primary/5 text-primary"
+                  ? "bg-primary/5 text-accent"
                   : "bg-accent/5 text-accent"
               }`}
             >
@@ -482,7 +482,7 @@ export default function Dashboard() {
         <CardHeader className="pb-2">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Kvartalsmål</p>
           <CardTitle className="flex items-center gap-2 text-lg font-serif">
-            <Target className="w-5 h-5 text-primary" strokeWidth={1.5} /> Vår riktning
+            <Target className="w-5 h-5 text-accent" strokeWidth={1.5} /> Vår riktning
           </CardTitle>
           <p className="text-xs text-muted-foreground">Q{Math.floor(new Date().getMonth() / 3) + 1} {new Date().getFullYear()}</p>
         </CardHeader>

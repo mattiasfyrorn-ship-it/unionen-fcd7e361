@@ -253,21 +253,21 @@ export default function WeeklyConversation() {
     {
       key: "appreciations",
       title: "Uppskattningar",
-      icon: <Heart className="w-5 h-5 text-primary" />,
+      icon: <Heart className="w-5 h-5 text-accent" />,
       myContent: appreciations.filter(Boolean),
       partnerContent: partnerEntry?.appreciations?.filter(Boolean) || [],
     },
     {
       key: "wins",
       title: "Vad gick bra",
-      icon: <Sparkles className="w-5 h-5 text-primary" />,
+      icon: <Sparkles className="w-5 h-5 text-accent" />,
       myContent: wins.filter(Boolean),
       partnerContent: partnerEntry?.wins?.filter(Boolean) || [],
     },
     {
       key: "issues",
       title: "Frågor / Problem",
-      icon: <MessageCircle className="w-5 h-5 text-primary" />,
+      icon: <MessageCircle className="w-5 h-5 text-accent" />,
       myContent: issues.filter(i => i.text.trim()).map(i => `${i.text} (${i.tag})`),
       partnerContent: (Array.isArray(partnerEntry?.issues) ? partnerEntry.issues as Issue[] : []).filter((i: Issue) => i.text?.trim()).map((i: Issue) => `${i.text} (${i.tag})`),
     },
@@ -285,14 +285,14 @@ export default function WeeklyConversation() {
     {
       key: "intention",
       title: "Positiv intention",
-      icon: <Sparkles className="w-5 h-5 text-primary" />,
+      icon: <Sparkles className="w-5 h-5 text-accent" />,
       myContent: intention ? [intention] : [],
       partnerContent: partnerEntry?.intention ? [partnerEntry.intention] : [],
     },
     {
       key: "closing",
       title: "Avslutning",
-      icon: <SmilePlus className="w-5 h-5 text-primary" />,
+      icon: <SmilePlus className="w-5 h-5 text-accent" />,
       myContent: [],
       partnerContent: [],
     },
@@ -435,7 +435,7 @@ export default function WeeklyConversation() {
   }
 
   return (
-    <div className="space-y-4 max-w-2xl mx-auto">
+    <div className="space-y-6 max-w-2xl mx-auto">
       <div>
         <h1 className="text-3xl text-primary">Veckosamtal</h1>
         <p className="text-muted-foreground text-sm">State of the Union – förbered och genomför ert veckosamtal</p>
@@ -502,7 +502,7 @@ export default function WeeklyConversation() {
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
-            <MessageCircle className="w-5 h-5 text-primary" />
+            <MessageCircle className="w-5 h-5 text-accent" />
             Uppskattningar (5 st)
           </CardTitle>
           <p className="text-xs text-muted-foreground">Sparas i er gemensamma uppskattningsbank</p>
@@ -599,7 +599,7 @@ export default function WeeklyConversation() {
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary" />
+            <Sparkles className="w-5 h-5 text-accent" />
             Positiv intention
           </CardTitle>
         </CardHeader>
@@ -612,7 +612,7 @@ export default function WeeklyConversation() {
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
-            <SmilePlus className="w-5 h-5 text-primary" />
+            <SmilePlus className="w-5 h-5 text-accent" />
             Utcheckning
           </CardTitle>
         </CardHeader>
