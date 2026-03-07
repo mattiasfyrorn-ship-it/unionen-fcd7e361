@@ -215,64 +215,78 @@ Deno.serve(async (req) => {
     const buyerName = splitName(buyerProfile.display_name);
     const partnerName = splitName(partnerProfile.display_name);
 
+    const SECRET = "hamnen_2026_03__p9K6w8rT2nV4aQ7xY1mD3sF5gH9jK4567sdgfGF";
     const ghlSecret = Deno.env.get("GHL_WEBHOOK_SECRET");
+    const pairLabel = `${buyerName.first_name} ❤️ ${partnerName.first_name}`;
 
-    const webhookBody = {
-      event: "couple_paired",
+    // --- Buyer webhook ---
+    const buyerWebhookUrl = Deno.env.get("GHL_COUPLE_PAIRED_WEBHOOK_URL");
+    const partnerWebhookUrl = "https://services.leadconnectorhq.com/hooks/4tOGnrR93KwicWUuAMjo/webhook-trigger/85w9PolTRd0uBagG7iV6";
+
+    const buyerPayload = {
+      event: "buyer_connected",
+      secret: SECRET,
+      email: userEmails[buyerProfile.user_id] || "",
+      first_name: buyerName.first_name,
+      last_name: buyerName.last_name,
+      phone: (buyerProfile as any).phone || null,
+      user_id: buyerProfile.user_id,
       pair_id: resolvedCoupleId,
-      paired_at: new Date().toISOString(),
-      secret: ghlSecret || null,
-      buyer: {
-        user_id: buyerProfile.user_id,
-        email: userEmails[buyerProfile.user_id] || "",
-        first_name: buyerName.first_name,
-        last_name: buyerName.last_name,
-        phone: (buyerProfile as any).phone || null,
-        ghl_contact_id: ghlMap[buyerProfile.user_id] || null,
-      },
-      partner: {
-        user_id: partnerProfile.user_id,
-        email: userEmails[partnerProfile.user_id] || "",
-        first_name: partnerName.first_name,
-        last_name: partnerName.last_name,
-        phone: (partnerProfile as any).phone || null,
-        ghl_contact_id: ghlMap[partnerProfile.user_id] || null,
-      },
+      role: "buyer",
+      partner_name: partnerName.first_name,
+      partner_email: userEmails[partnerProfile.user_id] || "",
+      pair_label: pairLabel,
     };
 
-    const webhookUrl = Deno.env.get("GHL_COUPLE_PAIRED_WEBHOOK_URL");
-    if (!webhookUrl) {
-      console.error("GHL_COUPLE_PAIRED_WEBHOOK_URL not configured");
-      return new Response(JSON.stringify({ success: true, ghl: "no_webhook_url" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const partnerPayload = {
+      event: "partner_connected",
+      secret: SECRET,
+      email: userEmails[partnerProfile.user_id] || "",
+      first_name: partnerName.first_name,
+      last_name: partnerName.last_name,
+      phone: (partnerProfile as any).phone || null,
+      user_id: partnerProfile.user_id,
+      pair_id: resolvedCoupleId,
+      role: "partner",
+      partner_name: buyerName.first_name,
+      partner_email: userEmails[buyerProfile.user_id] || "",
+      pair_label: pairLabel,
+    };
 
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (ghlSecret) headers["X-HAMNEN-SECRET"] = ghlSecret;
 
-    console.log("Sending GHL webhook for couple:", resolvedCoupleId,
-      "buyer:", userEmails[buyerProfile.user_id],
-      "partner:", userEmails[partnerProfile.user_id]);
+    console.log("Sending buyer webhook for couple:", resolvedCoupleId, "email:", buyerPayload.email);
+    console.log("Sending partner webhook for couple:", resolvedCoupleId, "email:", partnerPayload.email);
 
-    const webhookRes = await fetch(webhookUrl, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(webhookBody),
-    });
+    // Send both webhooks in parallel
+    const [buyerRes, partnerRes] = await Promise.all([
+      buyerWebhookUrl
+        ? fetch(buyerWebhookUrl, { method: "POST", headers, body: JSON.stringify(buyerPayload) })
+        : Promise.resolve(null),
+      fetch(partnerWebhookUrl, { method: "POST", headers, body: JSON.stringify(partnerPayload) }),
+    ]);
 
-    console.log("GHL webhook response:", webhookRes.status);
+    const buyerOk = buyerRes ? buyerRes.ok : false;
+    const partnerOk = partnerRes.ok;
 
-    if (webhookRes.ok) {
-      // Mark as sent (idempotency)
+    console.log("Buyer webhook response:", buyerRes?.status ?? "no_url", "Partner webhook response:", partnerRes.status);
+
+    if (!buyerOk && buyerRes) {
+      console.error("Buyer webhook failed:", buyerRes.status, await buyerRes.text());
+    }
+    if (!partnerOk) {
+      console.error("Partner webhook failed:", partnerRes.status, await partnerRes.text());
+    }
+
+    const bothOk = (buyerOk || !buyerWebhookUrl) && partnerOk;
+
+    if (bothOk) {
       await admin
         .from("couples")
         .update({ ghl_day1_started_at: new Date().toISOString() } as any)
         .eq("id", resolvedCoupleId);
       console.log("GHL day1 marked for couple:", resolvedCoupleId);
-    } else {
-      const body = await webhookRes.text();
-      console.error("GHL webhook failed:", webhookRes.status, body);
     }
 
     return new Response(JSON.stringify({
