@@ -1,0 +1,1 @@
+UPDATE couples SET ghl_day1_started_at = NULL WHERE id = '1af24043-b84d-4388-82bd-080be5db87e2';
