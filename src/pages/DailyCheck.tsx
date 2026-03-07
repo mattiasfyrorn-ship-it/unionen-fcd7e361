@@ -185,7 +185,6 @@ export default function DailyCheck() {
       {/* Card 1: Love Map */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Love Map</p>
           <CardTitle className="flex items-center gap-2 text-base font-serif">
             <Map className="w-5 h-5 text-primary" strokeWidth={1.5} />
             Love Map
@@ -215,7 +214,6 @@ export default function DailyCheck() {
       {/* Card 2: Appreciation & Presence */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Uppskattning</p>
           <CardTitle className="flex items-center gap-2 text-base font-serif">
             <Heart className="w-5 h-5 text-primary" strokeWidth={1.5} />
             Uppskattning & Närvaro
@@ -242,7 +240,6 @@ export default function DailyCheck() {
       {/* Card 3: Turn Toward */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Turn Toward</p>
           <CardTitle className="flex items-center gap-2 text-base font-serif">
             <ArrowRightLeft className="w-5 h-5 text-primary" strokeWidth={1.5} />
             Turn Toward
@@ -288,7 +285,6 @@ export default function DailyCheck() {
       {/* Card 4: Let Partner Influence */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Påverkan</p>
           <CardTitle className="flex items-center gap-2 text-base font-serif">
             <Handshake className="w-5 h-5 text-primary" strokeWidth={1.5} />
             Låt partner påverka
@@ -311,7 +307,6 @@ export default function DailyCheck() {
       {/* Card 5: Climate */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Klimat</p>
           <CardTitle className="flex items-center gap-2 text-base font-serif">
             <CloudSun className="w-5 h-5 text-primary" strokeWidth={1.5} />
             Klimat
@@ -340,7 +335,6 @@ export default function DailyCheck() {
       {/* Graph */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Utveckling</p>
           <CardTitle className="text-lg font-serif">Utveckling</CardTitle>
         </CardHeader>
         <CardContent>
