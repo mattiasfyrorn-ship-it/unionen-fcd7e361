@@ -291,8 +291,10 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({
       success: true,
-      ghl: webhookRes.ok ? "sent" : "failed",
-      ghl_status: webhookRes.status,
+      ghl_buyer: buyerOk ? "sent" : (buyerWebhookUrl ? "failed" : "no_url"),
+      ghl_partner: partnerOk ? "sent" : "failed",
+      buyer_status: buyerRes?.status ?? null,
+      partner_status: partnerRes.status,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
