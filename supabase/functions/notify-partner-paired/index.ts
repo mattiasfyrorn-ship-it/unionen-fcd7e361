@@ -55,6 +55,7 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  try {
     const body = await req.json();
 
     // Direct-to-GHL passthrough mode
