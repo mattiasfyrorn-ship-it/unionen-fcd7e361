@@ -1,29 +1,113 @@
 
+## GHL-webhook-integration + stängd registrering
 
-## Plan: Split GHL webhook into two separate calls (buyer + partner)
+### Flöde
 
-### What changes
+```text
+GHL (kund betalar)
+  |
+  POST /functions/v1/ghl-webhook  (X-HAMNEN-SECRET + X-HAMNEN-EVENT)
+  --> Skapar User 1 (kontohavaren) via auth.admin.createUser
+  --> Skickar "Välj lösenord"-mail via Resend
 
-Modify the `notify-partner-paired` edge function to send **two separate webhook POST requests** when a couple is paired:
+User 1 loggar in --> Bjuder in partner via appen
+  |
+  Partner får inbjudningslänk (/auth?invite=TOKEN)
+  --> Registreringsformuläret visas BARA med invite-token
+  --> Partner skapar konto och kopplas ihop
+```
 
-1. **Buyer webhook** → sent to the existing `GHL_COUPLE_PAIRED_WEBHOOK_URL` with event `"buyer_connected"` and the new flat payload format
-2. **Partner webhook** → sent to `https://services.leadconnectorhq.com/hooks/4tOGnrR93KwicWUuAMjo/webhook-trigger/85w9PolTRd0uBagG7iV6` with event `"partner_connected"` and the matching flat payload format
+### Tabeller
 
-### Payload structure (both use same shape, swapping buyer/partner perspective)
+- **webhook_events** — idempotens (webhook_id UNIQUE), RLS utan client-policies
+- **ghl_links** — user_id ↔ ghl_contact_id mapping, RLS utan client-policies
 
-Each webhook includes: `event`, `secret` (hardcoded value from your spec), `email`, `first_name`, `last_name`, `phone`, `user_id`, `pair_id`, `role`, `partner_name`, `partner_email`, `pair_label`.
+### Edge function: ghl-webhook
 
-### Technical details
+- Validerar X-HAMNEN-SECRET
+- Validerar X-HAMNEN-EVENT matchar body.event
+- Idempotenskoll via webhook_events
+- Skapar användare eller uppdaterar befintlig
+- Upsert i ghl_links
+- Genererar recovery-länk och skickar välkomstmail via Resend
+- Loggar event_type, email, resultat (aldrig secrets)
 
-**File: `supabase/functions/notify-partner-paired/index.ts`**
+### Auth.tsx: Villkorad registrering
 
-- Replace the single `webhookBody` construction and single `fetch()` call with two separate payloads and two separate `fetch()` calls
-- Partner webhook URL is hardcoded (or stored as a new secret — but since you provided it directly, I will hardcode it like the secret string)
-- The `secret` field uses the value `"hamnen_2026_03__p9K6w8rT2nV4aQ7xY1mD3sF5gH9jK4567sdgfGF"` directly in the payload (no longer from env var in the body, though `X-HAMNEN-SECRET` header can remain)
-- Both webhooks must succeed (or be logged) before marking `ghl_day1_started_at`
-- The `directToGhl` passthrough mode and email notification logic remain unchanged
+- Utan invite-token: Bara login + glömt lösenord + "Kontakta oss"
+- Med invite-token: Registreringsformulär (namn + email + lösenord)
 
-### New secret needed
+### Secrets
 
-A new secret `GHL_PARTNER_WEBHOOK_URL` for the partner webhook URL, or hardcode it. I will hardcode it since you provided the URL directly. If you prefer it as a secret, let me know.
+- GHL_WEBHOOK_SECRET
+- RESEND_API_KEY (redan konfigurerad)
 
+---
+
+## Problem: Två service workers krockar och bryter push-notiser
+
+### Rotorsaken
+
+Det finns en fundamental konflikt i hur service workers är uppsatta:
+
+1. VitePWA-pluginen genererar en `sw.js` via Workbox vid build och skriver automatiskt över `public/sw.js`
+2. Vår anpassade `public/sw.js` med push-logik försvinner alltså i produktionsbygget
+3. Resultatet: `navigator.serviceWorker.ready` pekar på Workbox service worker som saknar push-hantering
+4. `reg.pushManager.subscribe(...)` kastar ett fel (t.ex. ogiltig VAPID-nyckel eller problem med workern) och fångas i `catch`-blocket → returnerar `false` → felmeddelandet visas
+
+Dessutom finns ett timeout-problem: `navigator.serviceWorker.ready` kan hänga länge i en vanlig webbläsarflik (inte installerad PWA) om service workern inte aktiveras direkt.
+
+### Lösning: Slå samman till en enda service worker med `injectManifest`
+
+VitePWA stöder ett läge som heter `injectManifest` där vi skriver vår egen service worker och Workbox injicerar sina cache-definitioner i den. På så sätt har vi bara en service worker som gör allt.
+
+#### Konkreta ändringar
+
+**1. `vite.config.ts`** — Byt strategi från `generateSW` (default) till `injectManifest` och peka på vår custom service worker:
+
+```ts
+VitePWA({
+  strategies: 'injectManifest',
+  srcDir: 'public',
+  filename: 'sw.js',
+  registerType: 'autoUpdate',
+  // ...resten är samma
+})
+```
+
+**2. `public/sw.js`** — Lägg till Workbox-injektionspunkt överst och behåll push/notificationclick-logiken:
+
+```js
+// Workbox injicerar sitt precache-manifest här automatiskt vid build
+import { precacheAndRoute } from 'workbox-precaching';
+precacheAndRoute(self.__WB_MANIFEST);
+
+// Push-logiken finns kvar nedan (oförändrad)
+self.addEventListener('push', ...);
+self.addEventListener('notificationclick', ...);
+```
+
+**3. `src/lib/pushNotifications.ts`** — Lägg till timeout på `serviceWorker.ready` (max 5 sekunder) och bättre felhantering som loggar exakt vad som går fel, så att framtida problem är lättare att felsöka:
+
+```ts
+const registration = await Promise.race([
+  navigator.serviceWorker.ready,
+  new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 5000))
+]);
+```
+
+**4. `src/App.tsx`** — Ta bort den manuella registreringen av `/sw.js` i `PushInitializer` eftersom VitePWA sköter registreringen automatiskt. Dubbel-registrering kan orsaka problem.
+
+### Tekniska detaljer
+
+- `injectManifest`-strategin kräver att service worker-filen innehåller `self.__WB_MANIFEST` — det är platsen Workbox injicerar sitt precache-manifest
+- I development-läge fungerar `self.__WB_MANIFEST` inte utan en speciell mock — vi lägger till `if (typeof self.__WB_MANIFEST !== 'undefined')` som guard
+- VAPID-nycklarna är korrekt konfigurerade som secrets, så det problemet är inte orsaken
+- Ingen databasändring behövs
+
+### Filer som ändras
+
+- `vite.config.ts` — lägg till `strategies: 'injectManifest'`, `srcDir: 'public'`, `filename: 'sw.js'`
+- `public/sw.js` — lägg till Workbox precache-anrop överst med `__WB_MANIFEST`-guard
+- `src/lib/pushNotifications.ts` — lägg till timeout på `serviceWorker.ready` och förbättrad fellogning
+- `src/App.tsx` — ta bort manuell `navigator.serviceWorker.register('/sw.js')` i `PushInitializer`
