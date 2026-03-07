@@ -80,7 +80,7 @@ export default {
         },
       },
       boxShadow: {
-        hamnen: "0 4px 20px rgba(58,51,45,0.06)",
+        hamnen: "0 4px 12px rgba(0,0,0,0.05)",
       },
       borderRadius: {
         lg: "var(--radius)",
