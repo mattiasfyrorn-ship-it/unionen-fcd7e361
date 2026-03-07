@@ -59,7 +59,7 @@ export default function Dashboard() {
   const [myKonto, setMyKonto] = useState(0);
   const [partnerKonto, setPartnerKonto] = useState<number | null>(null);
   const [kontoTrend, setKontoTrend] = useState(0);
-  const [kontoView, setKontoView] = useState<"mine" | "ours">("mine");
+  // kontoView removed — summary always shows "ours"
 
   // Trend insights
   const [trends, setTrends] = useState<TrendInsight[]>([]);
@@ -419,8 +419,7 @@ export default function Dashboard() {
     );
   };
 
-  const hasPartner = !!partnerName;
-  const displayKonto = kontoView === "ours" && partnerKonto !== null
+  const displayKonto = partnerKonto !== null
     ? Math.round(((myKonto + partnerKonto) / 2) * 10) / 10
     : myKonto;
 
@@ -512,18 +511,10 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Relationskonto summary card */}
+      {/* Relationskonto summary card – always "vårt" */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardContent className="pt-6">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Relationskonto</p>
-            {hasPartner && (
-              <ToggleGroup type="single" value={kontoView} onValueChange={(v) => v && setKontoView(v as any)} size="sm">
-                <ToggleGroupItem value="mine" className="text-xs">Mitt</ToggleGroupItem>
-                <ToggleGroupItem value="ours" className="text-xs">Vårt</ToggleGroupItem>
-              </ToggleGroup>
-            )}
-          </div>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">Relationskonto</p>
           <div className="flex items-baseline gap-2">
             <span className="text-4xl font-bold text-primary">{Math.round(displayKonto)}</span>
             <span className="text-lg text-muted-foreground">/ 100</span>
