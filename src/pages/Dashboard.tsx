@@ -138,9 +138,7 @@ export default function Dashboard() {
 
     const myPoints = computeRelationskonto(myChecks || [], startDate, endDate);
     const myVal = getLatestKonto(myPoints);
-    const myTrend = get7DayTrend(myPoints);
     setMyKonto(myVal);
-    setKontoTrend(myTrend);
 
     // Partner checks
     if (profile?.couple_id) {
@@ -154,9 +152,21 @@ export default function Dashboard() {
 
       if (partnerChecks && partnerChecks.length > 0) {
         const partnerPoints = computeRelationskonto(partnerChecks, startDate, endDate);
-        setPartnerKonto(getLatestKonto(partnerPoints));
+        const pVal = getLatestKonto(partnerPoints);
+        setPartnerKonto(pVal);
+
+        // Compute trend based on "ours" (averaged)
+        const merged = myPoints.map((mp, i) => {
+          const pp = partnerPoints[i];
+          return { ...mp, value: pp ? Math.round(((mp.value + pp.value) / 2) * 10) / 10 : mp.value };
+        });
+        setKontoTrend(get7DayTrend(merged));
+        return;
       }
     }
+
+    // No partner — trend from own data
+    setKontoTrend(get7DayTrend(myPoints));
   };
 
   const rebuildGraphs = async () => {
