@@ -9,7 +9,7 @@
     --background: 37 25% 92%;
     --foreground: 28 13% 20%;
 
-    --card: 34 22% 88%;
+    --card: 34 15% 85%;
     --card-foreground: 28 13% 20%;
 
     --popover: 37 25% 92%;
@@ -24,7 +24,7 @@
     --muted: 34 15% 85%;
     --muted-foreground: 28 10% 45%;
 
-    --accent: 18 48% 56%;
+    --accent: 18 52% 54%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 50%;
@@ -56,7 +56,7 @@
     --hamnen-text: 28 13% 20%;
     --hamnen-forest: 106 16% 36%;
     --hamnen-ocean: 200 30% 35%;
-    --hamnen-terracotta: 18 48% 56%;
+    --hamnen-terracotta: 18 52% 54%;
     --hamnen-sage: 100 10% 67%;
   }
 }
@@ -70,6 +70,20 @@
   body {
     @apply bg-background text-foreground font-sans;
     font-family: 'Inter', sans-serif;
+    position: relative;
+  }
+
+  /* Subtle organic background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 600px 400px at 20% 30%, hsl(37 25% 88% / 0.4), transparent),
+      radial-gradient(ellipse 500px 500px at 80% 70%, hsl(34 22% 86% / 0.3), transparent),
+      radial-gradient(ellipse 400px 300px at 50% 90%, hsl(18 52% 54% / 0.03), transparent);
   }
 
   h1, h2, h3, h4 {

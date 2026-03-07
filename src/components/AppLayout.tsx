@@ -94,7 +94,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       )}
 
       {/* Content */}
-      <main className={`flex-1 container mx-auto px-4 py-6 ${isMobile ? "pb-24" : ""}`}>
+      <main className={`flex-1 container mx-auto px-4 py-8 ${isMobile ? "pb-24" : ""}`}>
         {children}
       </main>
 
@@ -110,7 +110,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                   key={item.to}
                   to={item.to}
                   className={`flex flex-col items-center gap-0.5 px-3 py-1 transition-colors duration-300 ${
-                    active ? "text-primary" : "text-muted-foreground/60"
+                    active ? "text-primary" : "text-hamnen-sage"
                   }`}
                 >
                   <Icon className="w-5 h-5" strokeWidth={1.5} />

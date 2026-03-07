@@ -207,7 +207,7 @@ export default function DailyCheck() {
   };
 
   return (
-    <div className="space-y-4 max-w-2xl mx-auto">
+    <div className="space-y-6 max-w-2xl mx-auto">
       <div>
         <h1 className="text-3xl text-primary font-serif">Relationskontot</h1>
         <p className="text-muted-foreground text-sm">3–5 minuter. Konsekvent handling stärker relationen.</p>
@@ -223,7 +223,7 @@ export default function DailyCheck() {
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base font-serif">
-            <Map className="w-5 h-5 text-primary" strokeWidth={1.5} />
+            <Map className="w-5 h-5 text-accent" strokeWidth={1.5} />
             Love Map
           </CardTitle>
         </CardHeader>
@@ -252,7 +252,7 @@ export default function DailyCheck() {
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base font-serif">
-            <Heart className="w-5 h-5 text-primary" strokeWidth={1.5} />
+            <Heart className="w-5 h-5 text-accent" strokeWidth={1.5} />
             Uppskattning & Närvaro
           </CardTitle>
         </CardHeader>
@@ -278,7 +278,7 @@ export default function DailyCheck() {
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base font-serif">
-            <ArrowRightLeft className="w-5 h-5 text-primary" strokeWidth={1.5} />
+            <ArrowRightLeft className="w-5 h-5 text-accent" strokeWidth={1.5} />
             Turn Toward
           </CardTitle>
         </CardHeader>
@@ -323,7 +323,7 @@ export default function DailyCheck() {
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base font-serif">
-            <Handshake className="w-5 h-5 text-primary" strokeWidth={1.5} />
+            <Handshake className="w-5 h-5 text-accent" strokeWidth={1.5} />
             Låt partner påverka
           </CardTitle>
         </CardHeader>
@@ -345,7 +345,7 @@ export default function DailyCheck() {
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base font-serif">
-            <CloudSun className="w-5 h-5 text-primary" strokeWidth={1.5} />
+            <CloudSun className="w-5 h-5 text-accent" strokeWidth={1.5} />
             Klimat
           </CardTitle>
         </CardHeader>
