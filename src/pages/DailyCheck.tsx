@@ -372,7 +372,7 @@ export default function DailyCheck() {
       {/* Graph */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-serif">Utveckling</CardTitle>
+          <CardTitle className="text-lg font-serif">Vår utveckling</CardTitle>
         </CardHeader>
         <CardContent>
           <ToggleGroup type="single" value={graphRange} onValueChange={(v) => v && setGraphRange(v)} className="mb-4">
