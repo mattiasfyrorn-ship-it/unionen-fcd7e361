@@ -172,7 +172,6 @@ export default function Evaluate() {
         return (
           <Card key={area.key} className="rounded-[10px] border-none shadow-hamnen">
             <CardHeader className="pb-2">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{area.label}</p>
               <CardTitle className="flex items-center gap-2 text-lg font-serif">
                 <Icon className="w-5 h-5 text-primary" strokeWidth={1.5} />
                 {area.label}
@@ -208,7 +207,6 @@ export default function Evaluate() {
       {/* Need & Want */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Idag</p>
           <CardTitle className="text-lg font-serif">Idag</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -236,7 +234,6 @@ export default function Evaluate() {
       {/* Graph */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Näring</p>
           <CardTitle className="text-lg font-serif">Total näring över tid</CardTitle>
         </CardHeader>
         <CardContent>
