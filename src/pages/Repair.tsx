@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Heart, ArrowRight, ArrowLeft, Check, Clock, MessageCircle, ChevronDown, Shield, Handshake, Link2, Send, Lightbulb } from "lucide-react";
+import InfoButton from "@/components/InfoButton";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import BreathingAnimation from "@/components/BreathingAnimation";
@@ -317,7 +318,10 @@ export default function Repair() {
       {step === 0 && (
         <div className="flex flex-col items-center gap-8 py-12 text-center animate-fade-in">
           <Heart className="w-12 h-12 text-primary" />
-          <h1 className="text-3xl text-primary">Reglering</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl text-primary">Reglering</h1>
+            <InfoButton title="Reglering & Reparation" description="Reglering handlar om att lugna ditt nervsystem när du är triggad – innan du försöker lösa konflikten. Reparation är konsten att återknyta efter att ni har krockat. Forskning visar att reparationsförsök är den starkaste prediktorn för långsiktig relationshälsa. Det spelar mindre roll att ni bråkar – det avgörande är att ni reparerar." />
+          </div>
           <p className="text-muted-foreground max-w-sm">
             Är du triggad och behöver reglera dig, eller är du lugn och redo att reparera?
           </p>
@@ -339,7 +343,7 @@ export default function Repair() {
             <BreathingAnimation duration={30} onComplete={() => setBreathingDone(true)} />
           ) : (
             <>
-              <h2 className="text-2xl text-primary">Känsla & Kropp</h2>
+              <h2 className="text-2xl text-primary flex items-center gap-2">Känsla & Kropp <InfoButton title="Känsla & Kropp" description="När vi är triggade aktiveras kroppens stressrespons. Genom att namnge vad du känner och var i kroppen du känner det, sänker du aktiveringen. Forskning visar att redan att sätta ord på en känsla minskar amygdalas respons." /></h2>
               <p className="text-muted-foreground">Vad känner jag just nu? Var känns det i kroppen?</p>
               <div className="relative">
                 <Textarea value={feelingBody} onChange={(e) => setFeelingBody(e.target.value.slice(0, 150))} placeholder="Beskriv kort..." rows={3} className="bg-muted/50 resize-none" />
@@ -356,7 +360,7 @@ export default function Repair() {
 
       {step === 2 && (
         <div className="space-y-6 animate-fade-in">
-          <h2 className="text-2xl text-primary">Historien</h2>
+          <h2 className="text-2xl text-primary flex items-center gap-2">Historien <InfoButton title="Historien" description="Vi skapar alltid en berättelse om vad som hände – och den berättelsen är sällan hela sanningen. Genom att skriva ner din historia blir du medveten om att det är just en tolkning, inte fakta." /></h2>
           <p className="text-muted-foreground">Vad är historien jag berättar om det som hände?</p>
           <div className="relative">
             <Textarea value={story} onChange={(e) => setStory(e.target.value.slice(0, 200))} placeholder="Min historia..." rows={3} className="bg-muted/50 resize-none" />
@@ -371,7 +375,7 @@ export default function Repair() {
 
       {step === 3 && (
         <div className="space-y-6 animate-fade-in">
-          <h2 className="text-2xl text-primary">Behovet</h2>
+          <h2 className="text-2xl text-primary flex items-center gap-2">Behovet <InfoButton title="Behovet" description="Bakom varje reaktion finns ett ouppfyllt behov. Att identifiera behovet hjälper dig att kommunicera vad du faktiskt vill – istället för att attackera eller dra dig undan. Det gör det lättare för din partner att möta dig." /></h2>
           <p className="text-muted-foreground">Vilket behov blev inte mött?</p>
           <div className="space-y-3">
             {NEEDS_OPTIONS.map((need) => (
@@ -437,7 +441,7 @@ export default function Repair() {
 
       {step === 5 && (
         <div className="space-y-6 animate-fade-in">
-          <h2 className="text-2xl text-primary">Historia vs Fakta</h2>
+          <h2 className="text-2xl text-primary flex items-center gap-2">Historia vs Fakta <InfoButton title="Historia vs Fakta" description="Att skilja på observerbar fakta och din tolkning är ett kraftfullt verktyg. Fakta är vad en kamera skulle fånga. Tolkningen är allt du lägger ovanpå – antaganden, känslor, gamla mönster. Denna separation minskar försvarsreaktioner hos din partner." /></h2>
           <div className="space-y-4">
             <div className="space-y-2">
               <p className="text-sm font-medium text-foreground">Observerbar fakta</p>
@@ -465,7 +469,7 @@ export default function Repair() {
 
       {step === 6 && (
         <div className="space-y-6 animate-fade-in">
-          <h2 className="text-2xl text-primary">Självansvar</h2>
+          <h2 className="text-2xl text-primary flex items-center gap-2">Självansvar <InfoButton title="Självansvar" description="Att ta ansvar för din del – utan att ta på dig allt – är transformerande för en relation. Det visar mognad och skapar trygghet. Det handlar inte om skuld utan om att äga sin påverkan." /></h2>
           <p className="text-muted-foreground">Vad kan jag göra annorlunda nästa gång?</p>
           <div className="relative">
             <Textarea value={selfResponsibility} onChange={(e) => setSelfResponsibility(e.target.value.slice(0, 200))} rows={3} className="bg-muted/50 resize-none" />

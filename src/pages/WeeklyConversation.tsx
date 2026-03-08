@@ -9,8 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   MessageCircle, Plus, Trash2, CheckCircle, Loader2, Lock, Unlock,
-  ChevronDown, CalendarDays, Sparkles, Heart, ClipboardList, SmilePlus, Play
+  ChevronDown, CalendarDays, Sparkles, Heart, ClipboardList, SmilePlus, Play, Clock
 } from "lucide-react";
+import InfoButton from "@/components/InfoButton";
 
 function getWeekStart() {
   const d = new Date();
@@ -438,7 +439,10 @@ export default function WeeklyConversation() {
     <div className="space-y-6 max-w-2xl mx-auto">
       <div>
         <h1 className="text-3xl text-primary">Veckosamtal</h1>
-        <p className="text-muted-foreground text-sm">State of the Union – förbered och genomför ert veckosamtal</p>
+        <p className="text-muted-foreground text-sm flex items-center gap-1">
+          State of the Union – förbered och genomför ert veckosamtal
+          <InfoButton title="Veckosamtal" description="Veckosamtalet (State of the Union) är ett strukturerat möte där ni sammanfattar veckan, delar uppskattningar, tar upp frågor och sätter riktning framåt. Forskning visar att par som regelbundet checkar in med varandra förebygger att små irritationer blir stora konflikter." />
+        </p>
       </div>
 
       {/* Start meeting button */}
@@ -504,6 +508,7 @@ export default function WeeklyConversation() {
           <CardTitle className="text-base flex items-center gap-2">
             <MessageCircle className="w-5 h-5 text-accent" />
             Uppskattningar (5 st)
+            <InfoButton title="Uppskattningar" description="Att dela fem specifika uppskattningar varje vecka bygger en kultur av tacksamhet. Var konkret: 'Tack för att du lyssnade igår kväll' slår 'Du är bra'. Specifik uppskattning visar att du ser din partner." />
           </CardTitle>
           <p className="text-xs text-muted-foreground">Sparas i er gemensamma uppskattningsbank</p>
         </CardHeader>
@@ -524,7 +529,7 @@ export default function WeeklyConversation() {
       {/* Wins */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Vad gick bra?</CardTitle>
+          <CardTitle className="text-base flex items-center gap-2">Vad gick bra? <InfoButton title="Vad gick bra?" description="Att identifiera vad som fungerade förstärker positiva mönster i relationen. Det skapar medvetenhet om era styrkor som par." /></CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           {wins.map((w, i) => (
@@ -543,7 +548,7 @@ export default function WeeklyConversation() {
       {/* Issues */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Frågor / Problem att ta upp</CardTitle>
+          <CardTitle className="text-base flex items-center gap-2">Frågor / Problem att ta upp <InfoButton title="Frågor / Problem" description="Här tar ni upp saker som behöver diskuteras. Tagga varje fråga som praktisk, emotionell eller vision. Gottman-forskning visar att 69% av alla parproblem är olösliga – de behöver hanteras med dialog, inte lösning." /></CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {issues.map((issue, i) => (
@@ -586,6 +591,7 @@ export default function WeeklyConversation() {
           <CardTitle className="text-base flex items-center gap-2">
             <ClipboardList className="w-5 h-5 text-primary" />
             Praktiskt kommande vecka
+            <InfoButton title="Praktiskt" description="Logistik och planering minskar friktion i vardagen. Genom att gå igenom vem som gör vad, när ni ses och speciella behov – förebygger ni missförstånd och frustration." />
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -601,10 +607,25 @@ export default function WeeklyConversation() {
           <CardTitle className="text-base flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-accent" />
             Positiv intention
+            <InfoButton title="Positiv intention" description="En positiv intention sätter riktning för veckan. Det kan vara 'Jag vill vara mer närvarande vid middagen' eller 'Jag vill visa uppskattning varje dag'. Intentioner fungerar som en inre kompass." />
           </CardTitle>
         </CardHeader>
         <CardContent>
           <Input placeholder="Min positiva intention för veckan..." value={intention} onChange={(e) => setIntention(e.target.value)} className="bg-muted/50 border-border text-sm" disabled={ready} />
+        </CardContent>
+      </Card>
+
+      {/* Next meeting time */}
+      <Card className="rounded-[10px] border-none shadow-hamnen">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Clock className="w-5 h-5 text-primary" />
+            Tid för nästa möte
+            <InfoButton title="Tid för nästa möte" description="Boka in nästa veckosamtal redan nu. Par som schemalägger sina möten i förväg håller rutinen bättre. Hitta en tid som fungerar för båda – det behöver inte vara lång, 30–45 minuter räcker." />
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Input placeholder="T.ex. Söndag kl 19:00" value={logistics.when || ""} onChange={(e) => setLogistics(prev => ({ ...prev, when: e.target.value }))} className="bg-muted/50 border-border text-sm" disabled={ready} />
         </CardContent>
       </Card>
 
@@ -614,6 +635,7 @@ export default function WeeklyConversation() {
           <CardTitle className="text-base flex items-center gap-2">
             <SmilePlus className="w-5 h-5 text-accent" />
             Utcheckning
+            <InfoButton title="Utcheckning" description="Avsluta samtalet genom att dela en känsla. Det skapar ett mjukt avslut och fördjupar den emotionella kontakten. Det behöver inte vara stort – bara ärligt." />
           </CardTitle>
         </CardHeader>
         <CardContent>

@@ -8,16 +8,17 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { Heart, Brain, Users, Compass, Sparkles, Loader2 } from "lucide-react";
+import InfoButton from "@/components/InfoButton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import WeekDayPicker from "@/components/WeekDayPicker";
 import { format, startOfWeek } from "date-fns";
 
 const AREAS = [
-  { key: "health", label: "Kropp", icon: Heart, description: "Fysisk hälsa, energi & avslappning" },
-  { key: "career", label: "Sinne", icon: Brain, description: "Mental & emotionell balans" },
-  { key: "economy", label: "Relationer", icon: Users, description: "Status i relationer generellt & hur påfylld du är av dessa" },
-  { key: "relationships", label: "Mission", icon: Compass, description: "Meningsfullhet, bidragande karriär & ekonomi" },
+  { key: "health", label: "Kropp", icon: Heart, description: "Fysisk hälsa, energi & avslappning", info: "Din kropp bär allt du gör. Sömn, kost, rörelse och vila påverkar direkt din förmåga att vara närvarande i relationen. Bedöm hur väl du tar hand om din fysiska hälsa." },
+  { key: "career", label: "Sinne", icon: Brain, description: "Mental & emotionell balans", info: "Ditt sinne behöver omsorg. Mental hälsa, stresshantering, mindfulness och emotionell reglering – allt detta påverkar hur du möter din partner. Bedöm din mentala balans." },
+  { key: "economy", label: "Relationer", icon: Users, description: "Status i relationer generellt & hur påfylld du är av dessa", info: "Dina relationer utanför parrelationen – vänner, familj, kollegor – fyller på din sociala tank. Om du är isolerad blir partnern din enda källa till kontakt, vilket skapar orimligt tryck." },
+  { key: "relationships", label: "Mission", icon: Compass, description: "Meningsfullhet, bidragande karriär & ekonomi", info: "Meningsfullhet handlar om att du lever i linje med dina värderingar – genom arbete, ekonomi eller annat bidragande. När du känner mening i ditt eget liv har du mer att ge i relationen." },
 ];
 
 const DEFAULT_SCORES = { health: 5, career: 5, economy: 5, relationships: 5 };
@@ -153,7 +154,7 @@ export default function Evaluate() {
       <div>
         <div className="flex items-center gap-2 mb-1">
           <Sparkles className="w-6 h-6 text-primary" strokeWidth={1.5} />
-          <h1 className="text-3xl text-primary font-serif">Närd</h1>
+          <h1 className="text-3xl text-primary font-serif flex items-center gap-2">Närd <InfoButton title="Närd" description="För en djup meningsfull relation behöver du vara närd i fyra livsområden: Kropp, Sinne, Relationer och Mission. Om du inte tar hand om dig själv har du mindre att ge. Här följer du upp hur du mår i varje område – inte för att prestera, utan för att bli medveten." /></h1>
         </div>
         <p className="text-muted-foreground text-sm max-w-lg">
           För en djup meningsfull relation behöver du leva närd. Annars blir du inte relaterbar. 
@@ -175,6 +176,7 @@ export default function Evaluate() {
               <CardTitle className="flex items-center gap-2 text-lg font-serif">
                 <Icon className="w-5 h-5 text-primary" strokeWidth={1.5} />
                 {area.label}
+                <InfoButton title={area.label} description={area.info} />
               </CardTitle>
               <p className="text-sm text-muted-foreground">{area.description}</p>
             </CardHeader>

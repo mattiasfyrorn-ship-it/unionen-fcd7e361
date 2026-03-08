@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { Map, Heart, ArrowRightLeft, Handshake, RefreshCw, Loader2, CloudSun } from "lucide-react";
+import InfoButton from "@/components/InfoButton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import WeekDayPicker from "@/components/WeekDayPicker";
@@ -210,7 +211,7 @@ export default function DailyCheck() {
     <div className="space-y-6 max-w-2xl mx-auto">
       <div>
         <h1 className="text-3xl text-primary font-serif">Relationskontot</h1>
-        <p className="text-muted-foreground text-sm">3–5 minuter. Konsekvent handling stärker relationen.</p>
+        <p className="text-muted-foreground text-sm flex items-center gap-1">3–5 minuter. Konsekvent handling stärker relationen. <InfoButton title="Relationskontot" description="Relationskontot är en metafor för den emotionella balansen i er relation. Varje dag gör du insättningar genom uppskattning, närvaro, att vända dig mot din partner och visa flexibilitet. Utan dagliga insättningar sjunker kontot sakta. Målet är att bygga ett starkt positivt saldo som bär er genom svårare perioder." /></p>
       </div>
 
       <WeekDayPicker
@@ -223,8 +224,9 @@ export default function DailyCheck() {
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base font-serif">
-            <Map className="w-5 h-5 text-primaryyyyy" strokeWidth={1.5} />
+            <Map className="w-5 h-5 text-primary" strokeWidth={1.5} />
             Love Map
+            <InfoButton title="Love Map" description="Love Maps handlar om att aktivt lära känna din partners inre värld – drömmar, rädslor, minnen och vardagstankar. Par som kontinuerligt uppdaterar sin karta över partnern har starkare relationer. Ställ frågan och lyssna nyfiket." />
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -252,8 +254,9 @@ export default function DailyCheck() {
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base font-serif">
-            <Heart className="w-5 h-5 tprimaryryryryt" strokeWidth={1.5} />
+            <Heart className="w-5 h-5 text-primary" strokeWidth={1.5} />
             Uppskattning & Närvaro
+            <InfoButton title="Uppskattning & Närvaro" description="Att ge specifik uppskattning bygger en kultur av tacksamhet. Emotionell närvaro innebär att du aktivt lyssnar och visar intresse. 5:1-regeln: det krävs fem positiva interaktioner för varje negativ." />
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -278,8 +281,9 @@ export default function DailyCheck() {
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base font-serif">
-            <ArrowRightLeft className="w-5 h-5primaryaryarynt" strokeWidth={1.5} />
+            <ArrowRightLeft className="w-5 h-5 text-primary" strokeWidth={1.5} />
             Turn Toward
+            <InfoButton title="Turn Toward" description="'Turn Toward' betyder att du aktivt besvarar din partners försök att nå dig. Par som vänder sig mot varandras försök 86% av tiden har starka relationer. Varje litet gensvar räknas." />
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -323,8 +327,9 @@ export default function DailyCheck() {
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base font-serif">
-            <Handshake className="w-5 h-5primarymaryent" strokeWidth={1.5} />
+            <Handshake className="w-5 h-5 text-primary" strokeWidth={1.5} />
             Låt partner påverka
+            <InfoButton title="Låt partner påverka" description="Att låta din partner påverka dig handlar om att göra plats för bådas behov. Små justeringar signalerar respekt och partnerskap – en av de starkaste prediktorerna för långvarig kärlek." />
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -345,8 +350,9 @@ export default function DailyCheck() {
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base font-serif">
-            <CloudSun className="w-5 h-5 tprimarycent" strokeWidth={1.5} />
+            <CloudSun className="w-5 h-5 text-primary" strokeWidth={1.5} />
             Klimat
+            <InfoButton title="Klimat" description="Relationens klimat är den känslomässiga temperaturen mellan er. Genom att dagligen reflektera över klimatet blir du medveten om mönster och kan fånga negativa trender tidigt." />
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
