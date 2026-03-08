@@ -327,8 +327,9 @@ export default function DailyCheck() {
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base font-serif">
-            <Handshake className="w-5 h-5primarymaryent" strokeWidth={1.5} />
+            <Handshake className="w-5 h-5 text-primary" strokeWidth={1.5} />
             Låt partner påverka
+            <InfoButton title="Låt partner påverka" description="Att låta din partner påverka dig handlar om att göra plats för bådas behov. Små justeringar signalerar respekt och partnerskap – en av de starkaste prediktorerna för långvarig kärlek." />
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
