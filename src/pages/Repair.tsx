@@ -520,7 +520,7 @@ export default function Repair() {
           <div className="space-y-3">
             <Card className={`cursor-pointer border-2 transition-all ${quickCategory === "responsibility" ? "border-primary" : "border-border/50"}`} onClick={() => { setQuickCategory("responsibility"); setStep(11); }}>
               <CardContent className="p-6 flex items-center gap-4">
-                <Shield className="w-8 h-8 text-accent shrink-0" />
+                <Shield className="w-8 h-8 text-primary shrink-0" />
                 <div className="text-left">
                   <p className="font-medium text-foreground">Jag vill ta ansvar</p>
                   <p className="text-sm text-muted-foreground">Erkänna min del</p>
