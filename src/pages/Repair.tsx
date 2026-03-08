@@ -318,7 +318,10 @@ export default function Repair() {
       {step === 0 && (
         <div className="flex flex-col items-center gap-8 py-12 text-center animate-fade-in">
           <Heart className="w-12 h-12 text-primary" />
-          <h1 className="text-3xl text-primary">Reglering</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl text-primary">Reglering</h1>
+            <InfoButton title="Reglering & Reparation" description="Reglering handlar om att lugna ditt nervsystem när du är triggad – innan du försöker lösa konflikten. Reparation är konsten att återknyta efter att ni har krockat. Forskning visar att reparationsförsök är den starkaste prediktorn för långsiktig relationshälsa. Det spelar mindre roll att ni bråkar – det avgörande är att ni reparerar." />
+          </div>
           <p className="text-muted-foreground max-w-sm">
             Är du triggad och behöver reglera dig, eller är du lugn och redo att reparera?
           </p>
