@@ -15,10 +15,10 @@ import WeekDayPicker from "@/components/WeekDayPicker";
 import { format, startOfWeek } from "date-fns";
 
 const AREAS = [
-  { key: "health", label: "Kropp", icon: Heart, description: "Fysisk hälsa, energi & avslappning" },
-  { key: "career", label: "Sinne", icon: Brain, description: "Mental & emotionell balans" },
-  { key: "economy", label: "Relationer", icon: Users, description: "Status i relationer generellt & hur påfylld du är av dessa" },
-  { key: "relationships", label: "Mission", icon: Compass, description: "Meningsfullhet, bidragande karriär & ekonomi" },
+  { key: "health", label: "Kropp", icon: Heart, description: "Fysisk hälsa, energi & avslappning", info: "Din kropp bär allt du gör. Sömn, kost, rörelse och vila påverkar direkt din förmåga att vara närvarande i relationen. Bedöm hur väl du tar hand om din fysiska hälsa." },
+  { key: "career", label: "Sinne", icon: Brain, description: "Mental & emotionell balans", info: "Ditt sinne behöver omsorg. Mental hälsa, stresshantering, mindfulness och emotionell reglering – allt detta påverkar hur du möter din partner. Bedöm din mentala balans." },
+  { key: "economy", label: "Relationer", icon: Users, description: "Status i relationer generellt & hur påfylld du är av dessa", info: "Dina relationer utanför parrelationen – vänner, familj, kollegor – fyller på din sociala tank. Om du är isolerad blir partnern din enda källa till kontakt, vilket skapar orimligt tryck." },
+  { key: "relationships", label: "Mission", icon: Compass, description: "Meningsfullhet, bidragande karriär & ekonomi", info: "Meningsfullhet handlar om att du lever i linje med dina värderingar – genom arbete, ekonomi eller annat bidragande. När du känner mening i ditt eget liv har du mer att ge i relationen." },
 ];
 
 const DEFAULT_SCORES = { health: 5, career: 5, economy: 5, relationships: 5 };
