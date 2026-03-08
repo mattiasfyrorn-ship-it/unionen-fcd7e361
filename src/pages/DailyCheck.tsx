@@ -223,7 +223,7 @@ export default function DailyCheck() {
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base font-serif">
-            <Map className="w-5 h-5 text-accent" strokeWidth={1.5} />
+            <Map className="w-5 h-5 text-primary" strokeWidth={1.5} />
             Love Map
           </CardTitle>
         </CardHeader>
