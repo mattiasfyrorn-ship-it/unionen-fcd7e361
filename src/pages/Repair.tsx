@@ -375,7 +375,7 @@ export default function Repair() {
 
       {step === 3 && (
         <div className="space-y-6 animate-fade-in">
-          <h2 className="text-2xl text-primary">Behovet</h2>
+          <h2 className="text-2xl text-primary flex items-center gap-2">Behovet <InfoButton title="Behovet" description="Bakom varje reaktion finns ett ouppfyllt behov. Att identifiera behovet hjälper dig att kommunicera vad du faktiskt vill – istället för att attackera eller dra dig undan. Det gör det lättare för din partner att möta dig." /></h2>
           <p className="text-muted-foreground">Vilket behov blev inte mött?</p>
           <div className="space-y-3">
             {NEEDS_OPTIONS.map((need) => (
