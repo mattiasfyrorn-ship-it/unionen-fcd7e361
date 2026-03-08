@@ -362,7 +362,10 @@ export default function Repair() {
             <Textarea value={story} onChange={(e) => setStory(e.target.value.slice(0, 200))} placeholder="Min historia..." rows={3} className="bg-muted/50 resize-none" />
             <span className="absolute bottom-2 right-3 text-xs text-muted-foreground">{story.length}/200</span>
           </div>
-          <Button onClick={() => setStep(3)} disabled={!story.trim()}>Nästa <ArrowRight className="w-4 h-4 ml-2" /></Button>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={() => setStep(1)}><ArrowLeft className="w-4 h-4 mr-2" /> Bakåt</Button>
+            <Button onClick={() => setStep(3)} disabled={!story.trim()}>Nästa <ArrowRight className="w-4 h-4 ml-2" /></Button>
+          </div>
         </div>
       )}
 
