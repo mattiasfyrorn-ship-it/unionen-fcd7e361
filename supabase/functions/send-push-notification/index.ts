@@ -123,6 +123,8 @@ serve(async (req) => {
         icon: '/icon-192.png',
         badge: '/icon-192.png',
         data: { type, url: type === 'message' ? '/messages' : '/repair' },
+        requireInteraction: true,
+        silent: false,
       });
 
       let sent = 0;
