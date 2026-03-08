@@ -254,8 +254,9 @@ export default function DailyCheck() {
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base font-serif">
-            <Heart className="w-5 h-5 tprimaryryryryt" strokeWidth={1.5} />
+            <Heart className="w-5 h-5 text-primary" strokeWidth={1.5} />
             Uppskattning & Närvaro
+            <InfoButton title="Uppskattning & Närvaro" description="Att ge specifik uppskattning bygger en kultur av tacksamhet. Emotionell närvaro innebär att du aktivt lyssnar och visar intresse. 5:1-regeln: det krävs fem positiva interaktioner för varje negativ." />
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
