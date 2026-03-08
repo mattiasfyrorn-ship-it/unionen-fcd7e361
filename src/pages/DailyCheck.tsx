@@ -211,7 +211,7 @@ export default function DailyCheck() {
     <div className="space-y-6 max-w-2xl mx-auto">
       <div>
         <h1 className="text-3xl text-primary font-serif">Relationskontot</h1>
-        <p className="text-muted-foreground text-sm">3–5 minuter. Konsekvent handling stärker relationen.</p>
+        <p className="text-muted-foreground text-sm flex items-center gap-1">3–5 minuter. Konsekvent handling stärker relationen. <InfoButton title="Relationskontot" description="Relationskontot är en metafor för den emotionella balansen i er relation. Varje dag gör du insättningar genom uppskattning, närvaro, att vända dig mot din partner och visa flexibilitet. Utan dagliga insättningar sjunker kontot sakta. Målet är att bygga ett starkt positivt saldo som bär er genom svårare perioder." /></p>
       </div>
 
       <WeekDayPicker
