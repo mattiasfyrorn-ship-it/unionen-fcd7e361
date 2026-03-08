@@ -316,7 +316,7 @@ export default function Repair() {
       {/* STEP 0: Choice */}
       {step === 0 && (
         <div className="flex flex-col items-center gap-8 py-12 text-center animate-fade-in">
-          <Heart className="w-12 h-12 text-accent" />
+          <Heart className="w-12 h-12 text-primary" />
           <h1 className="text-3xl text-primary">Reglering</h1>
           <p className="text-muted-foreground max-w-sm">
             Är du triggad och behöver reglera dig, eller är du lugn och redo att reparera?
