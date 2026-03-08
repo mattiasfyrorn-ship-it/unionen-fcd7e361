@@ -281,8 +281,9 @@ export default function DailyCheck() {
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base font-serif">
-            <ArrowRightLeft className="w-5 h-5primaryaryarynt" strokeWidth={1.5} />
+            <ArrowRightLeft className="w-5 h-5 text-primary" strokeWidth={1.5} />
             Turn Toward
+            <InfoButton title="Turn Toward" description="'Turn Toward' betyder att du aktivt besvarar din partners försök att nå dig. Par som vänder sig mot varandras försök 86% av tiden har starka relationer. Varje litet gensvar räknas." />
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
