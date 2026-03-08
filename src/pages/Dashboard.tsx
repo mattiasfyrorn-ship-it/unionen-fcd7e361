@@ -16,6 +16,7 @@ import {
   ChevronDown, Target, Lightbulb, Shield
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import InfoButton from "@/components/InfoButton";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { computeRelationskonto, getLatestKonto, get7DayTrend, type KontoPoint } from "@/lib/relationskonto";
 import { format, subDays } from "date-fns";

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { Map, Heart, ArrowRightLeft, Handshake, RefreshCw, Loader2, CloudSun } from "lucide-react";
+import InfoButton from "@/components/InfoButton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import WeekDayPicker from "@/components/WeekDayPicker";

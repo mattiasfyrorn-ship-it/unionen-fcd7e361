@@ -9,8 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   MessageCircle, Plus, Trash2, CheckCircle, Loader2, Lock, Unlock,
-  ChevronDown, CalendarDays, Sparkles, Heart, ClipboardList, SmilePlus, Play
+  ChevronDown, CalendarDays, Sparkles, Heart, ClipboardList, SmilePlus, Play, Clock
 } from "lucide-react";
+import InfoButton from "@/components/InfoButton";
 
 function getWeekStart() {
   const d = new Date();
