@@ -538,7 +538,7 @@ export default function Repair() {
             </Card>
             <Card className={`cursor-pointer border-2 transition-all ${quickCategory === "reconnect" ? "border-primary" : "border-border/50"}`} onClick={() => { setQuickCategory("reconnect"); setStep(11); }}>
               <CardContent className="p-6 flex items-center gap-4">
-                <Link2 className="w-8 h-8 text-accent shrink-0" />
+                <Link2 className="w-8 h-8 text-primary shrink-0" />
                 <div className="text-left">
                   <p className="font-medium text-foreground">Jag vill återknyta</p>
                   <p className="text-sm text-muted-foreground">Hitta tillbaka</p>
