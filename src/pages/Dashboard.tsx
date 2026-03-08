@@ -527,7 +527,7 @@ export default function Dashboard() {
       {/* Relationskonto summary card – always "vårt" */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardContent className="pt-6">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1">Relationskonto</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">Relationskonto</p>
           <div className="flex items-baseline gap-2">
             <span className="text-4xl font-bold text-primary">{Math.round(displayKonto)}</span>
             <span className="text-lg text-muted-foreground">/ 100</span>
