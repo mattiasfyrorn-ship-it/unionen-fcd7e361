@@ -591,6 +591,7 @@ export default function WeeklyConversation() {
           <CardTitle className="text-base flex items-center gap-2">
             <ClipboardList className="w-5 h-5 text-primary" />
             Praktiskt kommande vecka
+            <InfoButton title="Praktiskt" description="Logistik och planering minskar friktion i vardagen. Genom att gå igenom vem som gör vad, när ni ses och speciella behov – förebygger ni missförstånd och frustration." />
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
