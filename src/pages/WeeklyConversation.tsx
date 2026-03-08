@@ -267,7 +267,7 @@ export default function WeeklyConversation() {
     {
       key: "issues",
       title: "Frågor / Problem",
-      icon: <MessageCircle className="w-5 h-5 text-accent" />,
+      icon: <MessageCircle className="w-5 h-5 text-primary" />,
       myContent: issues.filter(i => i.text.trim()).map(i => `${i.text} (${i.tag})`),
       partnerContent: (Array.isArray(partnerEntry?.issues) ? partnerEntry.issues as Issue[] : []).filter((i: Issue) => i.text?.trim()).map((i: Issue) => `${i.text} (${i.tag})`),
     },
