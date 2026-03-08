@@ -426,7 +426,7 @@ export default function Repair() {
       {step === 5 && (
         <div className="space-y-6 animate-fade-in">
           <h2 className="text-2xl text-primary">Historia vs Fakta</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div className="space-y-2">
               <p className="text-sm font-medium text-foreground">Observerbar fakta</p>
               <p className="text-xs text-muted-foreground">Vad hände utan tolkning?</p>
