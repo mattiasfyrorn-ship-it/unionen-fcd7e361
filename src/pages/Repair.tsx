@@ -426,7 +426,10 @@ export default function Repair() {
           ) : (
             <div className="text-center space-y-6">
               <p className="text-foreground text-lg">Bra. Du är mer landad nu.</p>
-              <Button onClick={() => setStep(5)}>Nästa <ArrowRight className="w-4 h-4 ml-2" /></Button>
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => setStep(3)}><ArrowLeft className="w-4 h-4 mr-2" /> Bakåt</Button>
+                <Button onClick={() => setStep(5)}>Nästa <ArrowRight className="w-4 h-4 ml-2" /></Button>
+              </div>
             </div>
           )}
         </div>
