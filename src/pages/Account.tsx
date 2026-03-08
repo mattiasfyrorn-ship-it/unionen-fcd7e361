@@ -65,6 +65,9 @@ export default function Account() {
         setPushEnabled(!!data && data.length > 0);
       });
 
+    // Auto-refresh stale push subscriptions
+    refreshPushSubscription(user.id);
+
     // Load notification preferences
     supabase
       .from("notification_preferences")

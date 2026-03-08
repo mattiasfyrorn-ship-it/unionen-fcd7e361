@@ -16,6 +16,12 @@ self.addEventListener('push', (event) => {
       vibrate: [200, 100, 200],
       tag: data.data?.type || 'default',
       renotify: true,
+      requireInteraction: data.requireInteraction !== false, // default true for banner style
+      silent: false, // ensure sound/vibration
+      actions: [
+        { action: 'open', title: 'Öppna' },
+        { action: 'dismiss', title: 'Stäng' },
+      ],
     };
 
     event.waitUntil(
@@ -24,13 +30,20 @@ self.addEventListener('push', (event) => {
   } catch (e) {
     const text = event.data.text();
     event.waitUntil(
-      self.registration.showNotification('Hamnen', { body: text })
+      self.registration.showNotification('Hamnen', {
+        body: text,
+        requireInteraction: true,
+        silent: false,
+      })
     );
   }
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+
+  // Handle action buttons
+  if (event.action === 'dismiss') return;
 
   const url = event.notification.data?.url || '/';
 
