@@ -285,7 +285,7 @@ export default function WeeklyConversation() {
     {
       key: "intention",
       title: "Positiv intention",
-      icon: <Sparkles className="w-5 h-5 text-accent" />,
+      icon: <Sparkles className="w-5 h-5 text-primary" />,
       myContent: intention ? [intention] : [],
       partnerContent: partnerEntry?.intention ? [partnerEntry.intention] : [],
     },
