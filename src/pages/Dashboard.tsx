@@ -556,8 +556,9 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Relationskonto</p>
-              <CardTitle className="text-lg font-serif">
+              <CardTitle className="text-lg font-serif flex items-center gap-1.5">
               {view === "ours" ? "Vår utveckling" : "Min utveckling"}
+              <InfoButton title="Relationskonto" description="Relationskontot är en metafor för balansen i er relation. Positiva handlingar som uppskattning, närvaro och vändningar mot varandra sätter in på kontot, medan negativitet och avvisanden gör uttag. Forskning visar att det krävs minst 5 positiva interaktioner för varje negativ (5:1-regeln) för att relationen ska må bra." />
               </CardTitle>
             </div>
             <ToggleGroup type="single" value={graphPeriod} onValueChange={(v) => v && setGraphPeriod(v)} size="sm">
