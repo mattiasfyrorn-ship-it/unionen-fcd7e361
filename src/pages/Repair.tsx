@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { Heart, ArrowRight, Check, Clock, MessageCircle, ChevronDown, Shield, Handshake, Link2, Send, Lightbulb } from "lucide-react";
+import { Heart, ArrowRight, ArrowLeft, Check, Clock, MessageCircle, ChevronDown, Shield, Handshake, Link2, Send, Lightbulb } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import BreathingAnimation from "@/components/BreathingAnimation";
@@ -345,7 +345,10 @@ export default function Repair() {
                 <Textarea value={feelingBody} onChange={(e) => setFeelingBody(e.target.value.slice(0, 150))} placeholder="Beskriv kort..." rows={3} className="bg-muted/50 resize-none" />
                 <span className="absolute bottom-2 right-3 text-xs text-muted-foreground">{feelingBody.length}/150</span>
               </div>
-              <Button onClick={() => setStep(2)} disabled={!feelingBody.trim()}>Nästa <ArrowRight className="w-4 h-4 ml-2" /></Button>
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => setStep(0)}><ArrowLeft className="w-4 h-4 mr-2" /> Bakåt</Button>
+                <Button onClick={() => setStep(2)} disabled={!feelingBody.trim()}>Nästa <ArrowRight className="w-4 h-4 ml-2" /></Button>
+              </div>
             </>
           )}
         </div>
@@ -359,7 +362,10 @@ export default function Repair() {
             <Textarea value={story} onChange={(e) => setStory(e.target.value.slice(0, 200))} placeholder="Min historia..." rows={3} className="bg-muted/50 resize-none" />
             <span className="absolute bottom-2 right-3 text-xs text-muted-foreground">{story.length}/200</span>
           </div>
-          <Button onClick={() => setStep(3)} disabled={!story.trim()}>Nästa <ArrowRight className="w-4 h-4 ml-2" /></Button>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={() => setStep(1)}><ArrowLeft className="w-4 h-4 mr-2" /> Bakåt</Button>
+            <Button onClick={() => setStep(3)} disabled={!story.trim()}>Nästa <ArrowRight className="w-4 h-4 ml-2" /></Button>
+          </div>
         </div>
       )}
 
@@ -387,7 +393,10 @@ export default function Repair() {
             <Textarea value={idealOutcome} onChange={(e) => setIdealOutcome(e.target.value.slice(0, 200))} placeholder="Det hade sett ut som..." rows={3} className="bg-muted/50 resize-none" />
             <span className="absolute bottom-2 right-3 text-xs text-muted-foreground">{idealOutcome.length}/200</span>
           </div>
-          <Button onClick={() => setStep(4)} disabled={needs.length === 0}>Nästa <ArrowRight className="w-4 h-4 ml-2" /></Button>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={() => setStep(2)}><ArrowLeft className="w-4 h-4 mr-2" /> Bakåt</Button>
+            <Button onClick={() => setStep(4)} disabled={needs.length === 0}>Nästa <ArrowRight className="w-4 h-4 ml-2" /></Button>
+          </div>
         </div>
       )}
 
@@ -417,7 +426,10 @@ export default function Repair() {
           ) : (
             <div className="text-center space-y-6">
               <p className="text-foreground text-lg">Bra. Du är mer landad nu.</p>
-              <Button onClick={() => setStep(5)}>Nästa <ArrowRight className="w-4 h-4 ml-2" /></Button>
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => setStep(3)}><ArrowLeft className="w-4 h-4 mr-2" /> Bakåt</Button>
+                <Button onClick={() => setStep(5)}>Nästa <ArrowRight className="w-4 h-4 ml-2" /></Button>
+              </div>
             </div>
           )}
         </div>
@@ -444,7 +456,10 @@ export default function Repair() {
               </div>
             </div>
           </div>
-          <Button onClick={() => setStep(6)} disabled={!observableFact.trim()}>Nästa <ArrowRight className="w-4 h-4 ml-2" /></Button>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={() => setStep(4)}><ArrowLeft className="w-4 h-4 mr-2" /> Bakåt</Button>
+            <Button onClick={() => setStep(6)} disabled={!observableFact.trim()}>Nästa <ArrowRight className="w-4 h-4 ml-2" /></Button>
+          </div>
         </div>
       )}
 
@@ -461,7 +476,10 @@ export default function Repair() {
             <Textarea value={request} onChange={(e) => setRequest(e.target.value.slice(0, 150))} rows={2} className="bg-muted/50 resize-none" />
             <span className="absolute bottom-2 right-3 text-xs text-muted-foreground">{request.length}/150</span>
           </div>
-          <Button onClick={() => { generateMessage(); setStep(7); }} disabled={!selfResponsibility.trim()}>Nästa <ArrowRight className="w-4 h-4 ml-2" /></Button>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={() => setStep(5)}><ArrowLeft className="w-4 h-4 mr-2" /> Bakåt</Button>
+            <Button onClick={() => { generateMessage(); setStep(7); }} disabled={!selfResponsibility.trim()}>Nästa <ArrowRight className="w-4 h-4 ml-2" /></Button>
+          </div>
         </div>
       )}
 
