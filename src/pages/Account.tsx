@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { User, Mail, Lock, LogOut, Unlink, Bell, Download } from "lucide-react";
-import { subscribeToPush, unsubscribeFromPush, isPushSupported } from "@/lib/pushNotifications";
+import { subscribeToPush, unsubscribeFromPush, isPushSupported, refreshPushSubscription } from "@/lib/pushNotifications";
 import {
   AlertDialog,
   AlertDialogAction,
