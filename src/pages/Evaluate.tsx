@@ -154,7 +154,7 @@ export default function Evaluate() {
       <div>
         <div className="flex items-center gap-2 mb-1">
           <Sparkles className="w-6 h-6 text-primary" strokeWidth={1.5} />
-          <h1 className="text-3xl text-primary font-serif">Närd</h1>
+          <h1 className="text-3xl text-primary font-serif flex items-center gap-2">Närd <InfoButton title="Närd" description="För en djup meningsfull relation behöver du vara närd i fyra livsområden: Kropp, Sinne, Relationer och Mission. Om du inte tar hand om dig själv har du mindre att ge. Här följer du upp hur du mår i varje område – inte för att prestera, utan för att bli medveten." /></h1>
         </div>
         <p className="text-muted-foreground text-sm max-w-lg">
           För en djup meningsfull relation behöver du leva närd. Annars blir du inte relaterbar. 
