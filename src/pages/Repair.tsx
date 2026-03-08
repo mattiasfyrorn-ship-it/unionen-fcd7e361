@@ -316,7 +316,7 @@ export default function Repair() {
       {/* STEP 0: Choice */}
       {step === 0 && (
         <div className="flex flex-col items-center gap-8 py-12 text-center animate-fade-in">
-          <Heart className="w-12 h-12 text-accent" />
+          <Heart className="w-12 h-12 text-primary" />
           <h1 className="text-3xl text-primary">Reglering</h1>
           <p className="text-muted-foreground max-w-sm">
             Är du triggad och behöver reglera dig, eller är du lugn och redo att reparera?
@@ -520,7 +520,7 @@ export default function Repair() {
           <div className="space-y-3">
             <Card className={`cursor-pointer border-2 transition-all ${quickCategory === "responsibility" ? "border-primary" : "border-border/50"}`} onClick={() => { setQuickCategory("responsibility"); setStep(11); }}>
               <CardContent className="p-6 flex items-center gap-4">
-                <Shield className="w-8 h-8 text-accent shrink-0" />
+                <Shield className="w-8 h-8 text-primary shrink-0" />
                 <div className="text-left">
                   <p className="font-medium text-foreground">Jag vill ta ansvar</p>
                   <p className="text-sm text-muted-foreground">Erkänna min del</p>
@@ -529,7 +529,7 @@ export default function Repair() {
             </Card>
             <Card className={`cursor-pointer border-2 transition-all ${quickCategory === "soften" ? "border-primary" : "border-border/50"}`} onClick={() => { setQuickCategory("soften"); setStep(11); }}>
               <CardContent className="p-6 flex items-center gap-4">
-                <Heart className="w-8 h-8 text-accent shrink-0" />
+                <Heart className="w-8 h-8 text-primary shrink-0" />
                 <div className="text-left">
                   <p className="font-medium text-foreground">Jag vill mjuka upp</p>
                   <p className="text-sm text-muted-foreground">Sänka garden</p>
@@ -538,7 +538,7 @@ export default function Repair() {
             </Card>
             <Card className={`cursor-pointer border-2 transition-all ${quickCategory === "reconnect" ? "border-primary" : "border-border/50"}`} onClick={() => { setQuickCategory("reconnect"); setStep(11); }}>
               <CardContent className="p-6 flex items-center gap-4">
-                <Link2 className="w-8 h-8 text-accent shrink-0" />
+                <Link2 className="w-8 h-8 text-primary shrink-0" />
                 <div className="text-left">
                   <p className="font-medium text-foreground">Jag vill återknyta</p>
                   <p className="text-sm text-muted-foreground">Hitta tillbaka</p>
@@ -600,7 +600,7 @@ export default function Repair() {
       {/* QUICK REPAIR Step 13: Done */}
       {step === 13 && (
         <div className="flex flex-col items-center gap-6 py-12 text-center animate-fade-in">
-          <Heart className="w-12 h-12 text-accent" />
+          <Heart className="w-12 h-12 text-primary" />
           <h2 className="text-2xl text-primary">Reparation genomförd</h2>
           <div className="flex items-center gap-2 p-4 rounded-lg bg-muted/50 border border-border/50 max-w-sm">
             <Lightbulb className="w-5 h-5 text-primary shrink-0" />

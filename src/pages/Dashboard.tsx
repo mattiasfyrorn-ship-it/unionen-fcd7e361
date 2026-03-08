@@ -461,8 +461,8 @@ export default function Dashboard() {
               key={i}
               className={`flex items-center gap-3 p-4 rounded-xl border-none shadow-sm ${
                trend.positive
-                  ? "bg-primary/5 text-accent"
-                  : "bg-accent/5 text-accent"
+               ? "bg-primary/5 text-primary"
+                   : "bg-accent/5 text-primary"
               }`}
             >
               <div className="shrink-0">
@@ -482,7 +482,7 @@ export default function Dashboard() {
         <CardHeader className="pb-2">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Kvartalsmål</p>
           <CardTitle className="flex items-center gap-2 text-lg font-serif">
-            <Target className="w-5 h-5 text-accent" strokeWidth={1.5} /> Vår riktning
+            <Target className="w-5 h-5 text-primary" strokeWidth={1.5} /> Vår riktning
           </CardTitle>
           <p className="text-xs text-muted-foreground">Q{Math.floor(new Date().getMonth() / 3) + 1} {new Date().getFullYear()}</p>
         </CardHeader>
