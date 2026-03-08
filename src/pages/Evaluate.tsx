@@ -176,6 +176,7 @@ export default function Evaluate() {
               <CardTitle className="flex items-center gap-2 text-lg font-serif">
                 <Icon className="w-5 h-5 text-primary" strokeWidth={1.5} />
                 {area.label}
+                <InfoButton title={area.label} description={area.info} />
               </CardTitle>
               <p className="text-sm text-muted-foreground">{area.description}</p>
             </CardHeader>

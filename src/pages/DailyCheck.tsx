@@ -350,8 +350,9 @@ export default function DailyCheck() {
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base font-serif">
-            <CloudSun className="w-5 h-5 tprimarycent" strokeWidth={1.5} />
+            <CloudSun className="w-5 h-5 text-primary" strokeWidth={1.5} />
             Klimat
+            <InfoButton title="Klimat" description="Relationens klimat är den känslomässiga temperaturen mellan er. Genom att dagligen reflektera över klimatet blir du medveten om mönster och kan fånga negativa trender tidigt." />
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
