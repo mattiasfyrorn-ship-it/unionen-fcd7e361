@@ -343,7 +343,7 @@ export default function Repair() {
             <BreathingAnimation duration={30} onComplete={() => setBreathingDone(true)} />
           ) : (
             <>
-              <h2 className="text-2xl text-primary">Känsla & Kropp</h2>
+              <h2 className="text-2xl text-primary flex items-center gap-2">Känsla & Kropp <InfoButton title="Känsla & Kropp" description="När vi är triggade aktiveras kroppens stressrespons. Genom att namnge vad du känner och var i kroppen du känner det, sänker du aktiveringen. Forskning visar att redan att sätta ord på en känsla minskar amygdalas respons." /></h2>
               <p className="text-muted-foreground">Vad känner jag just nu? Var känns det i kroppen?</p>
               <div className="relative">
                 <Textarea value={feelingBody} onChange={(e) => setFeelingBody(e.target.value.slice(0, 150))} placeholder="Beskriv kort..." rows={3} className="bg-muted/50 resize-none" />
