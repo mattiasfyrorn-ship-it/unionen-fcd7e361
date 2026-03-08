@@ -1,113 +1,45 @@
 
-## GHL-webhook-integration + stängd registrering
 
-### Flöde
+# Fix push notifications + banner/heads-up style
 
-```text
-GHL (kund betalar)
-  |
-  POST /functions/v1/ghl-webhook  (X-HAMNEN-SECRET + X-HAMNEN-EVENT)
-  --> Skapar User 1 (kontohavaren) via auth.admin.createUser
-  --> Skickar "Välj lösenord"-mail via Resend
+## Diagnosis
 
-User 1 loggar in --> Bjuder in partner via appen
-  |
-  Partner får inbjudningslänk (/auth?invite=TOKEN)
-  --> Registreringsformuläret visas BARA med invite-token
-  --> Partner skapar konto och kopplas ihop
-```
+The backend works -- edge function returns `sent: 1` and VAPID keys are configured. Both users have push subscriptions in the database. The problems are likely:
 
-### Tabeller
+1. **Expired Apple push subscription** -- Mattias's subscription (Apple endpoint) was created Feb 20 and may have expired/become invalid
+2. **Service worker `push` event** -- needs `requireInteraction: true` for persistent banner-style notifications
+3. **No re-subscription logic** -- if a subscription expires, there's no auto-refresh
+4. **Missing notification actions** -- no tap-to-open actions configured
 
-- **webhook_events** — idempotens (webhook_id UNIQUE), RLS utan client-policies
-- **ghl_links** — user_id ↔ ghl_contact_id mapping, RLS utan client-policies
+## Plan
 
-### Edge function: ghl-webhook
+### 1. Update `public/sw.js` -- better notification options
 
-- Validerar X-HAMNEN-SECRET
-- Validerar X-HAMNEN-EVENT matchar body.event
-- Idempotenskoll via webhook_events
-- Skapar användare eller uppdaterar befintlig
-- Upsert i ghl_links
-- Genererar recovery-länk och skickar välkomstmail via Resend
-- Loggar event_type, email, resultat (aldrig secrets)
+- Add `requireInteraction: true` so the notification stays visible as a banner (not silently dismissed)
+- Add `actions` array for quick interaction (e.g., "Öppna")
+- Ensure `silent: false` is explicitly set so device vibrates/sounds
 
-### Auth.tsx: Villkorad registrering
+### 2. Update `src/lib/pushNotifications.ts` -- auto-refresh stale subscriptions
 
-- Utan invite-token: Bara login + glömt lösenord + "Kontakta oss"
-- Med invite-token: Registreringsformulär (namn + email + lösenord)
+- When `subscribeToPush` finds an existing subscription, check if the endpoint is still valid by comparing against stored subscription
+- Add logic to re-subscribe if the existing subscription might be stale (older than 7 days)
+- Add better error logging to surface issues
 
-### Secrets
+### 3. Update `src/pages/Account.tsx` -- auto-resubscribe on page load
 
-- GHL_WEBHOOK_SECRET
-- RESEND_API_KEY (redan konfigurerad)
+- When the user visits the account page and push is enabled, silently re-subscribe to refresh the subscription endpoint
+- This ensures expired Apple/FCM subscriptions get replaced
 
----
+### 4. Update edge function payload
 
-## Problem: Två service workers krockar och bryter push-notiser
+- In `supabase/functions/send-push-notification/index.ts`, add `requireInteraction: true` and `silent: false` to the payload so the service worker can pass them through
 
-### Rotorsaken
+## Files changed
 
-Det finns en fundamental konflikt i hur service workers är uppsatta:
+| File | Change |
+|------|--------|
+| `public/sw.js` | Add `requireInteraction`, `actions`, ensure banner-style display |
+| `src/lib/pushNotifications.ts` | Force re-subscribe to refresh stale endpoints, better error handling |
+| `src/pages/Account.tsx` | Auto-refresh subscription when push is enabled on page load |
+| `supabase/functions/send-push-notification/index.ts` | Add banner notification flags to payload |
 
-1. VitePWA-pluginen genererar en `sw.js` via Workbox vid build och skriver automatiskt över `public/sw.js`
-2. Vår anpassade `public/sw.js` med push-logik försvinner alltså i produktionsbygget
-3. Resultatet: `navigator.serviceWorker.ready` pekar på Workbox service worker som saknar push-hantering
-4. `reg.pushManager.subscribe(...)` kastar ett fel (t.ex. ogiltig VAPID-nyckel eller problem med workern) och fångas i `catch`-blocket → returnerar `false` → felmeddelandet visas
-
-Dessutom finns ett timeout-problem: `navigator.serviceWorker.ready` kan hänga länge i en vanlig webbläsarflik (inte installerad PWA) om service workern inte aktiveras direkt.
-
-### Lösning: Slå samman till en enda service worker med `injectManifest`
-
-VitePWA stöder ett läge som heter `injectManifest` där vi skriver vår egen service worker och Workbox injicerar sina cache-definitioner i den. På så sätt har vi bara en service worker som gör allt.
-
-#### Konkreta ändringar
-
-**1. `vite.config.ts`** — Byt strategi från `generateSW` (default) till `injectManifest` och peka på vår custom service worker:
-
-```ts
-VitePWA({
-  strategies: 'injectManifest',
-  srcDir: 'public',
-  filename: 'sw.js',
-  registerType: 'autoUpdate',
-  // ...resten är samma
-})
-```
-
-**2. `public/sw.js`** — Lägg till Workbox-injektionspunkt överst och behåll push/notificationclick-logiken:
-
-```js
-// Workbox injicerar sitt precache-manifest här automatiskt vid build
-import { precacheAndRoute } from 'workbox-precaching';
-precacheAndRoute(self.__WB_MANIFEST);
-
-// Push-logiken finns kvar nedan (oförändrad)
-self.addEventListener('push', ...);
-self.addEventListener('notificationclick', ...);
-```
-
-**3. `src/lib/pushNotifications.ts`** — Lägg till timeout på `serviceWorker.ready` (max 5 sekunder) och bättre felhantering som loggar exakt vad som går fel, så att framtida problem är lättare att felsöka:
-
-```ts
-const registration = await Promise.race([
-  navigator.serviceWorker.ready,
-  new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 5000))
-]);
-```
-
-**4. `src/App.tsx`** — Ta bort den manuella registreringen av `/sw.js` i `PushInitializer` eftersom VitePWA sköter registreringen automatiskt. Dubbel-registrering kan orsaka problem.
-
-### Tekniska detaljer
-
-- `injectManifest`-strategin kräver att service worker-filen innehåller `self.__WB_MANIFEST` — det är platsen Workbox injicerar sitt precache-manifest
-- I development-läge fungerar `self.__WB_MANIFEST` inte utan en speciell mock — vi lägger till `if (typeof self.__WB_MANIFEST !== 'undefined')` som guard
-- VAPID-nycklarna är korrekt konfigurerade som secrets, så det problemet är inte orsaken
-- Ingen databasändring behövs
-
-### Filer som ändras
-
-- `vite.config.ts` — lägg till `strategies: 'injectManifest'`, `srcDir: 'public'`, `filename: 'sw.js'`
-- `public/sw.js` — lägg till Workbox precache-anrop överst med `__WB_MANIFEST`-guard
-- `src/lib/pushNotifications.ts` — lägg till timeout på `serviceWorker.ready` och förbättrad fellogning
-- `src/App.tsx` — ta bort manuell `navigator.serviceWorker.register('/sw.js')` i `PushInitializer`
