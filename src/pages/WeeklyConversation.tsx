@@ -529,7 +529,7 @@ export default function WeeklyConversation() {
       {/* Wins */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Vad gick bra?</CardTitle>
+          <CardTitle className="text-base flex items-center gap-2">Vad gick bra? <InfoButton title="Vad gick bra?" description="Att identifiera vad som fungerade förstärker positiva mönster i relationen. Det skapar medvetenhet om era styrkor som par." /></CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           {wins.map((w, i) => (
