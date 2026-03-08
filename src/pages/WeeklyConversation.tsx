@@ -253,7 +253,7 @@ export default function WeeklyConversation() {
     {
       key: "appreciations",
       title: "Uppskattningar",
-      icon: <Heart className="w-5 h-5 text-accent" />,
+      icon: <Heart className="w-5 h-5 text-primary" />,
       myContent: appreciations.filter(Boolean),
       partnerContent: partnerEntry?.appreciations?.filter(Boolean) || [],
     },
