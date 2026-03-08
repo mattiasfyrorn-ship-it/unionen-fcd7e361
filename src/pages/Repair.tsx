@@ -393,7 +393,10 @@ export default function Repair() {
             <Textarea value={idealOutcome} onChange={(e) => setIdealOutcome(e.target.value.slice(0, 200))} placeholder="Det hade sett ut som..." rows={3} className="bg-muted/50 resize-none" />
             <span className="absolute bottom-2 right-3 text-xs text-muted-foreground">{idealOutcome.length}/200</span>
           </div>
-          <Button onClick={() => setStep(4)} disabled={needs.length === 0}>Nästa <ArrowRight className="w-4 h-4 ml-2" /></Button>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={() => setStep(2)}><ArrowLeft className="w-4 h-4 mr-2" /> Bakåt</Button>
+            <Button onClick={() => setStep(4)} disabled={needs.length === 0}>Nästa <ArrowRight className="w-4 h-4 ml-2" /></Button>
+          </div>
         </div>
       )}
 
