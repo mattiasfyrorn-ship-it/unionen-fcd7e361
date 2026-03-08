@@ -484,6 +484,7 @@ export default function Dashboard() {
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Kvartalsmål</p>
           <CardTitle className="flex items-center gap-2 text-lg font-serif">
             <Target className="w-5 h-5 text-primary" strokeWidth={1.5} /> Vår riktning
+            <InfoButton title="Vår riktning" description="Kvartalsmål ger er en gemensam riktning. Forskning visar att par som delar mål och drömmar har djupare meningsfullhet i relationen. Sätt ett relationsmål, ett upplevelsemål och ett praktiskt mål varje kvartal." />
           </CardTitle>
           <p className="text-xs text-muted-foreground">Q{Math.floor(new Date().getMonth() / 3) + 1} {new Date().getFullYear()}</p>
         </CardHeader>
