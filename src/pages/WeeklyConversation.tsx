@@ -292,7 +292,7 @@ export default function WeeklyConversation() {
     {
       key: "closing",
       title: "Avslutning",
-      icon: <SmilePlus className="w-5 h-5 text-accent" />,
+      icon: <SmilePlus className="w-5 h-5 text-primary" />,
       myContent: [],
       partnerContent: [],
     },

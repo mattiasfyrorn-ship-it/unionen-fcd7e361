@@ -600,7 +600,7 @@ export default function Repair() {
       {/* QUICK REPAIR Step 13: Done */}
       {step === 13 && (
         <div className="flex flex-col items-center gap-6 py-12 text-center animate-fade-in">
-          <Heart className="w-12 h-12 text-accent" />
+          <Heart className="w-12 h-12 text-primary" />
           <h2 className="text-2xl text-primary">Reparation genomförd</h2>
           <div className="flex items-center gap-2 p-4 rounded-lg bg-muted/50 border border-border/50 max-w-sm">
             <Lightbulb className="w-5 h-5 text-primary shrink-0" />

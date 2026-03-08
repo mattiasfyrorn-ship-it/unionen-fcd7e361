@@ -461,8 +461,8 @@ export default function Dashboard() {
               key={i}
               className={`flex items-center gap-3 p-4 rounded-xl border-none shadow-sm ${
                trend.positive
-                  ? "bg-primary/5 text-accent"
-                  : "bg-accent/5 text-accent"
+               ? "bg-primary/5 text-primary"
+                   : "bg-accent/5 text-primary"
               }`}
             >
               <div className="shrink-0">

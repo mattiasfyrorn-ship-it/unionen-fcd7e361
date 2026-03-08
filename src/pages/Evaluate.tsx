@@ -173,7 +173,7 @@ export default function Evaluate() {
           <Card key={area.key} className="rounded-[10px] border-none shadow-hamnen">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-lg font-serif">
-                <Icon className="w-5 h-5 text-accent" strokeWidth={1.5} />
+                <Icon className="w-5 h-5 text-primary" strokeWidth={1.5} />
                 {area.label}
               </CardTitle>
               <p className="text-sm text-muted-foreground">{area.description}</p>
