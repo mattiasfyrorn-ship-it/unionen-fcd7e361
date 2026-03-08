@@ -441,7 +441,7 @@ export default function Repair() {
 
       {step === 5 && (
         <div className="space-y-6 animate-fade-in">
-          <h2 className="text-2xl text-primary">Historia vs Fakta</h2>
+          <h2 className="text-2xl text-primary flex items-center gap-2">Historia vs Fakta <InfoButton title="Historia vs Fakta" description="Att skilja på observerbar fakta och din tolkning är ett kraftfullt verktyg. Fakta är vad en kamera skulle fånga. Tolkningen är allt du lägger ovanpå – antaganden, känslor, gamla mönster. Denna separation minskar försvarsreaktioner hos din partner." /></h2>
           <div className="space-y-4">
             <div className="space-y-2">
               <p className="text-sm font-medium text-foreground">Observerbar fakta</p>
