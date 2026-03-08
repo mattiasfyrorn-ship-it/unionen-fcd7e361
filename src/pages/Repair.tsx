@@ -360,7 +360,7 @@ export default function Repair() {
 
       {step === 2 && (
         <div className="space-y-6 animate-fade-in">
-          <h2 className="text-2xl text-primary">Historien</h2>
+          <h2 className="text-2xl text-primary flex items-center gap-2">Historien <InfoButton title="Historien" description="Vi skapar alltid en berättelse om vad som hände – och den berättelsen är sällan hela sanningen. Genom att skriva ner din historia blir du medveten om att det är just en tolkning, inte fakta." /></h2>
           <p className="text-muted-foreground">Vad är historien jag berättar om det som hände?</p>
           <div className="relative">
             <Textarea value={story} onChange={(e) => setStory(e.target.value.slice(0, 200))} placeholder="Min historia..." rows={3} className="bg-muted/50 resize-none" />
