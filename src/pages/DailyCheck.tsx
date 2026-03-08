@@ -224,8 +224,9 @@ export default function DailyCheck() {
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base font-serif">
-            <Map className="w-5 h-5 text-primaryyyyy" strokeWidth={1.5} />
+            <Map className="w-5 h-5 text-primary" strokeWidth={1.5} />
             Love Map
+            <InfoButton title="Love Map" description="Love Maps handlar om att aktivt lära känna din partners inre värld – drömmar, rädslor, minnen och vardagstankar. Par som kontinuerligt uppdaterar sin karta över partnern har starkare relationer. Ställ frågan och lyssna nyfiket." />
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
