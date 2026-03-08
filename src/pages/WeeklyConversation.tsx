@@ -615,12 +615,27 @@ export default function WeeklyConversation() {
         </CardContent>
       </Card>
 
+      {/* Next meeting time */}
+      <Card className="rounded-[10px] border-none shadow-hamnen">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Clock className="w-5 h-5 text-primary" />
+            Tid för nästa möte
+            <InfoButton title="Tid för nästa möte" description="Boka in nästa veckosamtal redan nu. Par som schemalägger sina möten i förväg håller rutinen bättre. Hitta en tid som fungerar för båda – det behöver inte vara lång, 30–45 minuter räcker." />
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Input placeholder="T.ex. Söndag kl 19:00" value={logistics.when || ""} onChange={(e) => setLogistics(prev => ({ ...prev, when: e.target.value }))} className="bg-muted/50 border-border text-sm" disabled={ready} />
+        </CardContent>
+      </Card>
+
       {/* Checkout feeling */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <SmilePlus className="w-5 h-5 text-accent" />
             Utcheckning
+            <InfoButton title="Utcheckning" description="Avsluta samtalet genom att dela en känsla. Det skapar ett mjukt avslut och fördjupar den emotionella kontakten. Det behöver inte vara stort – bara ärligt." />
           </CardTitle>
         </CardHeader>
         <CardContent>
