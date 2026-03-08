@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { Heart, ArrowRight, Check, Clock, MessageCircle, ChevronDown, Shield, Handshake, Link2, Send, Lightbulb } from "lucide-react";
+import { Heart, ArrowRight, ArrowLeft, Check, Clock, MessageCircle, ChevronDown, Shield, Handshake, Link2, Send, Lightbulb } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import BreathingAnimation from "@/components/BreathingAnimation";
