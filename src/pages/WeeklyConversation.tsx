@@ -260,7 +260,7 @@ export default function WeeklyConversation() {
     {
       key: "wins",
       title: "Vad gick bra",
-      icon: <Sparkles className="w-5 h-5 text-accent" />,
+      icon: <Sparkles className="w-5 h-5 text-primary" />,
       myContent: wins.filter(Boolean),
       partnerContent: partnerEntry?.wins?.filter(Boolean) || [],
     },
