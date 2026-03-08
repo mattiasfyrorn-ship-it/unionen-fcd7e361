@@ -439,7 +439,10 @@ export default function WeeklyConversation() {
     <div className="space-y-6 max-w-2xl mx-auto">
       <div>
         <h1 className="text-3xl text-primary">Veckosamtal</h1>
-        <p className="text-muted-foreground text-sm">State of the Union – förbered och genomför ert veckosamtal</p>
+        <p className="text-muted-foreground text-sm flex items-center gap-1">
+          State of the Union – förbered och genomför ert veckosamtal
+          <InfoButton title="Veckosamtal" description="Veckosamtalet (State of the Union) är ett strukturerat möte där ni sammanfattar veckan, delar uppskattningar, tar upp frågor och sätter riktning framåt. Forskning visar att par som regelbundet checkar in med varandra förebygger att små irritationer blir stora konflikter." />
+        </p>
       </div>
 
       {/* Start meeting button */}
