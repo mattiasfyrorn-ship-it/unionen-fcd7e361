@@ -476,7 +476,10 @@ export default function Repair() {
             <Textarea value={request} onChange={(e) => setRequest(e.target.value.slice(0, 150))} rows={2} className="bg-muted/50 resize-none" />
             <span className="absolute bottom-2 right-3 text-xs text-muted-foreground">{request.length}/150</span>
           </div>
-          <Button onClick={() => { generateMessage(); setStep(7); }} disabled={!selfResponsibility.trim()}>Nästa <ArrowRight className="w-4 h-4 ml-2" /></Button>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={() => setStep(5)}><ArrowLeft className="w-4 h-4 mr-2" /> Bakåt</Button>
+            <Button onClick={() => { generateMessage(); setStep(7); }} disabled={!selfResponsibility.trim()}>Nästa <ArrowRight className="w-4 h-4 ml-2" /></Button>
+          </div>
         </div>
       )}
 
