@@ -360,8 +360,8 @@ export default function Repair() {
 
       {step === 2 && (
         <div className="space-y-6 animate-fade-in">
-          <h2 className="text-2xl text-primary flex items-center gap-2">Historien <InfoButton title="Historien" description="Vi skapar alltid en berättelse om vad som hände – och den berättelsen är sällan hela sanningen. Genom att skriva ner din historia blir du medveten om att det är just en tolkning, inte fakta." /></h2>
-          <p className="text-muted-foreground">Vad är historien jag berättar om det som hände?</p>
+          <h2 className="text-2xl text-primary flex items-center gap-2">Historien <InfoButton title="Historien" description="Här handlar det om att få ut dramat – vad ditt reaktiva, triggade sinne säger just nu. Skriv ner allt utan filter: anklagelser, tolkningar, känslan av orättvisa. Poängen är inte att det ska vara sant eller rättvist – utan att tömma ut det så att du kan se klarare efteråt." /></h2>
+          <p className="text-muted-foreground">Vad är historien jag berättar för mig själv om det som hände? Skriv fritt – få ut det.</p>
           <div className="relative">
             <Textarea value={story} onChange={(e) => setStory(e.target.value.slice(0, 200))} placeholder="Min historia..." rows={3} className="bg-muted/50 resize-none" />
             <span className="absolute bottom-2 right-3 text-xs text-muted-foreground">{story.length}/200</span>
