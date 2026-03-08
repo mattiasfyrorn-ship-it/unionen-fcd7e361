@@ -469,7 +469,7 @@ export default function Repair() {
 
       {step === 6 && (
         <div className="space-y-6 animate-fade-in">
-          <h2 className="text-2xl text-primary">Självansvar</h2>
+          <h2 className="text-2xl text-primary flex items-center gap-2">Självansvar <InfoButton title="Självansvar" description="Att ta ansvar för din del – utan att ta på dig allt – är transformerande för en relation. Det visar mognad och skapar trygghet. Det handlar inte om skuld utan om att äga sin påverkan." /></h2>
           <p className="text-muted-foreground">Vad kan jag göra annorlunda nästa gång?</p>
           <div className="relative">
             <Textarea value={selfResponsibility} onChange={(e) => setSelfResponsibility(e.target.value.slice(0, 200))} rows={3} className="bg-muted/50 resize-none" />

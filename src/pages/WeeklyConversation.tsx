@@ -607,6 +607,7 @@ export default function WeeklyConversation() {
           <CardTitle className="text-base flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-accent" />
             Positiv intention
+            <InfoButton title="Positiv intention" description="En positiv intention sätter riktning för veckan. Det kan vara 'Jag vill vara mer närvarande vid middagen' eller 'Jag vill visa uppskattning varje dag'. Intentioner fungerar som en inre kompass." />
           </CardTitle>
         </CardHeader>
         <CardContent>
