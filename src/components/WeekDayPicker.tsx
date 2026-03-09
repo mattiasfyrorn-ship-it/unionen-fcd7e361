@@ -19,9 +19,12 @@ export default function WeekDayPicker({ selectedDate, onDateChange, markedDates 
 
   const canGoForward = !isSameDay(weekStart, startOfWeek(today, { weekStartsOn: 1 }));
 
-  const goBack = () => onDateChange(addWeeks(selectedDate, -1));
+  const goBack = () => onDateChange(addDays(weekStart, -1));
   const goForward = () => {
-    if (canGoForward) onDateChange(addWeeks(selectedDate, 1));
+    if (canGoForward) {
+      const nextDay = addDays(weekStart, 7);
+      onDateChange(isAfter(nextDay, today) ? today : nextDay);
+    }
   };
 
   const weekLabel = `${format(weekStart, "d MMM", { locale: sv })} – ${format(addDays(weekStart, 6), "d MMM", { locale: sv })}`;
