@@ -33,7 +33,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen flex flex-col">
       {isMobile ? (
         /* Mobile: sticky header with safe area */
-        <header className="bg-background sticky top-0 z-50 px-4 h-12 flex items-center justify-between pt-[env(safe-area-inset-top)]">
+        <header className="bg-[hsl(37,25%,92%)] sticky top-0 z-50 px-4 h-12 flex items-center justify-between pt-[env(safe-area-inset-top)]">
           <Link to="/" className="flex items-center gap-2">
             <img src={hamnenLogo} alt="Hamnen" className="w-8 h-8 object-contain" />
             <span className="text-foreground font-medium text-2xl font-serif">Hamnen</span>
