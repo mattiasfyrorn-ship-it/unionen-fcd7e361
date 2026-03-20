@@ -20,7 +20,7 @@ export default function InfoButton({ title, description }: InfoButtonProps) {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" onClick={() => setOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setOpen(false)}>
           <div className="fixed inset-0 bg-black/40" />
           <div
             className="relative z-50 w-full max-w-sm mx-4 mb-4 sm:mb-0 rounded-2xl bg-card border border-border shadow-lg p-5 space-y-2 animate-in fade-in slide-in-from-bottom-4 duration-200 font-normal"
