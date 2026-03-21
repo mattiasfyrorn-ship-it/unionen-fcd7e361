@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { Send, Heart } from "lucide-react";
 import { sendPushToPartner } from "@/lib/pushNotifications";
+import { clearAppBadge } from "@/lib/appBadge";
 
 interface Message {
   id: string;
@@ -49,7 +50,7 @@ export default function Messages() {
         .eq("couple_id", profile.couple_id!)
         .neq("sender_id", user.id)
         .eq("read", false)
-        .then(() => {});
+        .then(() => { clearAppBadge(); });
     }
 
     // Realtime subscription

@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from "react-r
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import { refreshPushSubscription } from "@/lib/pushNotifications";
+import { updateAppBadge } from "@/lib/appBadge";
+import { supabase } from "@/integrations/supabase/client";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Evaluate from "./pages/Evaluate";
@@ -23,12 +25,50 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 function PushInitializer() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   useEffect(() => {
     if (user?.id) {
       refreshPushSubscription(user.id);
     }
   }, [user?.id]);
+
+  // Badge counter for unread messages
+  useEffect(() => {
+    if (!user?.id || !profile?.couple_id) return;
+
+    const fetchUnread = async () => {
+      const { count } = await supabase
+        .from("messages")
+        .select("*", { count: "exact", head: true })
+        .eq("couple_id", profile.couple_id!)
+        .neq("sender_id", user.id)
+        .eq("read", false);
+      updateAppBadge(count ?? 0);
+    };
+
+    fetchUnread();
+
+    const channel = supabase
+      .channel("badge-updates")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages", filter: `couple_id=eq.${profile.couple_id}` },
+        (payload) => {
+          if ((payload.new as any).sender_id !== user.id) {
+            fetchUnread();
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "messages", filter: `couple_id=eq.${profile.couple_id}` },
+        () => { fetchUnread(); }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id, profile?.couple_id]);
+
   return null;
 }
 
