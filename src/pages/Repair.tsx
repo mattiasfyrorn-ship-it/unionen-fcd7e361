@@ -734,7 +734,7 @@ export default function Repair() {
                 <Card key={r.id} className="bg-muted/30 border-border/30">
                   <CardHeader className="pb-1 pt-3 px-4 cursor-pointer" onClick={() => setExpandedRepair(expandedRepair === r.id ? null : r.id)}>
                     <CardTitle className="text-sm flex items-center justify-between">
-                      <span>{new Date(r.created_at).toLocaleDateString("sv-SE")} – {r.status === "shared" ? "Delad" : r.status === "needs_time" ? "Behövde tid" : r.status}</span>
+                      <span>{new Date(r.created_at).toLocaleDateString("sv-SE")} – {r.status === "shared" ? "Delad" : r.status === "needs_time" ? "Behövde tid" : r.status === "completed" ? "Reparerat ✓" : r.status === "conversation_planned" ? "Samtal planerat ✓" : r.status}</span>
                       <ChevronDown className={`w-4 h-4 transition-transform ${expandedRepair === r.id ? "rotate-180" : ""}`} />
                     </CardTitle>
                   </CardHeader>
