@@ -152,6 +152,17 @@ export default function Repair() {
       message: generatedMessage,
     });
 
+    // Send as a chat message so partner sees it
+    await supabase.from("messages").insert({
+      couple_id: profile.couple_id,
+      sender_id: user.id,
+      content: generatedMessage,
+      type: "repair",
+    } as any);
+
+    // Push notification to partner
+    sendPushToPartner(profile.couple_id, user.id, "Reparationsmeddelande ❤️", generatedMessage.slice(0, 200), "repair");
+
     await addRepairToWeeklyIssues();
 
     toast({ title: "Skickat", description: "Ditt reparationsmeddelande har skickats." });
