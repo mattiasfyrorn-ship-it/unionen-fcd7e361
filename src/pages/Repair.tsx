@@ -325,8 +325,25 @@ export default function Repair() {
     setStep(13);
   };
 
+  const markRepairCompleted = async (type: "completed" | "conversation_planned") => {
+    if (openRepair) {
+      await supabase.from("repairs").update({
+        status: type,
+        completed_at: new Date().toISOString(),
+      }).eq("id", openRepair.id);
+      setOpenRepair(null);
+    }
+    if (openQuickRepair) {
+      await supabase.from("quick_repairs").update({
+        partner_response: type,
+      }).eq("id", openQuickRepair.id);
+      setOpenQuickRepair(null);
+    }
+    setRepairCompleted(true);
+    toast({ title: type === "completed" ? "Reparerat ❤️" : "Reparationssamtal planerat", description: "Fint att ni tar hand om relationen." });
+  };
 
-  return (
+
     <div className="max-w-lg mx-auto space-y-8 animate-fade-in">
       {/* Progress for regulation steps */}
       {step >= 1 && step <= 6 && (
