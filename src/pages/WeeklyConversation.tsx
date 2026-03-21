@@ -343,6 +343,37 @@ export default function WeeklyConversation() {
               ) : (
                 <p className="text-xs text-muted-foreground italic">Inget förifyllt – använd anteckningsfältet nedan</p>
               )}
+
+              {/* ATTUNE guide for issues section */}
+              {section.key === "issues" && (
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center gap-1.5 text-xs text-primary hover:underline">
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    Guide: Så tar ni upp svåra saker
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-2 space-y-3 text-sm text-muted-foreground bg-muted/30 rounded-lg p-3">
+                    <p className="font-medium text-foreground text-xs">ATTUNE – håll er nära varandra</p>
+                    <ul className="space-y-1 text-xs">
+                      <li><strong>A</strong>wareness – Medvetenhet om din partners känsla</li>
+                      <li><strong>T</strong>olerance – Tolerans för att det finns två giltiga perspektiv</li>
+                      <li><strong>T</strong>urning Toward – Vänd dig mot din partners behov</li>
+                      <li><strong>U</strong>nderstanding – Försök förstå din partners upplevelse</li>
+                      <li><strong>N</strong>on-defensive Listening – Lyssna utan att försvara dig</li>
+                      <li><strong>E</strong>mpathy – Svara med förståelse och lyhördhet</li>
+                    </ul>
+                    <div className="border-t border-border/30 pt-2">
+                      <p className="font-medium text-foreground text-xs mb-1">Som talare – mjuk start</p>
+                      <p className="text-xs italic">"Jag känner... (känsla) ...om... (situation) ...Jag behöver... (positivt behov)"</p>
+                      <p className="text-xs mt-1">Exempel: "Jag känner mig trött och överväldigad av att ha lagat mat sju kvällar i rad. Jag behöver att vi gör en plan där vi delar på matlagningen."</p>
+                    </div>
+                    <div className="border-t border-border/30 pt-2">
+                      <p className="font-medium text-foreground text-xs">Som lyssnare</p>
+                      <p className="text-xs">Lyssna utan att försvara dig. Hjälp din partner att känna sig hörd och förstådd.</p>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+
               <Textarea
                 placeholder={`Anteckningar – ${section.title.toLowerCase()}...`}
                 value={meetingNotes[section.key] || ""}
