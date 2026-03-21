@@ -69,7 +69,7 @@ export default function WeeklyConversation() {
   const [archive, setArchive] = useState<any[]>([]);
   const [expandedArchive, setExpandedArchive] = useState<string | null>(null);
   const [archiveEntries, setArchiveEntries] = useState<Record<string, any[]>>({});
-
+  const [nextMeetingAt, setNextMeetingAt] = useState<string>("");
   const hasCoupleId = !!profile?.couple_id;
 
   useEffect(() => {
