@@ -17,6 +17,7 @@ import {
   isInstalledPWA,
   isIOSSafari,
   sendTestPush,
+  resetPushSubscription,
 } from "@/lib/pushNotifications";
 import {
   AlertDialog,
