@@ -475,10 +475,10 @@ export default function WeeklyConversation() {
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <MessageCircle className="w-5 h-5 text-accent" />
-            Uppskattningar (5 st)
+            Uppskattningar
             <InfoButton title="Uppskattningar" description="Att dela fem specifika uppskattningar varje vecka bygger en kultur av tacksamhet. Var konkret: 'Tack för att du lyssnade igår kväll' slår 'Du är bra'. Specifik uppskattning visar att du ser din partner." />
           </CardTitle>
-          <p className="text-xs text-muted-foreground">Sparas i er gemensamma uppskattningsbank</p>
+          <p className="text-xs text-muted-foreground">Vad är fem saker du uppskattat med din partner senaste veckan?</p>
         </CardHeader>
         <CardContent className="space-y-2">
           {appreciations.map((a, i) => (
