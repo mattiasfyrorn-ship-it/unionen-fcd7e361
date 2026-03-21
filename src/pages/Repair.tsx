@@ -699,6 +699,22 @@ export default function Repair() {
               Reparationsförsök är den starkaste prediktorn för långsiktig relationshälsa.
             </p>
           </div>
+          {!repairCompleted && (
+            <div className="space-y-2 w-full max-w-xs">
+              <p className="text-sm text-muted-foreground">Har ni reparerat?</p>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" className="flex-1" onClick={() => markRepairCompleted("completed")}>
+                  <Check className="w-4 h-4 mr-1" /> Reparerat
+                </Button>
+                <Button size="sm" variant="outline" className="flex-1" onClick={() => markRepairCompleted("conversation_planned")}>
+                  <Clock className="w-4 h-4 mr-1" /> Samtal planerat
+                </Button>
+              </div>
+            </div>
+          )}
+          {repairCompleted && (
+            <p className="text-sm text-primary">✓ Markerad som slutförd</p>
+          )}
           <Button onClick={() => navigate("/")}>Tillbaka till Dashboard</Button>
         </div>
       )}
