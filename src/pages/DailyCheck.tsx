@@ -14,7 +14,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import WeekDayPicker from "@/components/WeekDayPicker";
 import { format, startOfWeek, addDays, subDays } from "date-fns";
-import { computeRelationskonto, type KontoPoint } from "@/lib/relationskonto";
+import { computeRelationskonto, computeSharedRelationskonto, type KontoPoint } from "@/lib/relationskonto";
+import { enrichChecksWithExtras } from "@/lib/enrichChecks";
 
 export default function DailyCheck() {
   const { user, profile } = useAuth();
