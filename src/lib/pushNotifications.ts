@@ -218,6 +218,60 @@ export async function sendPushToPartner(
   }
 }
 
+/**
+ * Full reset: unregister SW, clear DB subscriptions, re-register and create fresh subscription.
+ */
+export async function resetPushSubscription(userId: string): Promise<boolean> {
+  try {
+    console.log('[Push] === RESET START ===');
+    await supabase.from('push_subscriptions').delete().eq('user_id', userId);
+
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const existingSub = await (reg as any).pushManager.getSubscription();
+      if (existingSub) {
+        await existingSub.unsubscribe();
+        console.log('[Push] Browser subscription unsubscribed');
+      }
+    } catch (e) {
+      console.warn('[Push] Could not unsubscribe existing:', e);
+    }
+
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    for (const reg of registrations) {
+      await reg.unregister();
+      console.log('[Push] Unregistered SW:', reg.scope);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const newReg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+    console.log('[Push] New SW registered, scope:', newReg.scope);
+    await navigator.serviceWorker.ready;
+
+    const vapidKey = await getVapidKey();
+    const subscription = await (newReg as any).pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidKey),
+    });
+    console.log('[Push] Fresh subscription created, endpoint:', subscription.endpoint?.slice(0, 60));
+
+    const { error } = await supabase.from('push_subscriptions').insert({
+      user_id: userId,
+      subscription: subscription.toJSON() as any,
+    } as any);
+
+    if (error) {
+      console.error('[Push] Failed to save fresh subscription:', error);
+      return false;
+    }
+    console.log('[Push] === RESET COMPLETE ✓ ===');
+    return true;
+  } catch (err) {
+    console.error('[Push] Reset failed:', err);
+    return false;
+  }
+}
+
 /** Send a test push to a specific user via broadcast-push */
 export async function sendTestPush(userId: string): Promise<boolean> {
   try {

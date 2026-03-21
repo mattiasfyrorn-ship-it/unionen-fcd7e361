@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { User, Mail, Lock, LogOut, Unlink, Bell, Download, Send } from "lucide-react";
+import { User, Mail, Lock, LogOut, Unlink, Bell, Download, Send, RotateCcw } from "lucide-react";
 import {
   subscribeToPush,
   unsubscribeFromPush,
@@ -17,6 +17,7 @@ import {
   isInstalledPWA,
   isIOSSafari,
   sendTestPush,
+  resetPushSubscription,
 } from "@/lib/pushNotifications";
 import {
   AlertDialog,
@@ -53,6 +54,7 @@ export default function Account() {
   const [pushEnabled, setPushEnabled] = useState(false);
   const [iosSafari, setIosSafari] = useState(false);
   const [sendingTest, setSendingTest] = useState(false);
+  const [resettingPush, setResettingPush] = useState(false);
   const [notifPrefs, setNotifPrefs] = useState<NotifPrefs>({
     daily_reminder_enabled: true,
     daily_reminder_time: "08:00",
@@ -151,6 +153,25 @@ export default function Account() {
       toast({ title: "Misslyckades", description: "Kunde inte skicka testnotis.", variant: "destructive" });
     }
     setSendingTest(false);
+  };
+
+  const handleResetPush = async () => {
+    if (!user) return;
+    setResettingPush(true);
+    toast({ title: "Återställer...", description: "Rensar och skapar ny push-prenumeration." });
+    const ok = await resetPushSubscription(user.id);
+    if (ok) {
+      setPushEnabled(true);
+      const testOk = await sendTestPush(user.id);
+      if (testOk) {
+        toast({ title: "Återställt ✓", description: "Ny prenumeration skapad och testnotis skickad!" });
+      } else {
+        toast({ title: "Återställt ✓", description: "Ny prenumeration skapad, men testnotis kunde inte skickas." });
+      }
+    } else {
+      toast({ title: "Misslyckades", description: "Kunde inte återställa push-prenumerationen.", variant: "destructive" });
+    }
+    setResettingPush(false);
   };
 
   const saveName = async () => {
@@ -278,11 +299,15 @@ export default function Account() {
                       />
                     </div>
                   )}
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button size="sm" onClick={saveNotifPrefs} disabled={loading}>Spara inställningar</Button>
                     <Button size="sm" variant="outline" onClick={handleTestPush} disabled={sendingTest}>
                       <Send className="w-3 h-3 mr-1" />
                       {sendingTest ? "Skickar..." : "Skicka test-push"}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={handleResetPush} disabled={resettingPush}>
+                      <RotateCcw className="w-3 h-3 mr-1" />
+                      {resettingPush ? "Återställer..." : "Återställ push"}
                     </Button>
                   </div>
                 </>
