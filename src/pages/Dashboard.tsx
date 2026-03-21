@@ -179,62 +179,50 @@ export default function Dashboard() {
     if (!user) return;
     const days = graphPeriod === "week" ? 7 : graphPeriod === "month" ? 30 : 365;
     const endDate = format(new Date(), "yyyy-MM-dd");
-    // Use extra days for calculation warmup
     const calcStart = format(subDays(new Date(), days + 60), "yyyy-MM-dd");
     const displayStart = format(subDays(new Date(), days), "yyyy-MM-dd");
 
     if (view === "ours" && profile?.couple_id) {
-      // My konto line
-      const { data: myChecks } = await supabase
+      const { data: myChecksRaw } = await supabase
         .from("daily_checks")
         .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted, climate")
         .eq("user_id", user.id)
         .gte("check_date", calcStart)
         .order("check_date", { ascending: true });
 
-      const myPoints = computeRelationskonto(myChecks || [], calcStart, endDate)
-        .filter(p => p.date >= displayStart);
+      const myChecks = await enrichChecksWithExtras(
+        myChecksRaw || [], user.id, profile.couple_id, calcStart, endDate
+      );
 
-      // Partner konto line
-      const { data: partnerChecks } = await supabase
+      const { data: partnerChecksRaw } = await supabase
         .from("daily_checks")
-        .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted, climate")
+        .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted, climate, user_id")
         .eq("couple_id", profile.couple_id!)
         .neq("user_id", user.id)
         .gte("check_date", calcStart)
         .order("check_date", { ascending: true });
 
-      const partnerPoints = computeRelationskonto(partnerChecks || [], calcStart, endDate)
+      const partnerId = partnerChecksRaw?.[0]?.user_id;
+      const partnerChecks = await enrichChecksWithExtras(
+        partnerChecksRaw || [], partnerId || "", profile.couple_id, calcStart, endDate
+      );
+
+      const sharedPoints = computeSharedRelationskonto(myChecks, partnerChecks, calcStart, endDate)
         .filter(p => p.date >= displayStart);
-
-      // Merge into combined graph (average konto + average climate)
-      const merged: KontoPoint[] = myPoints.map((mp, i) => {
-        const pp = partnerPoints[i];
-        const ourVal = pp ? Math.round(((mp.value + pp.value) / 2) * 10) / 10 : mp.value;
-        const myClim = mp.climate;
-        const ppClim = pp?.climate;
-        let ourClimate: number | undefined;
-        if (myClim != null && ppClim != null) {
-          ourClimate = Math.round(((myClim + ppClim) / 2) * 10) / 10;
-        } else if (myClim != null) {
-          ourClimate = myClim;
-        } else if (ppClim != null) {
-          ourClimate = ppClim;
-        }
-        return { date: mp.date, value: ourVal, climate: ourClimate };
-      });
-
-      setKontoGraph(merged);
+      setKontoGraph(sharedPoints);
     } else {
-      // Mine only
-      const { data: myChecks } = await supabase
+      const { data: myChecksRaw } = await supabase
         .from("daily_checks")
         .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted, climate")
         .eq("user_id", user.id)
         .gte("check_date", calcStart)
         .order("check_date", { ascending: true });
 
-      const myPoints = computeRelationskonto(myChecks || [], calcStart, endDate)
+      const myChecks = await enrichChecksWithExtras(
+        myChecksRaw || [], user.id, profile?.couple_id || null, calcStart, endDate
+      );
+
+      const myPoints = computeRelationskonto(myChecks, calcStart, endDate)
         .filter(p => p.date >= displayStart);
       setKontoGraph(myPoints);
     }
