@@ -552,7 +552,7 @@ export default function WeeklyConversation() {
       {/* Issues */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">Frågor / Problem att ta upp <InfoButton title="Frågor / Problem" description="Här tar ni upp saker som behöver diskuteras. Tagga varje fråga som praktisk, emotionell eller vision. Gottman-forskning visar att 69% av alla parproblem är olösliga – de behöver hanteras med dialog, inte lösning." /></CardTitle>
+          <CardTitle className="text-base flex items-center gap-2">Frågor / Behov att ta upp <InfoButton title="Frågor / Behov" description="Här tar ni upp saker som behöver diskuteras. Tagga varje fråga som praktisk, emotionell eller vision. Gottman-forskning visar att 69% av alla parproblem är olösliga – de behöver hanteras med dialog, inte lösning." /></CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {issues.map((issue, i) => (
