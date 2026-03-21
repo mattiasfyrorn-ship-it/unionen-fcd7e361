@@ -602,34 +602,60 @@ export default function WeeklyConversation() {
           <Input placeholder="När ses vi?" value={logistics.when || ""} onChange={(e) => setLogistics(prev => ({ ...prev, when: e.target.value }))} className="bg-muted/50 border-border text-sm" disabled={ready} />
           <Input placeholder="Vem tar hand om vad?" value={logistics.who || ""} onChange={(e) => setLogistics(prev => ({ ...prev, who: e.target.value }))} className="bg-muted/50 border-border text-sm" disabled={ready} />
           <Input placeholder="Speciella behov att ta hänsyn till" value={logistics.needs || ""} onChange={(e) => setLogistics(prev => ({ ...prev, needs: e.target.value }))} className="bg-muted/50 border-border text-sm" disabled={ready} />
-        </CardContent>
-      </Card>
 
-      {/* Positive intention */}
-      <Card className="rounded-[10px] border-none shadow-hamnen">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-accent" />
-            Positiv intention
-            <InfoButton title="Positiv intention" description="En positiv intention sätter riktning för veckan. Det kan vara 'Jag vill vara mer närvarande vid middagen' eller 'Jag vill visa uppskattning varje dag'. Intentioner fungerar som en inre kompass." />
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Input placeholder="Min positiva intention för veckan..." value={intention} onChange={(e) => setIntention(e.target.value)} className="bg-muted/50 border-border text-sm" disabled={ready} />
-        </CardContent>
-      </Card>
-
-      {/* Next meeting time */}
-      <Card className="rounded-[10px] border-none shadow-hamnen">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Clock className="w-5 h-5 text-primary" />
-            Tid för nästa möte
-            <InfoButton title="Tid för nästa möte" description="Boka in nästa veckosamtal redan nu. Par som schemalägger sina möten i förväg håller rutinen bättre. Hitta en tid som fungerar för båda – det behöver inte vara lång, 30–45 minuter räcker." />
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Input placeholder="T.ex. Söndag kl 19:00" value={logistics.when || ""} onChange={(e) => setLogistics(prev => ({ ...prev, when: e.target.value }))} className="bg-muted/50 border-border text-sm" disabled={ready} />
+          {/* Next SOTU meeting */}
+          <div className="pt-2 border-t border-border/30">
+            <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5" /> Nästa State of the Union
+            </p>
+            <div className="flex gap-2">
+              <Input
+                type="datetime-local"
+                value={nextMeetingAt ? nextMeetingAt.slice(0, 16) : ""}
+                onChange={(e) => setNextMeetingAt(e.target.value)}
+                className="bg-muted/50 border-border text-sm flex-1"
+                disabled={ready}
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={ready || !nextMeetingAt}
+                onClick={async () => {
+                  if (!conversationId) return;
+                  const isoDate = new Date(nextMeetingAt).toISOString();
+                  const { error } = await supabase
+                    .from("weekly_conversations")
+                    .update({ next_meeting_at: isoDate } as any)
+                    .eq("id", conversationId);
+                  if (error) {
+                    toast({ title: "Fel", description: error.message, variant: "destructive" });
+                  } else {
+                    toast({ title: "Sparat! 📅" });
+                    // Send auto-message to partner
+                    if (hasCoupleId && user) {
+                      const formatted = format(new Date(nextMeetingAt), "EEEE d MMMM 'kl' HH:mm", { locale: sv });
+                      const msgContent = `Jag har uppdaterat tid för vårt nästa State of the Union-samtal: ${formatted}`;
+                      await supabase.from("messages").insert({
+                        couple_id: profile!.couple_id!,
+                        sender_id: user.id,
+                        content: msgContent,
+                        type: "system",
+                      });
+                      sendPushToPartner(profile!.couple_id!, user.id, "Nytt mötesdatum", msgContent, "message");
+                    }
+                  }
+                }}
+                className="text-xs"
+              >
+                Spara tid
+              </Button>
+            </div>
+            {nextMeetingAt && (
+              <p className="text-xs text-muted-foreground mt-1">
+                {format(new Date(nextMeetingAt), "EEEE d MMMM 'kl' HH:mm", { locale: sv })}
+              </p>
+            )}
+          </div>
         </CardContent>
       </Card>
 
