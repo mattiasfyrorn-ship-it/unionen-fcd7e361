@@ -42,6 +42,9 @@ export default function Evaluate() {
   const [markedDates, setMarkedDates] = useState<string[]>([]);
   const [graphRange, setGraphRange] = useState("week");
   const [graphData, setGraphData] = useState<{ week: string; total: number }[]>([]);
+  const [insightsText, setInsightsText] = useState<string | null>(null);
+  const [insightsMessage, setInsightsMessage] = useState<string | null>(null);
+  const [insightsLoading, setInsightsLoading] = useState(false);
 
   const checkDate = format(selectedDate, "yyyy-MM-dd");
   const weekStart = getWeekStartFromDate(selectedDate);
