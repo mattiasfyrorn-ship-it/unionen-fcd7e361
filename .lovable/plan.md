@@ -1,36 +1,31 @@
 
 
-## Två separata mötesdatum i Veckosamtal
+## Plan: Persistent "Markera reparation som slutförd" i Repair-vyn
 
-### Problemet
-Just nu finns bara ett datumfält (`next_meeting_at`), vilket gör att "nästa samtal" i toppen och i "Praktiskt"-sektionen pekar på samma värde. Användaren behöver kunna se *detta veckas möte* i toppen medan de i förberedelserna planerar *mötet efter det*.
+### Problem
+Om knapparna "Reparerat" / "Reparationssamtal planerat" bara visas på slutskärmen (steg 13) försvinner de när användaren lämnar sidan och kommer tillbaka.
 
-### Lösning: Två fält
-
-**Fält 1 — `next_meeting_at`** (befintligt): Tid för det möte paret förbereder just nu. Visas i header under "State of the Union".
-
-**Fält 2 — `planned_next_meeting_at`** (nytt): Tid för mötet *efter* det nuvarande. Sätts i "Praktiskt"-sektionen. När mötet markeras som genomfört kopieras detta värde till nästa veckas `next_meeting_at`.
+### Lösning
+Visa en banner/kort på **startsidan av reparationsflödet (steg 0)** när det finns en öppen (icke-slutförd) reparation. Bannern visar senaste reparationens datum och två knappar för att markera den som slutförd. Reparationer med `status = "shared"` eller `"needs_time"` och utan `completed_at` räknas som öppna.
 
 ### Ändringar
 
-#### 1. Databasmigration
-- Lägg till `planned_next_meeting_at` (timestamptz, nullable) i `weekly_conversations`
+**1. `src/pages/Repair.tsx`**
 
-#### 2. Header under "State of the Union" (rad 491-509)
-- Visa `next_meeting_at` med datum/tid
-- Om inget datum finns: visa "Inget samtal planerat" med en "Sätt tid"-knapp
-- "Ändra"-knapp öppnar inline datetime-picker direkt i headern (inte scroll till Praktiskt)
-- Vid ändring: spara till `next_meeting_at`, skicka systemmeddelande + push till partner: "Jag har ändrat datum för nästa State of the Union-samtal till [datum/tid]"
+- På steg 0, före valet "Reglering / Snabb reparation", kolla om det finns en öppen reparation (senaste reparationen där `completed_at IS NULL` och `status` inte redan är `"completed"`).
+- Om ja, visa ett kort med:
+  - Text: "Du har en öppen reparation från [datum]"
+  - Knapp 1: "Reparerat" → sätter `status = "completed"`, `completed_at = now()`
+  - Knapp 2: "Reparationssamtal planerat" → sätter `status = "conversation_planned"`, `completed_at = now()`
+  - Efter klick: toast-bekräftelse, dölj kortet
+- Samma logik på steg 13 (done-skärmen) — visa knapparna även där som idag planerat.
 
-#### 3. "Praktiskt"-sektionen (rad 662-714)
-- Byt label till "Nästa samtal efter detta möte"
-- Binder till `planned_next_meeting_at` (nytt state: `plannedNextMeetingAt`)
-- Vid sparande: samma logik (spara + meddelande + push)
+**2. Även kolla `quick_repairs`**
+- Senaste quick_repair där `partner_response IS NULL` visas på liknande sätt med en "Reparerat"-knapp som sätter `partner_response = "completed"`.
 
-#### 4. Auto-kopiering vid genomfört möte
-- När `meetingConfirmed` kryssas: om `plannedNextMeetingAt` finns, skapa/uppdatera nästa veckas conversation med det värdet som `next_meeting_at`
-
-### Filer som ändras
-- `src/pages/WeeklyConversation.tsx` — header-fält med inline datetime, Praktiskt-sektion binds till nytt fält
-- Ny migration för `planned_next_meeting_at`
+### Tekniska detaljer
+- Nytt state: `openRepair` (den senaste oslutförda reparationen) laddas i befintlig `useEffect`
+- Filtrera `pastRepairs`-queryn och plocka ut den första med `completed_at IS NULL`
+- Uppdatering sker direkt mot `repairs`/`quick_repairs`-tabellen med befintliga RLS-policies (user can update own)
+- Inga databasmigrationer behövs — `completed_at` och `status` finns redan på `repairs`, `partner_response` finns på `quick_repairs`
 
