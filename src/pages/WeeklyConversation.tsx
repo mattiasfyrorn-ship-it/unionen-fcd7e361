@@ -488,6 +488,25 @@ export default function WeeklyConversation() {
           State of the Union – förbered och genomför ert veckosamtal
           <InfoButton title="Veckosamtal" description="Veckosamtalet (State of the Union) är ett strukturerat möte där ni sammanfattar veckan, delar uppskattningar, tar upp frågor och sätter riktning framåt. Forskning visar att par som regelbundet checkar in med varandra förebygger att små irritationer blir stora konflikter." />
         </p>
+        {nextMeetingAt && (
+          <div className="mt-2 flex items-center gap-2 text-sm">
+            <CalendarDays className="w-4 h-4 text-primary" />
+            <span className="text-foreground">
+              Nästa samtal: <span className="font-medium">{format(new Date(nextMeetingAt), "EEEE d MMMM 'kl' HH:mm", { locale: sv })}</span>
+            </span>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-xs h-6 px-2"
+              onClick={() => {
+                const el = document.getElementById("next-meeting-field");
+                if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+              }}
+            >
+              Ändra
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Start meeting button */}
