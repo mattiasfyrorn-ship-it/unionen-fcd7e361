@@ -60,6 +60,7 @@ export default function Dashboard() {
   // Konto summary
   const [myKonto, setMyKonto] = useState(0);
   const [partnerKonto, setPartnerKonto] = useState<number | null>(null);
+  const [sharedKonto, setSharedKonto] = useState<number | null>(null);
   const [kontoTrend, setKontoTrend] = useState(0);
   // kontoView removed — summary always shows "ours"
 
