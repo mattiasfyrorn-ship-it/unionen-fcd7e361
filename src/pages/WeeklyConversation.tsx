@@ -123,6 +123,7 @@ export default function WeeklyConversation() {
       if (!conv) return;
       setConversationId(conv.id);
       if (conv.next_meeting_at) setNextMeetingAt(conv.next_meeting_at);
+      if ((conv as any).planned_next_meeting_at) setPlannedNextMeetingAt((conv as any).planned_next_meeting_at);
 
       const { data: myEntry } = await supabase
         .from("weekly_entries")
