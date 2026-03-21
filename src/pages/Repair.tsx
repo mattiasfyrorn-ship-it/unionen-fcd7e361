@@ -87,6 +87,9 @@ export default function Repair() {
   const [loading, setLoading] = useState(false);
   const [pastRepairs, setPastRepairs] = useState<any[]>([]);
   const [expandedRepair, setExpandedRepair] = useState<string | null>(null);
+  const [openRepair, setOpenRepair] = useState<any | null>(null);
+  const [openQuickRepair, setOpenQuickRepair] = useState<any | null>(null);
+  const [repairCompleted, setRepairCompleted] = useState(false);
 
   // Quick repair data
   const [quickCategory, setQuickCategory] = useState<string>("");
@@ -95,6 +98,7 @@ export default function Repair() {
 
   useEffect(() => {
     if (!user) return;
+    // Fetch all repairs
     supabase
       .from("repairs")
       .select("*")
@@ -102,9 +106,26 @@ export default function Repair() {
       .order("created_at", { ascending: false })
       .limit(20)
       .then(({ data }) => {
-        if (data) setPastRepairs(data);
+        if (data) {
+          setPastRepairs(data);
+          const open = data.find((r: any) => !r.completed_at && r.status !== "completed" && r.status !== "conversation_planned" && r.status !== "in_progress");
+          setOpenRepair(open || null);
+        }
       });
-  }, [user?.id]);
+    // Fetch open quick repair
+    if (profile?.couple_id) {
+      supabase
+        .from("quick_repairs")
+        .select("*")
+        .eq("user_id", user.id)
+        .is("partner_response", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .then(({ data }) => {
+          if (data && data.length > 0) setOpenQuickRepair(data[0]);
+        });
+    }
+  }, [user?.id, profile?.couple_id]);
 
   const toggleNeed = (need: string) => {
     setNeeds((prev) => prev.includes(need) ? prev.filter((n) => n !== need) : [...prev, need]);
@@ -304,6 +325,23 @@ export default function Repair() {
     setStep(13);
   };
 
+  const markRepairCompleted = async (type: "completed" | "conversation_planned") => {
+    if (openRepair) {
+      await supabase.from("repairs").update({
+        status: type,
+        completed_at: new Date().toISOString(),
+      }).eq("id", openRepair.id);
+      setOpenRepair(null);
+    }
+    if (openQuickRepair) {
+      await supabase.from("quick_repairs").update({
+        partner_response: type,
+      }).eq("id", openQuickRepair.id);
+      setOpenQuickRepair(null);
+    }
+    setRepairCompleted(true);
+    toast({ title: type === "completed" ? "Reparerat ❤️" : "Reparationssamtal planerat", description: "Fint att ni tar hand om relationen." });
+  };
 
   return (
     <div className="max-w-lg mx-auto space-y-8 animate-fade-in">
@@ -336,6 +374,26 @@ export default function Repair() {
           <p className="text-muted-foreground max-w-sm">
             Är du triggad och behöver reglera dig, eller är du lugn och redo att reparera?
           </p>
+          {/* Open repair banner */}
+          {(openRepair || openQuickRepair) && !repairCompleted && (
+            <Card className="w-full max-w-xs border-primary/30 bg-primary/5">
+              <CardContent className="p-4 space-y-3">
+                <p className="text-sm text-foreground">
+                  Du har en öppen reparation från{" "}
+                  {new Date((openRepair || openQuickRepair).created_at).toLocaleDateString("sv-SE")}
+                </p>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => markRepairCompleted("completed")}>
+                    <Check className="w-3 h-3 mr-1" /> Reparerat
+                  </Button>
+                  <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => markRepairCompleted("conversation_planned")}>
+                    <Clock className="w-3 h-3 mr-1" /> Samtal planerat
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="space-y-3 w-full max-w-xs">
             <Button size="lg" className="w-full" onClick={() => setStep(1)}>
               <Shield className="w-5 h-5 mr-2" /> Jag är triggad
@@ -641,6 +699,22 @@ export default function Repair() {
               Reparationsförsök är den starkaste prediktorn för långsiktig relationshälsa.
             </p>
           </div>
+          {!repairCompleted && (
+            <div className="space-y-2 w-full max-w-xs">
+              <p className="text-sm text-muted-foreground">Har ni reparerat?</p>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" className="flex-1" onClick={() => markRepairCompleted("completed")}>
+                  <Check className="w-4 h-4 mr-1" /> Reparerat
+                </Button>
+                <Button size="sm" variant="outline" className="flex-1" onClick={() => markRepairCompleted("conversation_planned")}>
+                  <Clock className="w-4 h-4 mr-1" /> Samtal planerat
+                </Button>
+              </div>
+            </div>
+          )}
+          {repairCompleted && (
+            <p className="text-sm text-primary">✓ Markerad som slutförd</p>
+          )}
           <Button onClick={() => navigate("/")}>Tillbaka till Dashboard</Button>
         </div>
       )}
@@ -660,7 +734,7 @@ export default function Repair() {
                 <Card key={r.id} className="bg-muted/30 border-border/30">
                   <CardHeader className="pb-1 pt-3 px-4 cursor-pointer" onClick={() => setExpandedRepair(expandedRepair === r.id ? null : r.id)}>
                     <CardTitle className="text-sm flex items-center justify-between">
-                      <span>{new Date(r.created_at).toLocaleDateString("sv-SE")} – {r.status === "shared" ? "Delad" : r.status === "needs_time" ? "Behövde tid" : r.status}</span>
+                      <span>{new Date(r.created_at).toLocaleDateString("sv-SE")} – {r.status === "shared" ? "Delad" : r.status === "needs_time" ? "Behövde tid" : r.status === "completed" ? "Reparerat ✓" : r.status === "conversation_planned" ? "Samtal planerat ✓" : r.status}</span>
                       <ChevronDown className={`w-4 h-4 transition-transform ${expandedRepair === r.id ? "rotate-180" : ""}`} />
                     </CardTitle>
                   </CardHeader>
