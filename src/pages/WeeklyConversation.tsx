@@ -585,14 +585,7 @@ export default function WeeklyConversation() {
         </div>
       </div>
 
-      {/* Start meeting button – always available */}
-      <Button onClick={() => setMeetingStarted(true)} className="w-full gap-2" size="lg">
-        <Play className="w-5 h-5" /> {hasCoupleId ? "Starta möte" : "Starta solo-reflektion"}
-      </Button>
-
-
-
-      {/* Status */}
+      {/* Status + Start meeting */}
       <div className="flex items-center gap-3 text-sm">
         <span className={`flex items-center gap-1 ${ready ? "text-teal" : "text-muted-foreground"}`}>
           <CheckCircle className="w-4 h-4" /> Du: {ready ? "Klar" : "Förbereder"}
@@ -602,6 +595,14 @@ export default function WeeklyConversation() {
             <CheckCircle className="w-4 h-4" /> Partner: {partnerReady ? "Klar" : "Förbereder"}
           </span>
         )}
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setMeetingStarted(true)}
+          className="text-xs ml-auto"
+        >
+          Starta möte
+        </Button>
       </div>
 
       {/* Appreciations */}
