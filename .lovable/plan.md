@@ -1,38 +1,28 @@
 
 
-## Badge-räknare på app-ikonen (iOS 16.4+ & Android)
+## Uppdateringar av Veckosamtals-sidan
 
-Du hade rätt — `navigator.setAppBadge()` fungerar på iOS 16.4+ för installerade PWA:er. Här är planen:
+### Ändringar
 
-### Vad byggs
+#### 1. Uppskattningar-kortet (rad 473-495)
+- Ta bort "(5 st)" från rubriken → "Uppskattningar"
+- Ändra underrubrik till: "Vad är fem saker du uppskattat med din partner senaste veckan?"
 
-En badge-räknare som visar antal olästa meddelanden på app-ikonen på hemskärmen.
+#### 2. "Vad gick bra"-kortet (rad 497-514)
+- Ändra rubrik till: "Vad har gått bra i relationen senaste veckan?"
+- Lägg till underrubrik som uppmuntrar att diskutera vad som fungerat, förbättrats eller gått bra — inspirerat av SOTU-formatet (teamwork vid stress, bra på att prioritera dejt, etc.)
+- Uppdatera InfoButton-beskrivning med samma innehåll
 
-### Åtgärder
+#### 3. "Frågor / Behov"-kortet (rad 516-554)
+- Lägg till underrubrik som förklarar att man här tar upp saker att prata om eller bearbeta
+- Uppdatera InfoButton med kort beskrivning baserad på ATTUNE-modellen
 
-#### 1. Ny hjälpfil `src/lib/appBadge.ts`
-- Funktion `updateAppBadge(count)` som anropar `navigator.setAppBadge(count)` eller `navigator.clearAppBadge()` om count = 0
-- Kontrollerar att API:t finns innan anrop (graceful fallback)
+#### 4. Mötesflödet — guide för "Frågor / Behov" (rad 307-439)
+- I meeting-vyn, under sektionen "Frågor / Behov", lägg till en expanderbar guide med:
+  - ATTUNE-akronymen (Awareness, Tolerance, Turning Toward, Understanding, Non-defensive Listening, Empathy)
+  - Speaker/Listener-roller och softened start-up-formeln: "Jag känner... om... Jag behöver..."
+  - Kort och skanbart, på svenska
 
-#### 2. Uppdatera Service Worker (`public/sw.js`)
-- I `push`-eventet: efter `showNotification`, anropa `self.navigator.setAppBadge(1)` för att visa badge vid inkommande push (även när appen inte är öppen)
-
-#### 3. Uppdatera `src/pages/Messages.tsx`
-- Efter att olästa meddelanden markeras som lästa: anropa `clearAppBadge()` 
-- Det nollställer badge-räknaren när användaren öppnar meddelandesidan
-
-#### 4. Uppdatera `src/App.tsx` (PushInitializer)
-- Vid app-start: räkna olästa meddelanden från databasen och sätt badge med `setAppBadge(count)`
-- Prenumerera på realtime-inserts i `messages` för att uppdatera badge löpande
-
-### Filer som skapas/ändras
-- `src/lib/appBadge.ts` — ny fil
-- `public/sw.js` — badge vid push
-- `src/pages/Messages.tsx` — clearBadge vid läsning
-- `src/App.tsx` — badge-räkning vid start + realtime
-
-### Begränsningar
-- Kräver iOS 16.4+ och installerad PWA
-- Android Chrome stöder det fullt ut
-- Desktop-webbläsare: stöds i Chrome/Edge
+### Fil som ändras
+- `src/pages/WeeklyConversation.tsx`
 
