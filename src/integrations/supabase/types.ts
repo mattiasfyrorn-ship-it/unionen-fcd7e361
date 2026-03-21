@@ -687,6 +687,7 @@ export type Database = {
           couple_id: string | null
           created_at: string
           id: string
+          next_meeting_at: string | null
           status: string
           user_id: string | null
           week_start: string
@@ -695,6 +696,7 @@ export type Database = {
           couple_id?: string | null
           created_at?: string
           id?: string
+          next_meeting_at?: string | null
           status?: string
           user_id?: string | null
           week_start: string
@@ -703,6 +705,7 @@ export type Database = {
           couple_id?: string | null
           created_at?: string
           id?: string
+          next_meeting_at?: string | null
           status?: string
           user_id?: string | null
           week_start?: string
