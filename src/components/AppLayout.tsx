@@ -19,7 +19,7 @@ const DESKTOP_NAV = [
   { to: "/daily", label: "Relationskontot", icon: Sun },
   { to: "/evaluate", label: "Närd", icon: Sparkles },
   { to: "/weekly", label: "Veckosamtal", icon: CalendarCheck },
-  { to: "/repair", label: "Reglering", icon: Shield },
+  { to: "/repair", label: "Reparation", icon: Shield },
   { to: "/messages", label: "Meddelanden", icon: MessageCircle },
   { to: "/pairing", label: "Partner", icon: Link2 },
 ];
