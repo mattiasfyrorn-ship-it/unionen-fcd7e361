@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { User, Mail, Lock, LogOut, Unlink, Bell, Download, Send } from "lucide-react";
+import { User, Mail, Lock, LogOut, Unlink, Bell, Download, Send, RotateCcw } from "lucide-react";
 import {
   subscribeToPush,
   unsubscribeFromPush,
