@@ -1,28 +1,29 @@
 
 
-## Uppdateringar av Veckosamtals-sidan
+## Ändringar i Veckosamtals-sidan
 
-### Ändringar
+### 1. Ny sektion: "Vad kan jag göra för att du ska känna dig älskad?"
+- Lägg till ett nytt kort **efter** "Frågor / Behov"-kortet med:
+  - Rubrik: "Vad kan jag göra nästa vecka för att du ska känna dig älskad?"
+  - Underrubrik inspirerad av SOTU: "Avsluta samtalet genom att dela en sak din partner kan göra för att du ska känna er mer sammankopplade kommande vecka. Var specifik och positiv."
+  - InfoButton med mer detalj
+  - Textarea-fält för svaret
+- Spara i `weekly_entries` — nytt fält behövs: `love_action` (text)
+- Visa även i mötesflödet som en egen sektion (före "Avslutning")
 
-#### 1. Uppskattningar-kortet (rad 473-495)
-- Ta bort "(5 st)" från rubriken → "Uppskattningar"
-- Ändra underrubrik till: "Vad är fem saker du uppskattat med din partner senaste veckan?"
+### 2. Nästa samtal-fält i sidans topp (under rubriken)
+- Flytta/duplicera nästa mötestid så den visas direkt under sidans underrubrik "State of the Union"
+- Visa datum+tid formaterat, med en "Ändra"-knapp som öppnar datetime-picker
+- Vid ändring: spara till `weekly_conversations.next_meeting_at` + skicka systemmeddelande + push till partner (samma logik som redan finns)
+- Behåll fältet i "Praktiskt"-sektionen också (synkat state)
 
-#### 2. "Vad gick bra"-kortet (rad 497-514)
-- Ändra rubrik till: "Vad har gått bra i relationen senaste veckan?"
-- Lägg till underrubrik som uppmuntrar att diskutera vad som fungerat, förbättrats eller gått bra — inspirerat av SOTU-formatet (teamwork vid stress, bra på att prioritera dejt, etc.)
-- Uppdatera InfoButton-beskrivning med samma innehåll
+### 3. Auto-uppdatering vid genomfört möte
+- När `meetingConfirmed` markeras och det finns ett `next_meeting_at`-värde i "Praktiskt", kopiera det till **nästa veckas** conversation automatiskt (eller visa det som "schemalagt" i toppfältet)
 
-#### 3. "Frågor / Behov"-kortet (rad 516-554)
-- Lägg till underrubrik som förklarar att man här tar upp saker att prata om eller bearbeta
-- Uppdatera InfoButton med kort beskrivning baserad på ATTUNE-modellen
-
-#### 4. Mötesflödet — guide för "Frågor / Behov" (rad 307-439)
-- I meeting-vyn, under sektionen "Frågor / Behov", lägg till en expanderbar guide med:
-  - ATTUNE-akronymen (Awareness, Tolerance, Turning Toward, Understanding, Non-defensive Listening, Empathy)
-  - Speaker/Listener-roller och softened start-up-formeln: "Jag känner... om... Jag behöver..."
-  - Kort och skanbart, på svenska
+### Databasändring
+- Migration: lägg till `love_action` (text, nullable) i `weekly_entries`
 
 ### Fil som ändras
-- `src/pages/WeeklyConversation.tsx`
+- `src/pages/WeeklyConversation.tsx` — ny sektion, toppfält för nästa samtal
+- Migration för `love_action`-kolumn
 
