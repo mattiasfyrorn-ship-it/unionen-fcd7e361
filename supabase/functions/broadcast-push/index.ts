@@ -63,14 +63,18 @@ serve(async (req) => {
     let totalFailed = 0;
 
     for (const sub of subs) {
+      const endpoint = (sub.subscription as any)?.endpoint || 'unknown';
+      console.log('[broadcast-push] Sending to user', sub.user_id, 'endpoint:', endpoint.slice(0, 80));
       try {
-        await webpush.sendNotification(sub.subscription, payload);
+        const result = await webpush.sendNotification(sub.subscription, payload);
+        console.log('[broadcast-push] Success for user', sub.user_id, 'statusCode:', result.statusCode, 'headers:', JSON.stringify(result.headers));
         totalSent++;
       } catch (e: any) {
-        console.error('Push error for user', sub.user_id, ':', e.statusCode, e.body);
+        console.error('[broadcast-push] Push error for user', sub.user_id, 'statusCode:', e.statusCode, 'body:', e.body, 'endpoint:', endpoint.slice(0, 80));
         totalFailed++;
         if (e.statusCode === 404 || e.statusCode === 410) {
           await supabase.from('push_subscriptions').delete().eq('id', sub.id);
+          console.log('[broadcast-push] Removed stale subscription for user', sub.user_id);
         }
       }
     }

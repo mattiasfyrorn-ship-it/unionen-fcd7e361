@@ -129,14 +129,17 @@ serve(async (req) => {
 
       let sent = 0;
       for (const sub of subs) {
+        const endpoint = (sub.subscription as any)?.endpoint || 'unknown';
+        console.log('[send-push] Sending to partner', partnerId, 'endpoint:', endpoint.slice(0, 80));
         try {
-          await webpush.sendNotification(sub.subscription, payload);
+          const result = await webpush.sendNotification(sub.subscription, payload);
+          console.log('[send-push] Success statusCode:', result.statusCode, 'headers:', JSON.stringify(result.headers));
           sent++;
         } catch (e: any) {
-          console.error('Push error:', e.statusCode, e.body);
-          // Remove invalid subscriptions (gone or not found)
+          console.error('[send-push] Push error statusCode:', e.statusCode, 'body:', e.body, 'endpoint:', endpoint.slice(0, 80));
           if (e.statusCode === 404 || e.statusCode === 410) {
             await supabase.from('push_subscriptions').delete().eq('user_id', partnerId);
+            console.log('[send-push] Removed stale subscription for', partnerId);
           }
         }
       }
