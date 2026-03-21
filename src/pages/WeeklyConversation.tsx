@@ -141,6 +141,7 @@ export default function WeeklyConversation() {
         setIntention((myEntry as any).intention || "");
         setCheckoutFeeling((myEntry as any).checkout_feeling || "");
         setPartnerLearning((myEntry as any).partner_learning || "");
+        setLoveAction((myEntry as any).love_action || "");
         setMeetingConfirmed((myEntry as any).meeting_confirmed || false);
       }
 
