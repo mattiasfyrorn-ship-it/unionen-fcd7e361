@@ -87,6 +87,9 @@ export default function Repair() {
   const [loading, setLoading] = useState(false);
   const [pastRepairs, setPastRepairs] = useState<any[]>([]);
   const [expandedRepair, setExpandedRepair] = useState<string | null>(null);
+  const [openRepair, setOpenRepair] = useState<any | null>(null);
+  const [openQuickRepair, setOpenQuickRepair] = useState<any | null>(null);
+  const [repairCompleted, setRepairCompleted] = useState(false);
 
   // Quick repair data
   const [quickCategory, setQuickCategory] = useState<string>("");
@@ -95,6 +98,7 @@ export default function Repair() {
 
   useEffect(() => {
     if (!user) return;
+    // Fetch all repairs
     supabase
       .from("repairs")
       .select("*")
@@ -102,9 +106,26 @@ export default function Repair() {
       .order("created_at", { ascending: false })
       .limit(20)
       .then(({ data }) => {
-        if (data) setPastRepairs(data);
+        if (data) {
+          setPastRepairs(data);
+          const open = data.find((r: any) => !r.completed_at && r.status !== "completed" && r.status !== "conversation_planned" && r.status !== "in_progress");
+          setOpenRepair(open || null);
+        }
       });
-  }, [user?.id]);
+    // Fetch open quick repair
+    if (profile?.couple_id) {
+      supabase
+        .from("quick_repairs")
+        .select("*")
+        .eq("user_id", user.id)
+        .is("partner_response", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .then(({ data }) => {
+          if (data && data.length > 0) setOpenQuickRepair(data[0]);
+        });
+    }
+  }, [user?.id, profile?.couple_id]);
 
   const toggleNeed = (need: string) => {
     setNeeds((prev) => prev.includes(need) ? prev.filter((n) => n !== need) : [...prev, need]);
