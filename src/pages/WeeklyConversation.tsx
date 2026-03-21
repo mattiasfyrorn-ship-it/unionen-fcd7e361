@@ -409,9 +409,38 @@ export default function WeeklyConversation() {
                 type="checkbox"
                 checked={meetingConfirmed}
                 onChange={async (e) => {
-                  setMeetingConfirmed(e.target.checked);
+                  const checked = e.target.checked;
+                  setMeetingConfirmed(checked);
                   if (entryId) {
-                    await supabase.from("weekly_entries").update({ meeting_confirmed: e.target.checked } as any).eq("id", entryId);
+                    await supabase.from("weekly_entries").update({ meeting_confirmed: checked } as any).eq("id", entryId);
+                  }
+                  // Auto-copy planned_next_meeting_at to next week's conversation
+                  if (checked && plannedNextMeetingAt && hasCoupleId && profile?.couple_id) {
+                    try {
+                      const nextWeekStart = new Date(weekStart);
+                      nextWeekStart.setDate(nextWeekStart.getDate() + 7);
+                      const nextWeekStr = nextWeekStart.toISOString().split("T")[0];
+                      const isoPlanned = new Date(plannedNextMeetingAt).toISOString();
+                      const { data: nextConv } = await supabase
+                        .from("weekly_conversations")
+                        .select("id")
+                        .eq("couple_id", profile.couple_id)
+                        .eq("week_start", nextWeekStr)
+                        .maybeSingle();
+                      if (nextConv) {
+                        await supabase.from("weekly_conversations").update({ next_meeting_at: isoPlanned } as any).eq("id", nextConv.id);
+                      } else {
+                        await supabase.from("weekly_conversations").insert({
+                          couple_id: profile.couple_id,
+                          user_id: user!.id,
+                          week_start: nextWeekStr,
+                          next_meeting_at: isoPlanned,
+                        } as any);
+                      }
+                      console.log("[SOTU] Copied planned_next_meeting_at to next week");
+                    } catch (err) {
+                      console.error("[SOTU] Failed to copy meeting date:", err);
+                    }
                   }
                 }}
                 className="rounded border-border"
