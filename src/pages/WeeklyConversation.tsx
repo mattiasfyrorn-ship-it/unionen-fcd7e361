@@ -71,6 +71,8 @@ export default function WeeklyConversation() {
   const [expandedArchive, setExpandedArchive] = useState<string | null>(null);
   const [archiveEntries, setArchiveEntries] = useState<Record<string, any[]>>({});
   const [nextMeetingAt, setNextMeetingAt] = useState<string>("");
+  const [plannedNextMeetingAt, setPlannedNextMeetingAt] = useState<string>("");
+  const [editingHeaderDate, setEditingHeaderDate] = useState(false);
   const hasCoupleId = !!profile?.couple_id;
 
   useEffect(() => {
@@ -121,6 +123,7 @@ export default function WeeklyConversation() {
       if (!conv) return;
       setConversationId(conv.id);
       if (conv.next_meeting_at) setNextMeetingAt(conv.next_meeting_at);
+      if ((conv as any).planned_next_meeting_at) setPlannedNextMeetingAt((conv as any).planned_next_meeting_at);
 
       const { data: myEntry } = await supabase
         .from("weekly_entries")
@@ -406,9 +409,38 @@ export default function WeeklyConversation() {
                 type="checkbox"
                 checked={meetingConfirmed}
                 onChange={async (e) => {
-                  setMeetingConfirmed(e.target.checked);
+                  const checked = e.target.checked;
+                  setMeetingConfirmed(checked);
                   if (entryId) {
-                    await supabase.from("weekly_entries").update({ meeting_confirmed: e.target.checked } as any).eq("id", entryId);
+                    await supabase.from("weekly_entries").update({ meeting_confirmed: checked } as any).eq("id", entryId);
+                  }
+                  // Auto-copy planned_next_meeting_at to next week's conversation
+                  if (checked && plannedNextMeetingAt && hasCoupleId && profile?.couple_id) {
+                    try {
+                      const nextWeekStart = new Date(weekStart);
+                      nextWeekStart.setDate(nextWeekStart.getDate() + 7);
+                      const nextWeekStr = nextWeekStart.toISOString().split("T")[0];
+                      const isoPlanned = new Date(plannedNextMeetingAt).toISOString();
+                      const { data: nextConv } = await supabase
+                        .from("weekly_conversations")
+                        .select("id")
+                        .eq("couple_id", profile.couple_id)
+                        .eq("week_start", nextWeekStr)
+                        .maybeSingle();
+                      if (nextConv) {
+                        await supabase.from("weekly_conversations").update({ next_meeting_at: isoPlanned } as any).eq("id", nextConv.id);
+                      } else {
+                        await supabase.from("weekly_conversations").insert({
+                          couple_id: profile.couple_id,
+                          user_id: user!.id,
+                          week_start: nextWeekStr,
+                          next_meeting_at: isoPlanned,
+                        } as any);
+                      }
+                      console.log("[SOTU] Copied planned_next_meeting_at to next week");
+                    } catch (err) {
+                      console.error("[SOTU] Failed to copy meeting date:", err);
+                    }
                   }
                 }}
                 className="rounded border-border"
@@ -488,25 +520,69 @@ export default function WeeklyConversation() {
           State of the Union – förbered och genomför ert veckosamtal
           <InfoButton title="Veckosamtal" description="Veckosamtalet (State of the Union) är ett strukturerat möte där ni sammanfattar veckan, delar uppskattningar, tar upp frågor och sätter riktning framåt. Forskning visar att par som regelbundet checkar in med varandra förebygger att små irritationer blir stora konflikter." />
         </p>
-        {nextMeetingAt && (
-          <div className="mt-2 flex items-center gap-2 text-sm">
+        <div className="mt-2 flex flex-col gap-2">
+          <div className="flex items-center gap-2 text-sm">
             <CalendarDays className="w-4 h-4 text-primary" />
-            <span className="text-foreground">
-              Nästa samtal: <span className="font-medium">{format(new Date(nextMeetingAt), "EEEE d MMMM 'kl' HH:mm", { locale: sv })}</span>
-            </span>
+            {nextMeetingAt ? (
+              <span className="text-foreground">
+                Nästa samtal: <span className="font-medium">{format(new Date(nextMeetingAt), "EEEE d MMMM 'kl' HH:mm", { locale: sv })}</span>
+              </span>
+            ) : (
+              <span className="text-muted-foreground">Inget samtal planerat</span>
+            )}
             <Button
               size="sm"
               variant="ghost"
               className="text-xs h-6 px-2"
-              onClick={() => {
-                const el = document.getElementById("next-meeting-field");
-                if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-              }}
+              onClick={() => setEditingHeaderDate(!editingHeaderDate)}
             >
-              Ändra
+              {nextMeetingAt ? "Ändra" : "Sätt tid"}
             </Button>
           </div>
-        )}
+          {editingHeaderDate && (
+            <div className="flex gap-2 items-center ml-6">
+              <Input
+                type="datetime-local"
+                value={nextMeetingAt ? (nextMeetingAt.includes("T") ? nextMeetingAt.slice(0, 16) : nextMeetingAt) : ""}
+                onChange={(e) => setNextMeetingAt(e.target.value)}
+                className="bg-muted/50 border-border text-sm w-auto"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!nextMeetingAt}
+                onClick={async () => {
+                  if (!conversationId) return;
+                  const isoDate = new Date(nextMeetingAt).toISOString();
+                  const { error } = await supabase
+                    .from("weekly_conversations")
+                    .update({ next_meeting_at: isoDate } as any)
+                    .eq("id", conversationId);
+                  if (error) {
+                    toast({ title: "Fel", description: error.message, variant: "destructive" });
+                  } else {
+                    setEditingHeaderDate(false);
+                    toast({ title: "Sparat! 📅" });
+                    if (hasCoupleId && user) {
+                      const formatted = format(new Date(nextMeetingAt), "EEEE d MMMM 'kl' HH:mm", { locale: sv });
+                      const msgContent = `Jag har ändrat datum för nästa State of the Union-samtal till ${formatted}`;
+                      await supabase.from("messages").insert({
+                        couple_id: profile!.couple_id!,
+                        sender_id: user.id,
+                        content: msgContent,
+                        type: "system",
+                      });
+                      sendPushToPartner(profile!.couple_id!, user.id, "Nytt mötesdatum", msgContent, "message");
+                    }
+                  }
+                }}
+                className="text-xs"
+              >
+                Spara
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Start meeting button */}
@@ -662,42 +738,41 @@ export default function WeeklyConversation() {
           {/* Next SOTU meeting */}
           <div id="next-meeting-field" className="pt-2 border-t border-border/30">
             <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5" /> Nästa State of the Union
+              <Clock className="w-3.5 h-3.5" /> Nästa samtal efter detta möte
             </p>
             <div className="flex gap-2">
               <Input
                 type="datetime-local"
-                value={nextMeetingAt ? nextMeetingAt.slice(0, 16) : ""}
-                onChange={(e) => setNextMeetingAt(e.target.value)}
+                value={plannedNextMeetingAt ? (plannedNextMeetingAt.includes("T") ? plannedNextMeetingAt.slice(0, 16) : plannedNextMeetingAt) : ""}
+                onChange={(e) => setPlannedNextMeetingAt(e.target.value)}
                 className="bg-muted/50 border-border text-sm flex-1"
                 disabled={ready}
               />
               <Button
                 size="sm"
                 variant="outline"
-                disabled={ready || !nextMeetingAt}
+                disabled={ready || !plannedNextMeetingAt}
                 onClick={async () => {
                   if (!conversationId) return;
-                  const isoDate = new Date(nextMeetingAt).toISOString();
+                  const isoDate = new Date(plannedNextMeetingAt).toISOString();
                   const { error } = await supabase
                     .from("weekly_conversations")
-                    .update({ next_meeting_at: isoDate } as any)
+                    .update({ planned_next_meeting_at: isoDate } as any)
                     .eq("id", conversationId);
                   if (error) {
                     toast({ title: "Fel", description: error.message, variant: "destructive" });
                   } else {
                     toast({ title: "Sparat! 📅" });
-                    // Send auto-message to partner
                     if (hasCoupleId && user) {
-                      const formatted = format(new Date(nextMeetingAt), "EEEE d MMMM 'kl' HH:mm", { locale: sv });
-                      const msgContent = `Jag har uppdaterat tid för vårt nästa State of the Union-samtal: ${formatted}`;
+                      const formatted = format(new Date(plannedNextMeetingAt), "EEEE d MMMM 'kl' HH:mm", { locale: sv });
+                      const msgContent = `Jag har satt nästa State of the Union-samtal (efter detta möte) till ${formatted}`;
                       await supabase.from("messages").insert({
                         couple_id: profile!.couple_id!,
                         sender_id: user.id,
                         content: msgContent,
                         type: "system",
                       });
-                      sendPushToPartner(profile!.couple_id!, user.id, "Nytt mötesdatum", msgContent, "message");
+                      sendPushToPartner(profile!.couple_id!, user.id, "Planerat mötesdatum", msgContent, "message");
                     }
                   }
                 }}
@@ -706,9 +781,9 @@ export default function WeeklyConversation() {
                 Spara tid
               </Button>
             </div>
-            {nextMeetingAt && (
+            {plannedNextMeetingAt && (
               <p className="text-xs text-muted-foreground mt-1">
-                {format(new Date(nextMeetingAt), "EEEE d MMMM 'kl' HH:mm", { locale: sv })}
+                {format(new Date(plannedNextMeetingAt), "EEEE d MMMM 'kl' HH:mm", { locale: sv })}
               </p>
             )}
           </div>
