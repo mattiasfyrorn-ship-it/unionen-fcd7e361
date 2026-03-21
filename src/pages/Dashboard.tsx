@@ -18,7 +18,8 @@ import {
 import { Link } from "react-router-dom";
 import InfoButton from "@/components/InfoButton";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
-import { computeRelationskonto, getLatestKonto, get7DayTrend, type KontoPoint } from "@/lib/relationskonto";
+import { computeRelationskonto, computeSharedRelationskonto, getLatestKonto, get7DayTrend, type KontoPoint } from "@/lib/relationskonto";
+import { enrichChecksWithExtras } from "@/lib/enrichChecks";
 import { format, subDays } from "date-fns";
 
 function getQuarterStart() {
