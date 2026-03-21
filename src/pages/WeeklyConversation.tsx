@@ -232,6 +232,7 @@ export default function WeeklyConversation() {
       intention: intention || null,
       checkout_feeling: checkoutFeeling || null,
       partner_learning: partnerLearning || null,
+      love_action: loveAction || null,
     };
 
     let error;
