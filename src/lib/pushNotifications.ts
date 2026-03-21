@@ -13,6 +13,20 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray;
 }
 
+/** True if the app is running as an installed PWA (home screen) */
+export function isInstalledPWA(): boolean {
+  const standalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as any).standalone === true;
+  return standalone;
+}
+
+/** True if running on iOS Safari but NOT as installed PWA */
+export function isIOSSafari(): boolean {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  return isIOS && !isInstalledPWA();
+}
+
 export async function isPushSupported(): Promise<boolean> {
   return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 }
@@ -32,61 +46,78 @@ async function getVapidKey(): Promise<string> {
 
 export async function subscribeToPush(userId: string): Promise<boolean> {
   try {
+    console.log('[Push] Starting subscribeToPush for user', userId);
+
     const supported = await isPushSupported();
+    console.log('[Push] isPushSupported:', supported);
     if (!supported) {
-      console.warn('Push not supported on this device');
+      console.warn('[Push] Push not supported on this device');
       return false;
     }
 
+    console.log('[Push] Current permission:', Notification.permission);
     const permission = await requestNotificationPermission();
+    console.log('[Push] Permission after request:', permission);
     if (permission !== 'granted') {
-      console.warn('Push permission denied');
+      console.warn('[Push] Push permission denied');
       return false;
     }
 
+    console.log('[Push] Waiting for service worker ready...');
     const registration = await Promise.race([
       navigator.serviceWorker.ready,
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('Service worker timeout efter 5s')), 5000)
       ),
     ]) as ServiceWorkerRegistration;
+    console.log('[Push] Service worker ready, scope:', registration.scope);
 
     const reg = registration as any;
     let subscription = await reg.pushManager.getSubscription();
+    console.log('[Push] Existing subscription:', subscription ? 'yes' : 'no');
 
     // Check if existing subscription is stale and should be refreshed
     const shouldRefresh = await isSubscriptionStale(userId, subscription);
+    console.log('[Push] Should refresh:', shouldRefresh);
 
     if (subscription && shouldRefresh) {
-      console.log('Refreshing stale push subscription...');
+      console.log('[Push] Refreshing stale push subscription...');
       await subscription.unsubscribe();
       subscription = null;
     }
 
     if (!subscription) {
+      console.log('[Push] Creating new subscription...');
       const vapidKey = await getVapidKey();
+      console.log('[Push] Got VAPID key');
       subscription = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidKey),
       });
-      console.log('New push subscription created');
+      console.log('[Push] New push subscription created');
     }
 
     // Save to database
     const subscriptionJson = subscription.toJSON();
+    console.log('[Push] Saving subscription to backend...');
     await supabase.from('push_subscriptions').delete().eq('user_id', userId);
-    await supabase.from('push_subscriptions').insert({
+    const { error } = await supabase.from('push_subscriptions').insert({
       user_id: userId,
       subscription: subscriptionJson as any,
     } as any);
 
-    console.log('Push subscription saved to database');
+    if (error) {
+      console.error('[Push] Failed to save subscription:', error);
+      return false;
+    }
+
+    console.log('[Push] Subscription saved to database ✓');
     return true;
   } catch (err) {
     if (err instanceof Error) {
-      console.error('Push subscription failed:', err.message, err);
+      console.error('[Push] Subscription failed:', err.message, err);
     } else {
-      console.error('Push subscription failed (unknown error):', err);
+      console.error('[Push] Subscription failed (unknown error):', err);
     }
     return false;
   }
@@ -142,11 +173,11 @@ export async function refreshPushSubscription(userId: string): Promise<void> {
 
     const age = Date.now() - new Date(data.created_at).getTime();
     if (age > STALE_THRESHOLD_MS) {
-      console.log('Auto-refreshing stale push subscription...');
+      console.log('[Push] Auto-refreshing stale push subscription...');
       await subscribeToPush(userId);
     }
   } catch (err) {
-    console.error('Push refresh failed:', err);
+    console.error('[Push] Push refresh failed:', err);
   }
 }
 
@@ -158,8 +189,9 @@ export async function unsubscribeFromPush(userId: string): Promise<void> {
       await subscription.unsubscribe();
     }
     await supabase.from('push_subscriptions').delete().eq('user_id', userId);
+    console.log('[Push] Unsubscribed and removed from database');
   } catch (err) {
-    console.error('Push unsubscribe failed:', err);
+    console.error('[Push] Push unsubscribe failed:', err);
   }
 }
 
@@ -182,6 +214,28 @@ export async function sendPushToPartner(
       },
     });
   } catch (err) {
-    console.error('Failed to send push notification:', err);
+    console.error('[Push] Failed to send push notification:', err);
+  }
+}
+
+/** Send a test push to a specific user via broadcast-push */
+export async function sendTestPush(userId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.functions.invoke('broadcast-push', {
+      body: {
+        user_id: userId,
+        title: 'Testnotis 🔔',
+        body: 'Push fungerar! 🎉',
+      },
+    });
+    if (error) {
+      console.error('[Push] Test push error:', error);
+      return false;
+    }
+    console.log('[Push] Test push result:', data);
+    return data?.sent > 0;
+  } catch (err) {
+    console.error('[Push] Test push failed:', err);
+    return false;
   }
 }

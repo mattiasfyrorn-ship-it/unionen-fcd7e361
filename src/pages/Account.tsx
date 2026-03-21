@@ -8,8 +8,16 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { User, Mail, Lock, LogOut, Unlink, Bell, Download } from "lucide-react";
-import { subscribeToPush, unsubscribeFromPush, isPushSupported, refreshPushSubscription } from "@/lib/pushNotifications";
+import { User, Mail, Lock, LogOut, Unlink, Bell, Download, Send } from "lucide-react";
+import {
+  subscribeToPush,
+  unsubscribeFromPush,
+  isPushSupported,
+  refreshPushSubscription,
+  isInstalledPWA,
+  isIOSSafari,
+  sendTestPush,
+} from "@/lib/pushNotifications";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,6 +51,8 @@ export default function Account() {
   // Notification state
   const [pushSupported, setPushSupported] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
+  const [iosSafari, setIosSafari] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
   const [notifPrefs, setNotifPrefs] = useState<NotifPrefs>({
     daily_reminder_enabled: true,
     daily_reminder_time: "08:00",
@@ -52,11 +62,11 @@ export default function Account() {
 
   useEffect(() => {
     isPushSupported().then(setPushSupported);
+    setIosSafari(isIOSSafari());
   }, []);
 
   useEffect(() => {
     if (!user) return;
-    // Check if user has push subscription
     supabase
       .from("push_subscriptions")
       .select("id")
@@ -65,10 +75,8 @@ export default function Account() {
         setPushEnabled(!!data && data.length > 0);
       });
 
-    // Auto-refresh stale push subscriptions
     refreshPushSubscription(user.id);
 
-    // Load notification preferences
     supabase
       .from("notification_preferences")
       .select("*")
@@ -93,14 +101,26 @@ export default function Account() {
       const success = await subscribeToPush(user.id);
       if (success) {
         setPushEnabled(true);
-        // Ensure notification preferences exist
         await supabase.from("notification_preferences").upsert(
           { user_id: user.id, ...notifPrefs, daily_reminder_time: notifPrefs.daily_reminder_time + ":00" } as any,
           { onConflict: "user_id" }
         );
-        toast({ title: "Aktiverat", description: "Push-notiser är nu aktiverade." });
+        toast({ title: "Notiser aktiverade ✓", description: "Push-notiser är nu aktiverade." });
       } else {
-        toast({ title: "Kunde inte aktivera", description: "Kontrollera att du godkänt notiser i webbläsaren.", variant: "destructive" });
+        const perm = 'Notification' in window ? Notification.permission : 'unsupported';
+        if (perm === 'denied') {
+          toast({
+            title: "Notiser nekades",
+            description: "Ändra i enhetens inställningar för att tillåta notiser.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Kunde inte aktivera",
+            description: "Kontrollera att du godkänt notiser i webbläsaren.",
+            variant: "destructive",
+          });
+        }
       }
     } else {
       await unsubscribeFromPush(user.id);
@@ -119,6 +139,18 @@ export default function Account() {
     );
     toast({ title: "Sparat", description: "Notisinställningar uppdaterade." });
     setLoading(false);
+  };
+
+  const handleTestPush = async () => {
+    if (!user) return;
+    setSendingTest(true);
+    const ok = await sendTestPush(user.id);
+    if (ok) {
+      toast({ title: "Skickat!", description: "Du bör få en testnotis inom några sekunder." });
+    } else {
+      toast({ title: "Misslyckades", description: "Kunde inte skicka testnotis.", variant: "destructive" });
+    }
+    setSendingTest(false);
   };
 
   const saveName = async () => {
@@ -175,64 +207,99 @@ export default function Account() {
     setLoading(false);
   };
 
+  // Determine notification card content
+  const renderNotificationCard = () => {
+    const isIosNotInstalled = iosSafari;
+    const canUsePush = pushSupported && (!isIosNotInstalled);
+
+    return (
+      <Card className="rounded-[10px] border-none shadow-hamnen">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Bell className="w-4 h-4 text-primary" /> Notiser
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isIosNotInstalled && (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Installera appen på hemskärmen för att aktivera push-notiser på iPhone.
+              </p>
+              <Button size="sm" variant="outline" onClick={() => navigate("/install")}>
+                Visa instruktioner
+              </Button>
+            </div>
+          )}
+
+          {!pushSupported && !isIosNotInstalled && (
+            <p className="text-sm text-muted-foreground">
+              Din webbläsare stöder inte push-notiser.
+            </p>
+          )}
+
+          {canUsePush && (
+            <>
+              <div className="flex items-center justify-between">
+                <Label>Push-notiser</Label>
+                <Switch checked={pushEnabled} onCheckedChange={togglePush} disabled={loading} />
+              </div>
+
+              {pushEnabled && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm">Meddelanden</Label>
+                    <Switch
+                      checked={notifPrefs.messages_enabled}
+                      onCheckedChange={(v) => setNotifPrefs((p) => ({ ...p, messages_enabled: v }))}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm">Reparationer</Label>
+                    <Switch
+                      checked={notifPrefs.repairs_enabled}
+                      onCheckedChange={(v) => setNotifPrefs((p) => ({ ...p, repairs_enabled: v }))}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm">Daglig påminnelse</Label>
+                    <Switch
+                      checked={notifPrefs.daily_reminder_enabled}
+                      onCheckedChange={(v) => setNotifPrefs((p) => ({ ...p, daily_reminder_enabled: v }))}
+                    />
+                  </div>
+                  {notifPrefs.daily_reminder_enabled && (
+                    <div className="flex items-center gap-3">
+                      <Label className="text-sm">Tid</Label>
+                      <Input
+                        type="time"
+                        value={notifPrefs.daily_reminder_time}
+                        onChange={(e) => setNotifPrefs((p) => ({ ...p, daily_reminder_time: e.target.value }))}
+                        className="bg-muted/50 w-32"
+                      />
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={saveNotifPrefs} disabled={loading}>Spara inställningar</Button>
+                    <Button size="sm" variant="outline" onClick={handleTestPush} disabled={sendingTest}>
+                      <Send className="w-3 h-3 mr-1" />
+                      {sendingTest ? "Skickar..." : "Skicka test-push"}
+                    </Button>
+                  </div>
+                </>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
+
   return (
     <div className="max-w-lg mx-auto space-y-6 animate-fade-in">
       <h1 className="text-3xl text-primary">Konto</h1>
 
-      {/* Push Notifications */}
-      {pushSupported && (
-        <Card className="rounded-[10px] border-none shadow-hamnen">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Bell className="w-4 h-4 text-primary" /> Notiser
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label>Push-notiser</Label>
-              <Switch checked={pushEnabled} onCheckedChange={togglePush} disabled={loading} />
-            </div>
-
-            {pushEnabled && (
-              <>
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm">Meddelanden</Label>
-                  <Switch
-                    checked={notifPrefs.messages_enabled}
-                    onCheckedChange={(v) => setNotifPrefs((p) => ({ ...p, messages_enabled: v }))}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm">Reparationer</Label>
-                  <Switch
-                    checked={notifPrefs.repairs_enabled}
-                    onCheckedChange={(v) => setNotifPrefs((p) => ({ ...p, repairs_enabled: v }))}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm">Daglig påminnelse</Label>
-                  <Switch
-                    checked={notifPrefs.daily_reminder_enabled}
-                    onCheckedChange={(v) => setNotifPrefs((p) => ({ ...p, daily_reminder_enabled: v }))}
-                  />
-                </div>
-                {notifPrefs.daily_reminder_enabled && (
-                  <div className="flex items-center gap-3">
-                    <Label className="text-sm">Tid</Label>
-                    <Input
-                      type="time"
-                      value={notifPrefs.daily_reminder_time}
-                      onChange={(e) => setNotifPrefs((p) => ({ ...p, daily_reminder_time: e.target.value }))}
-                      className="bg-muted/50 w-32"
-                    />
-                  </div>
-                )}
-                <Button size="sm" onClick={saveNotifPrefs} disabled={loading}>Spara inställningar</Button>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {/* Push Notifications — always visible */}
+      {renderNotificationCard()}
 
       {/* Install app */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
