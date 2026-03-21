@@ -1,29 +1,36 @@
 
 
-## Ändringar i Veckosamtals-sidan
+## Två separata mötesdatum i Veckosamtal
 
-### 1. Ny sektion: "Vad kan jag göra för att du ska känna dig älskad?"
-- Lägg till ett nytt kort **efter** "Frågor / Behov"-kortet med:
-  - Rubrik: "Vad kan jag göra nästa vecka för att du ska känna dig älskad?"
-  - Underrubrik inspirerad av SOTU: "Avsluta samtalet genom att dela en sak din partner kan göra för att du ska känna er mer sammankopplade kommande vecka. Var specifik och positiv."
-  - InfoButton med mer detalj
-  - Textarea-fält för svaret
-- Spara i `weekly_entries` — nytt fält behövs: `love_action` (text)
-- Visa även i mötesflödet som en egen sektion (före "Avslutning")
+### Problemet
+Just nu finns bara ett datumfält (`next_meeting_at`), vilket gör att "nästa samtal" i toppen och i "Praktiskt"-sektionen pekar på samma värde. Användaren behöver kunna se *detta veckas möte* i toppen medan de i förberedelserna planerar *mötet efter det*.
 
-### 2. Nästa samtal-fält i sidans topp (under rubriken)
-- Flytta/duplicera nästa mötestid så den visas direkt under sidans underrubrik "State of the Union"
-- Visa datum+tid formaterat, med en "Ändra"-knapp som öppnar datetime-picker
-- Vid ändring: spara till `weekly_conversations.next_meeting_at` + skicka systemmeddelande + push till partner (samma logik som redan finns)
-- Behåll fältet i "Praktiskt"-sektionen också (synkat state)
+### Lösning: Två fält
 
-### 3. Auto-uppdatering vid genomfört möte
-- När `meetingConfirmed` markeras och det finns ett `next_meeting_at`-värde i "Praktiskt", kopiera det till **nästa veckas** conversation automatiskt (eller visa det som "schemalagt" i toppfältet)
+**Fält 1 — `next_meeting_at`** (befintligt): Tid för det möte paret förbereder just nu. Visas i header under "State of the Union".
 
-### Databasändring
-- Migration: lägg till `love_action` (text, nullable) i `weekly_entries`
+**Fält 2 — `planned_next_meeting_at`** (nytt): Tid för mötet *efter* det nuvarande. Sätts i "Praktiskt"-sektionen. När mötet markeras som genomfört kopieras detta värde till nästa veckas `next_meeting_at`.
 
-### Fil som ändras
-- `src/pages/WeeklyConversation.tsx` — ny sektion, toppfält för nästa samtal
-- Migration för `love_action`-kolumn
+### Ändringar
+
+#### 1. Databasmigration
+- Lägg till `planned_next_meeting_at` (timestamptz, nullable) i `weekly_conversations`
+
+#### 2. Header under "State of the Union" (rad 491-509)
+- Visa `next_meeting_at` med datum/tid
+- Om inget datum finns: visa "Inget samtal planerat" med en "Sätt tid"-knapp
+- "Ändra"-knapp öppnar inline datetime-picker direkt i headern (inte scroll till Praktiskt)
+- Vid ändring: spara till `next_meeting_at`, skicka systemmeddelande + push till partner: "Jag har ändrat datum för nästa State of the Union-samtal till [datum/tid]"
+
+#### 3. "Praktiskt"-sektionen (rad 662-714)
+- Byt label till "Nästa samtal efter detta möte"
+- Binder till `planned_next_meeting_at` (nytt state: `plannedNextMeetingAt`)
+- Vid sparande: samma logik (spara + meddelande + push)
+
+#### 4. Auto-kopiering vid genomfört möte
+- När `meetingConfirmed` kryssas: om `plannedNextMeetingAt` finns, skapa/uppdatera nästa veckas conversation med det värdet som `next_meeting_at`
+
+### Filer som ändras
+- `src/pages/WeeklyConversation.tsx` — header-fält med inline datetime, Praktiskt-sektion binds till nytt fält
+- Ny migration för `planned_next_meeting_at`
 
