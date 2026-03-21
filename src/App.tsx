@@ -23,8 +23,12 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 function PushInitializer() {
-  // VitePWA registrerar service workern automatiskt via injectManifest-strategin.
-  // Ingen manuell registrering behövs här — dubbel-registrering orsakar konflikter.
+  const { user } = useAuth();
+  useEffect(() => {
+    if (user?.id) {
+      refreshPushSubscription(user.id);
+    }
+  }, [user?.id]);
   return null;
 }
 
