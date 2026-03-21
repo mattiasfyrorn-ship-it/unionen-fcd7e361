@@ -521,7 +521,12 @@ export default function WeeklyConversation() {
       {/* Issues */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">Frågor / Behov att ta upp <InfoButton title="Frågor / Behov" description="Här tar ni upp saker som behöver diskuteras. Tagga varje fråga som praktisk, emotionell eller vision. Gottman-forskning visar att 69% av alla parproblem är olösliga – de behöver hanteras med dialog, inte lösning." /></CardTitle>
+          <CardTitle className="text-base flex items-center gap-2">
+            <MessageCircle className="w-5 h-5 text-accent" />
+            Frågor / Behov att ta upp
+            <InfoButton title="Frågor / Behov" description="Välj ett ämne att prata om eller bearbeta. Konflikter är oundvikliga och nödvändiga i en relation. När de hanteras konstruktivt leder de till ökad närhet. Använd ATTUNE-modellen: Awareness (medvetenhet), Tolerance (tolerans), Turning Toward (vända sig mot), Understanding (förståelse), Non-defensive Listening (icke-defensivt lyssnande), Empathy (empati)." />
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">Välj ett ämne att prata om eller bearbeta – tagga som praktiskt, emotionellt eller vision</p>
         </CardHeader>
         <CardContent className="space-y-3">
           {issues.map((issue, i) => (
