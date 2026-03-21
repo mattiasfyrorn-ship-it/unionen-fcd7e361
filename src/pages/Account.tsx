@@ -54,6 +54,7 @@ export default function Account() {
   const [pushEnabled, setPushEnabled] = useState(false);
   const [iosSafari, setIosSafari] = useState(false);
   const [sendingTest, setSendingTest] = useState(false);
+  const [resettingPush, setResettingPush] = useState(false);
   const [notifPrefs, setNotifPrefs] = useState<NotifPrefs>({
     daily_reminder_enabled: true,
     daily_reminder_time: "08:00",
