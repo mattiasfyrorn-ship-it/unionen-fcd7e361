@@ -763,17 +763,6 @@ export default function WeeklyConversation() {
                     toast({ title: "Fel", description: error.message, variant: "destructive" });
                   } else {
                     toast({ title: "Sparat! 📅" });
-                    if (hasCoupleId && user) {
-                      const formatted = format(new Date(plannedNextMeetingAt), "EEEE d MMMM 'kl' HH:mm", { locale: sv });
-                      const msgContent = `Jag har satt nästa State of the Union-samtal (efter detta möte) till ${formatted}`;
-                      await supabase.from("messages").insert({
-                        couple_id: profile!.couple_id!,
-                        sender_id: user.id,
-                        content: msgContent,
-                        type: "system",
-                      });
-                      sendPushToPartner(profile!.couple_id!, user.id, "Planerat mötesdatum", msgContent, "message");
-                    }
                   }
                 }}
                 className="text-xs"
