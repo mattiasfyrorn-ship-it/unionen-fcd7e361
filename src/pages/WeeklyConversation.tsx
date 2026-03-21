@@ -785,6 +785,7 @@ export default function WeeklyConversation() {
                       )}
                       {entry.takeaway && <p><strong>Takeaway:</strong> {entry.takeaway}</p>}
                       {(entry as any).intention && <p><strong>Intention:</strong> {(entry as any).intention}</p>}
+                      {(entry as any).love_action && <p><strong>Känn dig älskad:</strong> {(entry as any).love_action}</p>}
                       {(entry as any).partner_learning && <p><strong>Lärdom om partner:</strong> {(entry as any).partner_learning}</p>}
                       {(entry as any).checkout_feeling && <p><strong>Känsla:</strong> {(entry as any).checkout_feeling}</p>}
                       {(entry as any).meeting_notes && Object.entries((entry as any).meeting_notes as MeetingNotes).filter(([, v]) => v).length > 0 && (
