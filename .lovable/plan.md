@@ -1,23 +1,44 @@
 
 
-## Omstrukturering av Närd-sidan
+## AI-driven insikter från behov & vilja
 
-### Vad ändras
+### Vad byggs
 
-**1. Flytta "Idag"-rutan (behov & vilja) ovanför de fyra områdeskorten**
-- Kortet med "Vad behöver jag idag?" och "Vad vill jag idag?" placeras direkt efter WeekDayPicker, före Kropp/Sinne/Relationer/Mission.
-- Byt rubrik från "Idag" till "Idag" med en symbol (`Sun`-ikonen från Lucide, i samma stil som Heart/Brain/Users/Compass).
+Ett nytt "Insikter"-kort på Närd-sidan som analyserar användarens historiska behov/vilja-svar med AI och visar:
+- Återkommande behov och mönster
+- Koppling mellan behov och näringsnivåer (scores)
+- Koppling mellan behov och klimat (från daily_checks)
+- Konkreta rekommendationer
 
-**2. Lägg till InfoButton på "Idag"-kortet**
-- InfoButton med text som förklarar vikten av att lära känna sina behov, skilja behov från vilja, och att träna på att kommunicera dessa. Ungefär:
-  > "Att lära känna sina behov är ett av de viktigaste stegen mot ett påfyllt liv. Behov handlar om vad du faktiskt behöver för att må bra – vila, närhet, gränser. Vilja handlar om vad du längtar efter och drömmer om. När du blir tydlig med skillnaden kan du börja ta hand om dig själv på riktigt, kommunicera ärligt med din partner, och skapa ett liv som inspirerar dig. Det är ett stort steg – och det börjar med medvetenhet."
+### Åtgärder
 
-**3. Egen liten spara-knapp i "Idag"-kortet**
-- En kompakt spara-knapp (sekundär stil, liten storlek) i botten av kortet som sparar bara need_today/want_today utan att behöva skrolla ner till huvudknappen.
+#### 1. Ny edge function `supabase/functions/needs-insights/index.ts`
+- Hämtar de senaste 30 dagarnas `need_today` och `want_today` från `evaluations`-tabellen för användaren
+- Hämtar motsvarande `score`-data (näring) och `climate` från `daily_checks` för samma period
+- Skickar all data till Lovable AI (gemini-3-flash-preview) med en systemprompt som ber om:
+  - Återkommande behov/vilja-teman
+  - Korrelation mellan specifika behov och höga/låga näringspoäng
+  - Korrelation med klimat
+  - 2-3 konkreta insikter på svenska
+- Returnerar AI-svaret som JSON (ej streaming, enkel invoke)
 
-**4. Lägg till symbol-ikon på "Idag"-kortet**
-- Använd `Sun`-ikonen (Lucide) i samma storlek och stil (w-5 h-5, text-primary, strokeWidth 1.5) som de övriga korten.
+#### 2. Nytt insiktskort i `src/pages/Evaluate.tsx`
+- Placeras efter grafen, längst ner på sidan
+- Knapp "Visa insikter" (med Lightbulb-ikon) som triggar edge function-anrop
+- Visar AI-genererade insikter i en kort med laddningsindikator
+- Cachear resultatet i state så det inte anropas vid varje render
 
-### Filer som ändras
-- `src/pages/Evaluate.tsx` — omstrukturering av JSX-ordning, ny InfoButton, ny spara-knapp, ny ikon-import
+#### 3. Datainsamling i edge function
+- Query `evaluations` WHERE `user_id` = anroparen, `need_today IS NOT NULL`, senaste 30 dagar
+- Query `daily_checks` WHERE `user_id` = anroparen, senaste 30 dagar (för klimat)
+- Kräver minst 5 dagars data för att generera insikter, annars returnera meddelande om att mer data behövs
+
+### Filer som skapas/ändras
+- `supabase/functions/needs-insights/index.ts` — ny edge function
+- `src/pages/Evaluate.tsx` — nytt insiktskort med knapp och AI-svar
+
+### Tekniska detaljer
+- Använder `LOVABLE_API_KEY` (redan konfigurerad) och `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` för databasåtkomst i edge function
+- Modell: `google/gemini-3-flash-preview` (snabb, billig)
+- Ej streaming — använder `supabase.functions.invoke` från klienten
 
