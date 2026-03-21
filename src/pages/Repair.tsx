@@ -374,6 +374,26 @@ export default function Repair() {
           <p className="text-muted-foreground max-w-sm">
             Är du triggad och behöver reglera dig, eller är du lugn och redo att reparera?
           </p>
+          {/* Open repair banner */}
+          {(openRepair || openQuickRepair) && !repairCompleted && (
+            <Card className="w-full max-w-xs border-primary/30 bg-primary/5">
+              <CardContent className="p-4 space-y-3">
+                <p className="text-sm text-foreground">
+                  Du har en öppen reparation från{" "}
+                  {new Date((openRepair || openQuickRepair).created_at).toLocaleDateString("sv-SE")}
+                </p>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => markRepairCompleted("completed")}>
+                    <Check className="w-3 h-3 mr-1" /> Reparerat
+                  </Button>
+                  <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => markRepairCompleted("conversation_planned")}>
+                    <Clock className="w-3 h-3 mr-1" /> Samtal planerat
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="space-y-3 w-full max-w-xs">
             <Button size="lg" className="w-full" onClick={() => setStep(1)}>
               <Shield className="w-5 h-5 mr-2" /> Jag är triggad
