@@ -426,11 +426,7 @@ export default function Dashboard() {
   };
 
   const hasPartner = !!partnerName;
-  // Shared konto is already computed via computeSharedRelationskonto in buildKontoSummary
-  // For display, use the shared konto trend value (last point) — recompute here for simplicity
-  // Actually the summary card should show the shared value. We store it via kontoTrend already.
-  // Let's just use myKonto for solo, or recompute shared. For now, keep it simple:
-  const displayKonto = myKonto; // This is individual; shared is shown via the graph
+  const displayKonto = sharedKonto !== null ? sharedKonto : myKonto;
 
   return (
     <div className="space-y-10 max-w-2xl mx-auto">
