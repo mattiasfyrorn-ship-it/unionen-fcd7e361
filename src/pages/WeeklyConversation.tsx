@@ -497,7 +497,12 @@ export default function WeeklyConversation() {
       {/* Wins */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">Vad gick bra? <InfoButton title="Vad gick bra?" description="Att identifiera vad som fungerade förstärker positiva mönster i relationen. Det skapar medvetenhet om era styrkor som par." /></CardTitle>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-accent" />
+            Vad har gått bra i relationen senaste veckan?
+            <InfoButton title="Vad har gått bra?" description="Ta er tid att diskutera vad som fungerar, förbättras eller har gått bra i relationen. Kanske hanterade ni en stressig situation bra som team, eller var ni duktiga på att boka in och genomföra en dejt. Att uppmärksamma det arbete ni lägger ner på relationen hjälper er att hålla motivationen uppe." />
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">Diskutera vad som fungerat, förbättrats eller gått bra – som teamwork, prioriteringar eller vardagliga vinster</p>
         </CardHeader>
         <CardContent className="space-y-2">
           {wins.map((w, i) => (
