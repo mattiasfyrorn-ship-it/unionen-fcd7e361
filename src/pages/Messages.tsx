@@ -151,7 +151,7 @@ export default function Messages() {
                 className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
                   isSystem
                     ? "bg-muted/50 text-muted-foreground italic text-center mx-auto"
-                    : isRepairQuick
+                    : isRepairQuick || isRepairFull
                     ? "bg-primary/10 border border-primary/20"
                     : isMine
                     ? "bg-primary/10 text-foreground"
