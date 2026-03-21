@@ -585,12 +585,10 @@ export default function WeeklyConversation() {
         </div>
       </div>
 
-      {/* Start meeting button */}
-      {canStartMeeting && (
-        <Button onClick={() => setMeetingStarted(true)} className="w-full gap-2" size="lg">
-          <Play className="w-5 h-5" /> {hasCoupleId ? "Starta möte" : "Starta solo-reflektion"}
-        </Button>
-      )}
+      {/* Start meeting button – always available */}
+      <Button onClick={() => setMeetingStarted(true)} className="w-full gap-2" size="lg">
+        <Play className="w-5 h-5" /> {hasCoupleId ? "Starta möte" : "Starta solo-reflektion"}
+      </Button>
 
 
 
