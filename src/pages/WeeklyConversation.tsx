@@ -317,7 +317,7 @@ export default function WeeklyConversation() {
   ];
 
   // Meeting flow view
-  if (canStartMeeting && meetingStarted) {
+  if (meetingStarted) {
     return (
       <div className="space-y-4 max-w-2xl mx-auto">
         <div>
@@ -585,12 +585,10 @@ export default function WeeklyConversation() {
         </div>
       </div>
 
-      {/* Start meeting button */}
-      {canStartMeeting && (
-        <Button onClick={() => setMeetingStarted(true)} className="w-full gap-2" size="lg">
-          <Play className="w-5 h-5" /> {hasCoupleId ? "Starta möte" : "Starta solo-reflektion"}
-        </Button>
-      )}
+      {/* Start meeting button – always available */}
+      <Button onClick={() => setMeetingStarted(true)} className="w-full gap-2" size="lg">
+        <Play className="w-5 h-5" /> {hasCoupleId ? "Starta möte" : "Starta solo-reflektion"}
+      </Button>
 
 
 
