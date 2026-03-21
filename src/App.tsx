@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
-import { subscribeToPush, isPushSupported } from "@/lib/pushNotifications";
+import { refreshPushSubscription } from "@/lib/pushNotifications";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Evaluate from "./pages/Evaluate";
@@ -23,8 +23,12 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 function PushInitializer() {
-  // VitePWA registrerar service workern automatiskt via injectManifest-strategin.
-  // Ingen manuell registrering behövs här — dubbel-registrering orsakar konflikter.
+  const { user } = useAuth();
+  useEffect(() => {
+    if (user?.id) {
+      refreshPushSubscription(user.id);
+    }
+  }, [user?.id]);
   return null;
 }
 
