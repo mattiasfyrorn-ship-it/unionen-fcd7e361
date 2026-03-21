@@ -343,7 +343,7 @@ export default function Repair() {
     toast({ title: type === "completed" ? "Reparerat ❤️" : "Reparationssamtal planerat", description: "Fint att ni tar hand om relationen." });
   };
 
-
+  return (
     <div className="max-w-lg mx-auto space-y-8 animate-fade-in">
       {/* Progress for regulation steps */}
       {step >= 1 && step <= 6 && (
