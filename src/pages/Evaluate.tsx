@@ -275,6 +275,68 @@ export default function Evaluate() {
           )}
         </CardContent>
       </Card>
+
+      {/* Insikter */}
+      <Card className="rounded-[10px] border-none shadow-hamnen">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-lg font-serif">
+            <Lightbulb className="w-5 h-5 text-primary" strokeWidth={1.5} />
+            Insikter
+            <InfoButton title="Insikter" description="Baserat på dina senaste 30 dagars behov, vilja, näringspoäng och klimat genereras en AI-driven analys av dina mönster. Ju mer data du fyller i, desto bättre insikter." />
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {!insightsText && !insightsMessage && (
+            <Button
+              variant="secondary"
+              onClick={async () => {
+                setInsightsLoading(true);
+                setInsightsText(null);
+                setInsightsMessage(null);
+                try {
+                  const { data, error } = await supabase.functions.invoke("needs-insights");
+                  if (error) throw error;
+                  if (data?.insights) setInsightsText(data.insights);
+                  if (data?.message) setInsightsMessage(data.message);
+                  if (data?.error) {
+                    toast({ title: "Fel", description: data.error, variant: "destructive" });
+                  }
+                } catch (e: any) {
+                  toast({ title: "Fel", description: e.message || "Kunde inte hämta insikter", variant: "destructive" });
+                } finally {
+                  setInsightsLoading(false);
+                }
+              }}
+              disabled={insightsLoading}
+              className="w-full rounded-[10px]"
+            >
+              {insightsLoading ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Analyserar...</>
+              ) : (
+                <><Lightbulb className="w-4 h-4 mr-2" /> Visa insikter</>
+              )}
+            </Button>
+          )}
+          {insightsMessage && (
+            <p className="text-sm text-muted-foreground">{insightsMessage}</p>
+          )}
+          {insightsText && (
+            <div className="text-sm text-foreground whitespace-pre-line leading-relaxed">
+              {insightsText}
+            </div>
+          )}
+          {(insightsText || insightsMessage) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setInsightsText(null); setInsightsMessage(null); }}
+              className="text-xs text-muted-foreground"
+            >
+              Generera nya insikter
+            </Button>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
