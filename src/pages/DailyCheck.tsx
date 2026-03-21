@@ -121,51 +121,43 @@ export default function DailyCheck() {
       const displayStart = format(subDays(new Date(), numDays), "yyyy-MM-dd");
 
       // My checks
-      const { data: myChecks } = await supabase
+      const { data: myChecksRaw } = await supabase
         .from("daily_checks")
         .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted, climate")
         .eq("user_id", user.id)
         .gte("check_date", calcStart)
         .order("check_date", { ascending: true });
 
-      const myPoints = computeRelationskonto(myChecks || [], calcStart, endDate)
-        .filter(p => p.date >= displayStart);
+      const myChecks = await enrichChecksWithExtras(
+        myChecksRaw || [], user.id, profile?.couple_id || null, calcStart, endDate
+      );
 
-      // Partner checks (if coupled)
+      // Partner checks (if coupled) → use shared konto
       if (profile?.couple_id) {
-        const { data: partnerChecks } = await supabase
+        const { data: partnerChecksRaw } = await supabase
           .from("daily_checks")
-          .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted, climate")
+          .select("check_date, love_map_completed, gave_appreciation, turn_toward_options, turn_toward, adjusted, climate, user_id")
           .eq("couple_id", profile.couple_id!)
           .neq("user_id", user.id)
           .gte("check_date", calcStart)
           .order("check_date", { ascending: true });
 
-        if (partnerChecks && partnerChecks.length > 0) {
-          const partnerPoints = computeRelationskonto(partnerChecks, calcStart, endDate)
-            .filter(p => p.date >= displayStart);
+        if (partnerChecksRaw && partnerChecksRaw.length > 0) {
+          const partnerId = partnerChecksRaw[0].user_id;
+          const partnerChecks = await enrichChecksWithExtras(
+            partnerChecksRaw, partnerId, profile.couple_id, calcStart, endDate
+          );
 
-          // Merge: average konto + average climate
-          const merged = myPoints.map((mp, i) => {
-            const pp = partnerPoints[i];
-            const ourVal = pp ? Math.round(((mp.value + pp.value) / 2) * 10) / 10 : mp.value;
-            const myClim = mp.climate;
-            const ppClim = pp?.climate;
-            let ourClimate: number | undefined;
-            if (myClim != null && ppClim != null) {
-              ourClimate = Math.round(((myClim + ppClim) / 2) * 10) / 10;
-            } else if (myClim != null) {
-              ourClimate = myClim;
-            } else if (ppClim != null) {
-              ourClimate = ppClim;
-            }
-            return { date: mp.date, value: ourVal, climate: ourClimate };
-          });
-          setGraphData(merged);
+          const sharedPoints = computeSharedRelationskonto(myChecks, partnerChecks, calcStart, endDate)
+            .filter(p => p.date >= displayStart);
+          setGraphData(sharedPoints);
           return;
         }
       }
 
+      // No partner — individual konto
+      const myPoints = computeRelationskonto(myChecks, calcStart, endDate)
+        .filter(p => p.date >= displayStart);
       setGraphData(myPoints);
     };
     fetchGraph();
