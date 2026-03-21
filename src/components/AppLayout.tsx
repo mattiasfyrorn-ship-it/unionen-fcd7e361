@@ -11,7 +11,7 @@ const BOTTOM_NAV = [
   { to: "/daily", label: "Konto", icon: Sun },
   { to: "/evaluate", label: "Närd", icon: Sparkles },
   { to: "/weekly", label: "Samtal", icon: CalendarCheck },
-  { to: "/repair", label: "Reglering", icon: Shield },
+  { to: "/repair", label: "Reparation", icon: Shield },
 ];
 
 const DESKTOP_NAV = [
