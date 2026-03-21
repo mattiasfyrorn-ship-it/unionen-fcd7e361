@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, Brain, Users, Compass, Sparkles, Loader2 } from "lucide-react";
+import { Heart, Brain, Users, Compass, Sparkles, Loader2, Sun } from "lucide-react";
 import InfoButton from "@/components/InfoButton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
