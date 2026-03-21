@@ -730,6 +730,7 @@ export type Database = {
           intention: string | null
           issues: Json | null
           logistics: Json | null
+          love_action: string | null
           meeting_confirmed: boolean | null
           meeting_notes: Json | null
           partner_learning: string | null
@@ -747,6 +748,7 @@ export type Database = {
           intention?: string | null
           issues?: Json | null
           logistics?: Json | null
+          love_action?: string | null
           meeting_confirmed?: boolean | null
           meeting_notes?: Json | null
           partner_learning?: string | null
@@ -764,6 +766,7 @@ export type Database = {
           intention?: string | null
           issues?: Json | null
           logistics?: Json | null
+          love_action?: string | null
           meeting_confirmed?: boolean | null
           meeting_notes?: Json | null
           partner_learning?: string | null
