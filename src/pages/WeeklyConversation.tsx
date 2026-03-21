@@ -60,6 +60,7 @@ export default function WeeklyConversation() {
   const [intention, setIntention] = useState("");
   const [checkoutFeeling, setCheckoutFeeling] = useState("");
   const [partnerLearning, setPartnerLearning] = useState("");
+  const [loveAction, setLoveAction] = useState("");
 
   const [partnerEntry, setPartnerEntry] = useState<any>(null);
   const [meetingStarted, setMeetingStarted] = useState(false);
