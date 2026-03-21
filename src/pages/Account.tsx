@@ -299,11 +299,15 @@ export default function Account() {
                       />
                     </div>
                   )}
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button size="sm" onClick={saveNotifPrefs} disabled={loading}>Spara inställningar</Button>
                     <Button size="sm" variant="outline" onClick={handleTestPush} disabled={sendingTest}>
                       <Send className="w-3 h-3 mr-1" />
                       {sendingTest ? "Skickar..." : "Skicka test-push"}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={handleResetPush} disabled={resettingPush}>
+                      <RotateCcw className="w-3 h-3 mr-1" />
+                      {resettingPush ? "Återställer..." : "Återställ push"}
                     </Button>
                   </div>
                 </>
