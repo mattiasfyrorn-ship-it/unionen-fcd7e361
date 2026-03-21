@@ -12,6 +12,9 @@ import {
   ChevronDown, CalendarDays, Sparkles, Heart, ClipboardList, SmilePlus, Play, Clock
 } from "lucide-react";
 import InfoButton from "@/components/InfoButton";
+import { format } from "date-fns";
+import { sv } from "date-fns/locale";
+import { sendPushToPartner } from "@/lib/pushNotifications";
 
 function getWeekStart() {
   const d = new Date();
@@ -66,7 +69,7 @@ export default function WeeklyConversation() {
   const [archive, setArchive] = useState<any[]>([]);
   const [expandedArchive, setExpandedArchive] = useState<string | null>(null);
   const [archiveEntries, setArchiveEntries] = useState<Record<string, any[]>>({});
-
+  const [nextMeetingAt, setNextMeetingAt] = useState<string>("");
   const hasCoupleId = !!profile?.couple_id;
 
   useEffect(() => {
@@ -116,6 +119,7 @@ export default function WeeklyConversation() {
 
       if (!conv) return;
       setConversationId(conv.id);
+      if (conv.next_meeting_at) setNextMeetingAt(conv.next_meeting_at);
 
       const { data: myEntry } = await supabase
         .from("weekly_entries")
@@ -267,7 +271,7 @@ export default function WeeklyConversation() {
     },
     {
       key: "issues",
-      title: "Frågor / Problem",
+      title: "Frågor / Behov",
       icon: <MessageCircle className="w-5 h-5 text-primary" />,
       myContent: issues.filter(i => i.text.trim()).map(i => `${i.text} (${i.tag})`),
       partnerContent: (Array.isArray(partnerEntry?.issues) ? partnerEntry.issues as Issue[] : []).filter((i: Issue) => i.text?.trim()).map((i: Issue) => `${i.text} (${i.tag})`),
@@ -452,43 +456,7 @@ export default function WeeklyConversation() {
         </Button>
       )}
 
-      {/* Archive */}
-      {archive.length > 0 && (
-        <Collapsible>
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1">
-              <CalendarDays className="w-4 h-4" /> Tidigare veckosamtal ({archive.length})
-              <ChevronDown className="w-3 h-3" />
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-2 mt-2">
-            {archive.map((conv) => (
-              <Card key={conv.id} className="bg-muted/30 border-border/30">
-                <CardHeader className="pb-1 pt-3 px-4 cursor-pointer" onClick={() => loadArchiveEntries(conv.id)}>
-                  <CardTitle className="text-sm flex items-center justify-between">
-                    <span>Vecka {conv.week_start}</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${expandedArchive === conv.id ? "rotate-180" : ""}`} />
-                  </CardTitle>
-                </CardHeader>
-                {expandedArchive === conv.id && archiveEntries[conv.id] && (
-                  <CardContent className="space-y-2 text-xs text-muted-foreground">
-                    {archiveEntries[conv.id].map((entry) => (
-                      <div key={entry.id} className="space-y-1 border-t border-border/30 pt-2">
-                        <p className="font-medium text-foreground">{entry.user_id === user?.id ? "Du" : "Partner"}</p>
-                        {entry.appreciations?.length > 0 && <p><strong>Uppskattningar:</strong> {entry.appreciations.join(", ")}</p>}
-                        {entry.wins?.length > 0 && <p><strong>Bra:</strong> {entry.wins.join(", ")}</p>}
-                        {entry.takeaway && <p><strong>Takeaway:</strong> {entry.takeaway}</p>}
-                        {(entry as any).intention && <p><strong>Intention:</strong> {(entry as any).intention}</p>}
-                        {(entry as any).checkout_feeling && <p><strong>Känsla:</strong> {(entry as any).checkout_feeling}</p>}
-                      </div>
-                    ))}
-                  </CardContent>
-                )}
-              </Card>
-            ))}
-          </CollapsibleContent>
-        </Collapsible>
-      )}
+
 
       {/* Status */}
       <div className="flex items-center gap-3 text-sm">
@@ -548,7 +516,7 @@ export default function WeeklyConversation() {
       {/* Issues */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">Frågor / Problem att ta upp <InfoButton title="Frågor / Problem" description="Här tar ni upp saker som behöver diskuteras. Tagga varje fråga som praktisk, emotionell eller vision. Gottman-forskning visar att 69% av alla parproblem är olösliga – de behöver hanteras med dialog, inte lösning." /></CardTitle>
+          <CardTitle className="text-base flex items-center gap-2">Frågor / Behov att ta upp <InfoButton title="Frågor / Behov" description="Här tar ni upp saker som behöver diskuteras. Tagga varje fråga som praktisk, emotionell eller vision. Gottman-forskning visar att 69% av alla parproblem är olösliga – de behöver hanteras med dialog, inte lösning." /></CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {issues.map((issue, i) => (
@@ -598,6 +566,60 @@ export default function WeeklyConversation() {
           <Input placeholder="När ses vi?" value={logistics.when || ""} onChange={(e) => setLogistics(prev => ({ ...prev, when: e.target.value }))} className="bg-muted/50 border-border text-sm" disabled={ready} />
           <Input placeholder="Vem tar hand om vad?" value={logistics.who || ""} onChange={(e) => setLogistics(prev => ({ ...prev, who: e.target.value }))} className="bg-muted/50 border-border text-sm" disabled={ready} />
           <Input placeholder="Speciella behov att ta hänsyn till" value={logistics.needs || ""} onChange={(e) => setLogistics(prev => ({ ...prev, needs: e.target.value }))} className="bg-muted/50 border-border text-sm" disabled={ready} />
+
+          {/* Next SOTU meeting */}
+          <div className="pt-2 border-t border-border/30">
+            <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5" /> Nästa State of the Union
+            </p>
+            <div className="flex gap-2">
+              <Input
+                type="datetime-local"
+                value={nextMeetingAt ? nextMeetingAt.slice(0, 16) : ""}
+                onChange={(e) => setNextMeetingAt(e.target.value)}
+                className="bg-muted/50 border-border text-sm flex-1"
+                disabled={ready}
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={ready || !nextMeetingAt}
+                onClick={async () => {
+                  if (!conversationId) return;
+                  const isoDate = new Date(nextMeetingAt).toISOString();
+                  const { error } = await supabase
+                    .from("weekly_conversations")
+                    .update({ next_meeting_at: isoDate } as any)
+                    .eq("id", conversationId);
+                  if (error) {
+                    toast({ title: "Fel", description: error.message, variant: "destructive" });
+                  } else {
+                    toast({ title: "Sparat! 📅" });
+                    // Send auto-message to partner
+                    if (hasCoupleId && user) {
+                      const formatted = format(new Date(nextMeetingAt), "EEEE d MMMM 'kl' HH:mm", { locale: sv });
+                      const msgContent = `Jag har uppdaterat tid för vårt nästa State of the Union-samtal: ${formatted}`;
+                      await supabase.from("messages").insert({
+                        couple_id: profile!.couple_id!,
+                        sender_id: user.id,
+                        content: msgContent,
+                        type: "system",
+                      });
+                      sendPushToPartner(profile!.couple_id!, user.id, "Nytt mötesdatum", msgContent, "message");
+                    }
+                  }
+                }}
+                className="text-xs"
+              >
+                Spara tid
+              </Button>
+            </div>
+            {nextMeetingAt && (
+              <p className="text-xs text-muted-foreground mt-1">
+                {format(new Date(nextMeetingAt), "EEEE d MMMM 'kl' HH:mm", { locale: sv })}
+              </p>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -612,20 +634,6 @@ export default function WeeklyConversation() {
         </CardHeader>
         <CardContent>
           <Input placeholder="Min positiva intention för veckan..." value={intention} onChange={(e) => setIntention(e.target.value)} className="bg-muted/50 border-border text-sm" disabled={ready} />
-        </CardContent>
-      </Card>
-
-      {/* Next meeting time */}
-      <Card className="rounded-[10px] border-none shadow-hamnen">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Clock className="w-5 h-5 text-primary" />
-            Tid för nästa möte
-            <InfoButton title="Tid för nästa möte" description="Boka in nästa veckosamtal redan nu. Par som schemalägger sina möten i förväg håller rutinen bättre. Hitta en tid som fungerar för båda – det behöver inte vara lång, 30–45 minuter räcker." />
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Input placeholder="T.ex. Söndag kl 19:00" value={logistics.when || ""} onChange={(e) => setLogistics(prev => ({ ...prev, when: e.target.value }))} className="bg-muted/50 border-border text-sm" disabled={ready} />
         </CardContent>
       </Card>
 
@@ -658,6 +666,51 @@ export default function WeeklyConversation() {
           </Button>
         )}
       </div>
+
+      {/* Tidigare samtal */}
+      {archive.length > 0 && (
+        <div className="space-y-2 pt-4 border-t border-border/30">
+          <h2 className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+            <CalendarDays className="w-4 h-4" /> Tidigare samtal ({archive.length})
+          </h2>
+          {archive.map((conv) => (
+            <Card key={conv.id} className="bg-muted/30 border-border/30">
+              <CardHeader className="pb-1 pt-3 px-4 cursor-pointer" onClick={() => loadArchiveEntries(conv.id)}>
+                <CardTitle className="text-sm flex items-center justify-between">
+                  <span>Vecka {conv.week_start}</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${expandedArchive === conv.id ? "rotate-180" : ""}`} />
+                </CardTitle>
+              </CardHeader>
+              {expandedArchive === conv.id && archiveEntries[conv.id] && (
+                <CardContent className="space-y-2 text-xs text-muted-foreground">
+                  {archiveEntries[conv.id].map((entry) => (
+                    <div key={entry.id} className="space-y-1 border-t border-border/30 pt-2">
+                      <p className="font-medium text-foreground">{entry.user_id === user?.id ? "Du" : "Partner"}</p>
+                      {entry.appreciations?.length > 0 && <p><strong>Uppskattningar:</strong> {entry.appreciations.join(", ")}</p>}
+                      {entry.wins?.length > 0 && <p><strong>Bra:</strong> {entry.wins.join(", ")}</p>}
+                      {Array.isArray(entry.issues) && entry.issues.filter((i: Issue) => i.text?.trim()).length > 0 && (
+                        <p><strong>Frågor:</strong> {entry.issues.filter((i: Issue) => i.text?.trim()).map((i: Issue) => `${i.text} (${i.tag})`).join(", ")}</p>
+                      )}
+                      {entry.takeaway && <p><strong>Takeaway:</strong> {entry.takeaway}</p>}
+                      {(entry as any).intention && <p><strong>Intention:</strong> {(entry as any).intention}</p>}
+                      {(entry as any).partner_learning && <p><strong>Lärdom om partner:</strong> {(entry as any).partner_learning}</p>}
+                      {(entry as any).checkout_feeling && <p><strong>Känsla:</strong> {(entry as any).checkout_feeling}</p>}
+                      {(entry as any).meeting_notes && Object.entries((entry as any).meeting_notes as MeetingNotes).filter(([, v]) => v).length > 0 && (
+                        <div>
+                          <strong>Mötesanteckningar:</strong>
+                          {Object.entries((entry as any).meeting_notes as MeetingNotes).filter(([, v]) => v).map(([k, v]) => (
+                            <p key={k} className="ml-2">• {k}: {v}</p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </CardContent>
+              )}
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,0 +1,1 @@
+ALTER TABLE public.weekly_conversations ADD COLUMN next_meeting_at timestamptz DEFAULT NULL;
