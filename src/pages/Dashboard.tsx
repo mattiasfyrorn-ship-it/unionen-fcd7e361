@@ -165,8 +165,9 @@ export default function Dashboard() {
         const pPoints = computeRelationskonto(partnerChecks, startDate, endDate);
         setPartnerKonto(getLatestKonto(pPoints));
 
-        // Shared konto for trend
+        // Shared konto for display and trend
         const sharedPoints = computeSharedRelationskonto(myChecks, partnerChecks, startDate, endDate);
+        setSharedKonto(getLatestKonto(sharedPoints));
         setKontoTrend(get7DayTrend(sharedPoints));
         return;
       }
