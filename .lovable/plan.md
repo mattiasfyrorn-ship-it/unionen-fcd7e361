@@ -1,64 +1,37 @@
 
 
-# Robust Push Notification Registration Flow
+## Fix: Push-notiser levereras inte på iOS
 
-## Problem
-The current push toggle calls `subscribeToPush` which does the registration, but lacks:
-- iOS PWA standalone detection (push only works from home screen)
-- Clear user feedback for each state
-- Debug logging
-- Test push button
-- The notification section is hidden entirely when `isPushSupported` is false, giving no guidance to iOS users
+### Problem
+Backend rapporterar `sent: 1` men notisen visas aldrig på enheten. Apple accepterar payload utan fel men levererar inte till appen. Trolig orsak: inaktuell/korrupt push-prenumeration som Apple inte längre mappar till enheten.
 
-## Plan
+### Åtgärder
 
-### 1. Update `src/lib/pushNotifications.ts` — Add PWA detection + logging
+#### 1. Lägg till "Återställ push"-funktion i `src/lib/pushNotifications.ts`
+Ny funktion `resetPushSubscription(userId)` som:
+- Tar bort alla sparade prenumerationer i databasen för användaren
+- Avregistrerar befintlig browser-subscription via `subscription.unsubscribe()`
+- Avregistrerar service workern helt (`registration.unregister()`)
+- Väntar på att en ny service worker registreras (via PWA-pluginen)
+- Skapar en helt ny push-subscription med nytt VAPID-anrop
+- Sparar den nya prenumerationen i databasen
 
-Add helper functions:
-- `isInstalledPWA()`: checks `window.matchMedia('(display-mode: standalone)')` or `navigator.standalone` (iOS)
-- `isIOSSafari()`: detects iOS Safari (not standalone)
-- Add `console.log` breadcrumbs throughout `subscribeToPush` for: permission status, SW registration, subscription created, saved to backend
+#### 2. Lägg till "Återställ push"-knapp i `src/pages/Account.tsx`
+- Ny knapp "Återställ push" (med `RotateCcw`-ikon) bredvid "Skicka test-push"
+- Anropar `resetPushSubscription`, sedan `sendTestPush` automatiskt
+- Visar toast med resultat
 
-### 2. Rewrite push toggle in `src/pages/Account.tsx`
+#### 3. Förbättra loggning i `broadcast-push` edge function
+- Logga Apple-svarets `statusCode` och `headers` vid varje push-försök (både success och fail)
+- Logga subscription-endpoint så vi kan verifiera att rätt token används
+- Detta ger synlighet i om Apple faktiskt tar emot eller avvisar
 
-**Show notification card always** (not just when `pushSupported`), with contextual messaging:
+#### 4. Förbättra loggning i `send-push-notification` edge function
+- Samma detaljerade loggning av web-push-svar
 
-- If iOS but NOT standalone → show message: "Installera appen på hemskärmen för att aktivera push på iPhone" with link to `/install`
-- If push not supported at all → show "Din webbläsare stöder inte push-notiser"
-- If supported → show the toggle
-
-**When user toggles push ON** (user-initiated click):
-1. Call `Notification.requestPermission()`
-2. If denied → toast "Notiser nekades — ändra i enhetens inställningar", don't enable toggle
-3. If granted → run full `subscribeToPush(userId)` which creates subscription + saves to DB
-4. Toast "Notiser aktiverade ✓"
-
-**Save button** saves all preferences to `notification_preferences` table as today.
-
-### 3. Add "Skicka test-push" button
-
-Visible when `pushEnabled` is true. Calls `broadcast-push` edge function with `{ title: "Testnotis", body: "Push fungerar! 🎉" }` filtered to current user only.
-
-Update `broadcast-push/index.ts` to accept optional `user_id` parameter — if provided, only send to that user instead of all users.
-
-### 4. Files changed
-
-| File | Change |
-|------|--------|
-| `src/lib/pushNotifications.ts` | Add `isInstalledPWA()`, `isIOSSafari()` exports; add console.log debugging throughout `subscribeToPush` |
-| `src/pages/Account.tsx` | Rewrite notification card: always show, iOS detection, permission flow on toggle, test button |
-| `supabase/functions/broadcast-push/index.ts` | Accept optional `user_id` to send test push to single user |
-
-### Technical details
-
-**iOS standalone detection:**
-```ts
-const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
-  || (window.navigator as any).standalone === true;
-const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-```
-
-**Permission flow** triggered only on Switch `onCheckedChange` (user click), never on page load.
-
-**Debug logging** format: `[Push] step: detail` for easy filtering in console.
+### Filer som ändras
+- `src/lib/pushNotifications.ts` — ny `resetPushSubscription`-funktion
+- `src/pages/Account.tsx` — ny knapp + import
+- `supabase/functions/broadcast-push/index.ts` — detaljerad loggning
+- `supabase/functions/send-push-notification/index.ts` — detaljerad loggning
 
