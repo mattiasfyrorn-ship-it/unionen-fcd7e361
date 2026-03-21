@@ -623,6 +623,28 @@ export default function WeeklyConversation() {
         </CardContent>
       </Card>
 
+      {/* Love action */}
+      <Card className="rounded-[10px] border-none shadow-hamnen">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Heart className="w-5 h-5 text-accent" />
+            Vad kan jag göra nästa vecka för att du ska känna dig älskad?
+            <InfoButton title="Känn dig älskad" description="Avsluta samtalet genom att dela en sak din partner kan göra för att du ska känna er mer sammankopplade kommande vecka. Var specifik och positiv, till exempel: 'En sak som skulle hjälpa mig att känna mig mer älskad kommande vecka är om vi spenderade lite tid med att mysa i sängen på lördagsmorgonen.'" />
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">Dela en specifik, positiv sak din partner kan göra för att ni ska känna er mer sammankopplade kommande vecka</p>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            placeholder="En sak som skulle hjälpa mig att känna mig mer älskad..."
+            value={loveAction}
+            onChange={(e) => setLoveAction(e.target.value)}
+            className="bg-muted/50 border-border resize-none text-sm"
+            rows={2}
+            disabled={ready}
+          />
+        </CardContent>
+      </Card>
+
       {/* Logistics */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
