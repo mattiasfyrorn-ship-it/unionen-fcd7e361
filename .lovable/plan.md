@@ -1,44 +1,38 @@
 
 
-## AI-driven insikter från behov & vilja
+## Badge-räknare på app-ikonen (iOS 16.4+ & Android)
+
+Du hade rätt — `navigator.setAppBadge()` fungerar på iOS 16.4+ för installerade PWA:er. Här är planen:
 
 ### Vad byggs
 
-Ett nytt "Insikter"-kort på Närd-sidan som analyserar användarens historiska behov/vilja-svar med AI och visar:
-- Återkommande behov och mönster
-- Koppling mellan behov och näringsnivåer (scores)
-- Koppling mellan behov och klimat (från daily_checks)
-- Konkreta rekommendationer
+En badge-räknare som visar antal olästa meddelanden på app-ikonen på hemskärmen.
 
 ### Åtgärder
 
-#### 1. Ny edge function `supabase/functions/needs-insights/index.ts`
-- Hämtar de senaste 30 dagarnas `need_today` och `want_today` från `evaluations`-tabellen för användaren
-- Hämtar motsvarande `score`-data (näring) och `climate` från `daily_checks` för samma period
-- Skickar all data till Lovable AI (gemini-3-flash-preview) med en systemprompt som ber om:
-  - Återkommande behov/vilja-teman
-  - Korrelation mellan specifika behov och höga/låga näringspoäng
-  - Korrelation med klimat
-  - 2-3 konkreta insikter på svenska
-- Returnerar AI-svaret som JSON (ej streaming, enkel invoke)
+#### 1. Ny hjälpfil `src/lib/appBadge.ts`
+- Funktion `updateAppBadge(count)` som anropar `navigator.setAppBadge(count)` eller `navigator.clearAppBadge()` om count = 0
+- Kontrollerar att API:t finns innan anrop (graceful fallback)
 
-#### 2. Nytt insiktskort i `src/pages/Evaluate.tsx`
-- Placeras efter grafen, längst ner på sidan
-- Knapp "Visa insikter" (med Lightbulb-ikon) som triggar edge function-anrop
-- Visar AI-genererade insikter i en kort med laddningsindikator
-- Cachear resultatet i state så det inte anropas vid varje render
+#### 2. Uppdatera Service Worker (`public/sw.js`)
+- I `push`-eventet: efter `showNotification`, anropa `self.navigator.setAppBadge(1)` för att visa badge vid inkommande push (även när appen inte är öppen)
 
-#### 3. Datainsamling i edge function
-- Query `evaluations` WHERE `user_id` = anroparen, `need_today IS NOT NULL`, senaste 30 dagar
-- Query `daily_checks` WHERE `user_id` = anroparen, senaste 30 dagar (för klimat)
-- Kräver minst 5 dagars data för att generera insikter, annars returnera meddelande om att mer data behövs
+#### 3. Uppdatera `src/pages/Messages.tsx`
+- Efter att olästa meddelanden markeras som lästa: anropa `clearAppBadge()` 
+- Det nollställer badge-räknaren när användaren öppnar meddelandesidan
+
+#### 4. Uppdatera `src/App.tsx` (PushInitializer)
+- Vid app-start: räkna olästa meddelanden från databasen och sätt badge med `setAppBadge(count)`
+- Prenumerera på realtime-inserts i `messages` för att uppdatera badge löpande
 
 ### Filer som skapas/ändras
-- `supabase/functions/needs-insights/index.ts` — ny edge function
-- `src/pages/Evaluate.tsx` — nytt insiktskort med knapp och AI-svar
+- `src/lib/appBadge.ts` — ny fil
+- `public/sw.js` — badge vid push
+- `src/pages/Messages.tsx` — clearBadge vid läsning
+- `src/App.tsx` — badge-räkning vid start + realtime
 
-### Tekniska detaljer
-- Använder `LOVABLE_API_KEY` (redan konfigurerad) och `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` för databasåtkomst i edge function
-- Modell: `google/gemini-3-flash-preview` (snabb, billig)
-- Ej streaming — använder `supabase.functions.invoke` från klienten
+### Begränsningar
+- Kräver iOS 16.4+ och installerad PWA
+- Android Chrome stöder det fullt ut
+- Desktop-webbläsare: stöds i Chrome/Edge
 
