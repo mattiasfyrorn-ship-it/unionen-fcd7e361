@@ -1,31 +1,57 @@
 
 
-## Plan: Persistent "Markera reparation som slutförd" i Repair-vyn
+## Plan: Uppdaterad Relationskonto-beräkning med ny formel och gemensamt konto (max 100)
 
-### Problem
-Om knapparna "Reparerat" / "Reparationssamtal planerat" bara visas på slutskärmen (steg 13) försvinner de när användaren lämnar sidan och kommer tillbaka.
+### Sammanfattning
+Ny beräkningslogik: insättningsdagar har ingen decay, tomma dagar har 5% decay. Startvärde 10. Nya insättningskategorier (reparationer, veckosamtal). Gemensamt konto = ett enda konto (max 100) där båda partners dagliga effekter summeras.
 
-### Lösning
-Visa en banner/kort på **startsidan av reparationsflödet (steg 0)** när det finns en öppen (icke-slutförd) reparation. Bannern visar senaste reparationens datum och två knappar för att markera den som slutförd. Reparationer med `status = "shared"` eller `"needs_time"` och utan `completed_at` räknas som öppna.
+### Ny formel
+
+**Individuellt konto (för "Min" vy):**
+- Start: 10
+- Om `dagens_poäng > 0`: `konto = min(100, konto + poäng/4)`
+- Om `dagens_poäng == 0`: `konto = max(0, konto * 0.95)`
+
+**Gemensamt konto (för "Vår" vy):**
+- Ett enda delat konto (max 100), inte två separata som slås ihop
+- Varje dag beräknas varje partners effekt:
+  - Om partner har `poäng > 0`: effekt = `poäng / 4`
+  - Om partner har `poäng == 0`: effekt = `konto * -0.05` (decay)
+- `konto = max(0, min(100, konto + effekt_A + effekt_B))`
+
+**Dagliga poäng:**
+| Kategori | Poäng |
+|---|---|
+| Love Maps (besvarad) | 0 / 1 |
+| Uppskattning | 0 / 1 |
+| Turn Toward (en = 0.5, båda = 1) | 0 / 0.5 / 1 |
+| Låt partner påverka | 0 / 1 |
+| Reparationsinitiativ | 0 / 2 |
+| Slutförd reparation | 0 / 2 |
+| State of the Union | 0 / 2 |
+| Klimatmodifierare (1→-1.5, 2→-0.75, 3→0, 4→+0.75, 5→+1.5) | -1.5 till +1.5 |
+
+Klimat räknas bara om andra insättningar finns. Klimat ensam = decay.
 
 ### Ändringar
 
-**1. `src/pages/Repair.tsx`**
+**1. `src/lib/relationskonto.ts`**
+- Utöka `DailyCheck` med: `repair_initiated`, `repair_completed`, `weekly_conversation_done`
+- Lägg till `dailyChange` i `KontoPoint`
+- Ny `computeDailyPoints(check)` funktion som beräknar poäng enligt tabellen ovan
+- Ny `computeRelationskonto`: startvärde 10, ny formel utan exponentiell utjämning
+- Ny `computeSharedRelationskonto(myChecks, partnerChecks, start, end)`: ett delat konto där båda partners effekter summeras per dag
+- Klimat i KontoPoint: visa råvärde (1-5 × 20) som idag
 
-- På steg 0, före valet "Reglering / Snabb reparation", kolla om det finns en öppen reparation (senaste reparationen där `completed_at IS NULL` och `status` inte redan är `"completed"`).
-- Om ja, visa ett kort med:
-  - Text: "Du har en öppen reparation från [datum]"
-  - Knapp 1: "Reparerat" → sätter `status = "completed"`, `completed_at = now()`
-  - Knapp 2: "Reparationssamtal planerat" → sätter `status = "conversation_planned"`, `completed_at = now()`
-  - Efter klick: toast-bekräftelse, dölj kortet
-- Samma logik på steg 13 (done-skärmen) — visa knapparna även där som idag planerat.
+**2. `src/pages/DailyCheck.tsx` — Hämta reparationer/veckosamtal**
+- I `fetchGraph`: hämta `repairs` (created_at per datum = initierad, completed_at per datum = slutförd), `quick_repairs`, och `weekly_conversations` (status = 'completed')
+- Bygg per-datum-lookup och mergea in `repair_initiated`, `repair_completed`, `weekly_conversation_done` i check-datan
+- Använd `computeSharedRelationskonto` istället för att beräkna separat och ta genomsnitt
 
-**2. Även kolla `quick_repairs`**
-- Senaste quick_repair där `partner_response IS NULL` visas på liknande sätt med en "Reparerat"-knapp som sätter `partner_response = "completed"`.
+**3. `src/pages/Dashboard.tsx` — Samma uppdateringar**
+- `buildKontoSummary` och `rebuildGraphs`: hämta reparationer/veckosamtal, mergea, använd `computeSharedRelationskonto` för "ours"-vyn
+- Individuell vy: använd uppdaterade `computeRelationskonto`
 
-### Tekniska detaljer
-- Nytt state: `openRepair` (den senaste oslutförda reparationen) laddas i befintlig `useEffect`
-- Filtrera `pastRepairs`-queryn och plocka ut den första med `completed_at IS NULL`
-- Uppdatering sker direkt mot `repairs`/`quick_repairs`-tabellen med befintliga RLS-policies (user can update own)
-- Inga databasmigrationer behövs — `completed_at` och `status` finns redan på `repairs`, `partner_response` finns på `quick_repairs`
+### Ingen databasmigration behövs
+All data finns redan i `repairs`, `quick_repairs`, `weekly_conversations` och `daily_checks`.
 
