@@ -666,6 +666,51 @@ export default function WeeklyConversation() {
           </Button>
         )}
       </div>
+
+      {/* Tidigare samtal */}
+      {archive.length > 0 && (
+        <div className="space-y-2 pt-4 border-t border-border/30">
+          <h2 className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+            <CalendarDays className="w-4 h-4" /> Tidigare samtal ({archive.length})
+          </h2>
+          {archive.map((conv) => (
+            <Card key={conv.id} className="bg-muted/30 border-border/30">
+              <CardHeader className="pb-1 pt-3 px-4 cursor-pointer" onClick={() => loadArchiveEntries(conv.id)}>
+                <CardTitle className="text-sm flex items-center justify-between">
+                  <span>Vecka {conv.week_start}</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${expandedArchive === conv.id ? "rotate-180" : ""}`} />
+                </CardTitle>
+              </CardHeader>
+              {expandedArchive === conv.id && archiveEntries[conv.id] && (
+                <CardContent className="space-y-2 text-xs text-muted-foreground">
+                  {archiveEntries[conv.id].map((entry) => (
+                    <div key={entry.id} className="space-y-1 border-t border-border/30 pt-2">
+                      <p className="font-medium text-foreground">{entry.user_id === user?.id ? "Du" : "Partner"}</p>
+                      {entry.appreciations?.length > 0 && <p><strong>Uppskattningar:</strong> {entry.appreciations.join(", ")}</p>}
+                      {entry.wins?.length > 0 && <p><strong>Bra:</strong> {entry.wins.join(", ")}</p>}
+                      {Array.isArray(entry.issues) && entry.issues.filter((i: Issue) => i.text?.trim()).length > 0 && (
+                        <p><strong>Frågor:</strong> {entry.issues.filter((i: Issue) => i.text?.trim()).map((i: Issue) => `${i.text} (${i.tag})`).join(", ")}</p>
+                      )}
+                      {entry.takeaway && <p><strong>Takeaway:</strong> {entry.takeaway}</p>}
+                      {(entry as any).intention && <p><strong>Intention:</strong> {(entry as any).intention}</p>}
+                      {(entry as any).partner_learning && <p><strong>Lärdom om partner:</strong> {(entry as any).partner_learning}</p>}
+                      {(entry as any).checkout_feeling && <p><strong>Känsla:</strong> {(entry as any).checkout_feeling}</p>}
+                      {(entry as any).meeting_notes && Object.entries((entry as any).meeting_notes as MeetingNotes).filter(([, v]) => v).length > 0 && (
+                        <div>
+                          <strong>Mötesanteckningar:</strong>
+                          {Object.entries((entry as any).meeting_notes as MeetingNotes).filter(([, v]) => v).map(([k, v]) => (
+                            <p key={k} className="ml-2">• {k}: {v}</p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </CardContent>
+              )}
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
