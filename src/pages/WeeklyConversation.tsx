@@ -291,6 +291,13 @@ export default function WeeklyConversation() {
       ].filter(Boolean) as string[],
     },
     {
+      key: "love_action",
+      title: "Vad kan jag göra för att du ska känna dig älskad?",
+      icon: <Heart className="w-5 h-5 text-primary" />,
+      myContent: loveAction ? [loveAction] : [],
+      partnerContent: (partnerEntry as any)?.love_action ? [(partnerEntry as any).love_action] : [],
+    },
+    {
       key: "intention",
       title: "Positiv intention",
       icon: <Sparkles className="w-5 h-5 text-primary" />,
