@@ -343,6 +343,37 @@ export default function WeeklyConversation() {
               ) : (
                 <p className="text-xs text-muted-foreground italic">Inget förifyllt – använd anteckningsfältet nedan</p>
               )}
+
+              {/* ATTUNE guide for issues section */}
+              {section.key === "issues" && (
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center gap-1.5 text-xs text-primary hover:underline">
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    Guide: Så tar ni upp svåra saker
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-2 space-y-3 text-sm text-muted-foreground bg-muted/30 rounded-lg p-3">
+                    <p className="font-medium text-foreground text-xs">ATTUNE – håll er nära varandra</p>
+                    <ul className="space-y-1 text-xs">
+                      <li><strong>A</strong>wareness – Medvetenhet om din partners känsla</li>
+                      <li><strong>T</strong>olerance – Tolerans för att det finns två giltiga perspektiv</li>
+                      <li><strong>T</strong>urning Toward – Vänd dig mot din partners behov</li>
+                      <li><strong>U</strong>nderstanding – Försök förstå din partners upplevelse</li>
+                      <li><strong>N</strong>on-defensive Listening – Lyssna utan att försvara dig</li>
+                      <li><strong>E</strong>mpathy – Svara med förståelse och lyhördhet</li>
+                    </ul>
+                    <div className="border-t border-border/30 pt-2">
+                      <p className="font-medium text-foreground text-xs mb-1">Som talare – mjuk start</p>
+                      <p className="text-xs italic">"Jag känner... (känsla) ...om... (situation) ...Jag behöver... (positivt behov)"</p>
+                      <p className="text-xs mt-1">Exempel: "Jag känner mig trött och överväldigad av att ha lagat mat sju kvällar i rad. Jag behöver att vi gör en plan där vi delar på matlagningen."</p>
+                    </div>
+                    <div className="border-t border-border/30 pt-2">
+                      <p className="font-medium text-foreground text-xs">Som lyssnare</p>
+                      <p className="text-xs">Lyssna utan att försvara dig. Hjälp din partner att känna sig hörd och förstådd.</p>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+
               <Textarea
                 placeholder={`Anteckningar – ${section.title.toLowerCase()}...`}
                 value={meetingNotes[section.key] || ""}
@@ -475,10 +506,10 @@ export default function WeeklyConversation() {
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <MessageCircle className="w-5 h-5 text-accent" />
-            Uppskattningar (5 st)
+            Uppskattningar
             <InfoButton title="Uppskattningar" description="Att dela fem specifika uppskattningar varje vecka bygger en kultur av tacksamhet. Var konkret: 'Tack för att du lyssnade igår kväll' slår 'Du är bra'. Specifik uppskattning visar att du ser din partner." />
           </CardTitle>
-          <p className="text-xs text-muted-foreground">Sparas i er gemensamma uppskattningsbank</p>
+          <p className="text-xs text-muted-foreground">Vad är fem saker du uppskattat med din partner senaste veckan?</p>
         </CardHeader>
         <CardContent className="space-y-2">
           {appreciations.map((a, i) => (
@@ -497,7 +528,12 @@ export default function WeeklyConversation() {
       {/* Wins */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">Vad gick bra? <InfoButton title="Vad gick bra?" description="Att identifiera vad som fungerade förstärker positiva mönster i relationen. Det skapar medvetenhet om era styrkor som par." /></CardTitle>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-accent" />
+            Vad har gått bra i relationen senaste veckan?
+            <InfoButton title="Vad har gått bra?" description="Ta er tid att diskutera vad som fungerar, förbättras eller har gått bra i relationen. Kanske hanterade ni en stressig situation bra som team, eller var ni duktiga på att boka in och genomföra en dejt. Att uppmärksamma det arbete ni lägger ner på relationen hjälper er att hålla motivationen uppe." />
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">Diskutera vad som fungerat, förbättrats eller gått bra – som teamwork, prioriteringar eller vardagliga vinster</p>
         </CardHeader>
         <CardContent className="space-y-2">
           {wins.map((w, i) => (
@@ -516,7 +552,12 @@ export default function WeeklyConversation() {
       {/* Issues */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">Frågor / Behov att ta upp <InfoButton title="Frågor / Behov" description="Här tar ni upp saker som behöver diskuteras. Tagga varje fråga som praktisk, emotionell eller vision. Gottman-forskning visar att 69% av alla parproblem är olösliga – de behöver hanteras med dialog, inte lösning." /></CardTitle>
+          <CardTitle className="text-base flex items-center gap-2">
+            <MessageCircle className="w-5 h-5 text-accent" />
+            Frågor / Behov att ta upp
+            <InfoButton title="Frågor / Behov" description="Välj ett ämne att prata om eller bearbeta. Konflikter är oundvikliga och nödvändiga i en relation. När de hanteras konstruktivt leder de till ökad närhet. Använd ATTUNE-modellen: Awareness (medvetenhet), Tolerance (tolerans), Turning Toward (vända sig mot), Understanding (förståelse), Non-defensive Listening (icke-defensivt lyssnande), Empathy (empati)." />
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">Välj ett ämne att prata om eller bearbeta – tagga som praktiskt, emotionellt eller vision</p>
         </CardHeader>
         <CardContent className="space-y-3">
           {issues.map((issue, i) => (
