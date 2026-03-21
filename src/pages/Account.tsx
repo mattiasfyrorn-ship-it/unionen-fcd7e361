@@ -155,6 +155,25 @@ export default function Account() {
     setSendingTest(false);
   };
 
+  const handleResetPush = async () => {
+    if (!user) return;
+    setResettingPush(true);
+    toast({ title: "Återställer...", description: "Rensar och skapar ny push-prenumeration." });
+    const ok = await resetPushSubscription(user.id);
+    if (ok) {
+      setPushEnabled(true);
+      const testOk = await sendTestPush(user.id);
+      if (testOk) {
+        toast({ title: "Återställt ✓", description: "Ny prenumeration skapad och testnotis skickad!" });
+      } else {
+        toast({ title: "Återställt ✓", description: "Ny prenumeration skapad, men testnotis kunde inte skickas." });
+      }
+    } else {
+      toast({ title: "Misslyckades", description: "Kunde inte återställa push-prenumerationen.", variant: "destructive" });
+    }
+    setResettingPush(false);
+  };
+
   const saveName = async () => {
     if (!user || !displayName.trim()) return;
     setLoading(true);
