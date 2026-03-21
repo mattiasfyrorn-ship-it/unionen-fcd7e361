@@ -32,6 +32,7 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const title = body.title || 'Relationskontot';
     const message = body.body || 'Dags att fylla i Relationskontot! ❤️';
+    const targetUserId = body.user_id || null;
 
     const payload = JSON.stringify({
       title,
@@ -41,10 +42,16 @@ serve(async (req) => {
       data: { type: 'broadcast', url: '/daily' },
     });
 
-    // Get ALL push subscriptions
-    const { data: subs } = await supabase
+    // Get push subscriptions — filtered by user_id if provided
+    let query = supabase
       .from('push_subscriptions')
       .select('id, user_id, subscription');
+    
+    if (targetUserId) {
+      query = query.eq('user_id', targetUserId);
+    }
+
+    const { data: subs } = await query;
 
     if (!subs || subs.length === 0) {
       return new Response(JSON.stringify({ sent: 0, reason: 'no_subscriptions' }), {
