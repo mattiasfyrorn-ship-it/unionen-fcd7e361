@@ -709,42 +709,41 @@ export default function WeeklyConversation() {
           {/* Next SOTU meeting */}
           <div id="next-meeting-field" className="pt-2 border-t border-border/30">
             <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5" /> Nästa State of the Union
+              <Clock className="w-3.5 h-3.5" /> Nästa samtal efter detta möte
             </p>
             <div className="flex gap-2">
               <Input
                 type="datetime-local"
-                value={nextMeetingAt ? nextMeetingAt.slice(0, 16) : ""}
-                onChange={(e) => setNextMeetingAt(e.target.value)}
+                value={plannedNextMeetingAt ? (plannedNextMeetingAt.includes("T") ? plannedNextMeetingAt.slice(0, 16) : plannedNextMeetingAt) : ""}
+                onChange={(e) => setPlannedNextMeetingAt(e.target.value)}
                 className="bg-muted/50 border-border text-sm flex-1"
                 disabled={ready}
               />
               <Button
                 size="sm"
                 variant="outline"
-                disabled={ready || !nextMeetingAt}
+                disabled={ready || !plannedNextMeetingAt}
                 onClick={async () => {
                   if (!conversationId) return;
-                  const isoDate = new Date(nextMeetingAt).toISOString();
+                  const isoDate = new Date(plannedNextMeetingAt).toISOString();
                   const { error } = await supabase
                     .from("weekly_conversations")
-                    .update({ next_meeting_at: isoDate } as any)
+                    .update({ planned_next_meeting_at: isoDate } as any)
                     .eq("id", conversationId);
                   if (error) {
                     toast({ title: "Fel", description: error.message, variant: "destructive" });
                   } else {
                     toast({ title: "Sparat! 📅" });
-                    // Send auto-message to partner
                     if (hasCoupleId && user) {
-                      const formatted = format(new Date(nextMeetingAt), "EEEE d MMMM 'kl' HH:mm", { locale: sv });
-                      const msgContent = `Jag har uppdaterat tid för vårt nästa State of the Union-samtal: ${formatted}`;
+                      const formatted = format(new Date(plannedNextMeetingAt), "EEEE d MMMM 'kl' HH:mm", { locale: sv });
+                      const msgContent = `Jag har satt nästa State of the Union-samtal (efter detta möte) till ${formatted}`;
                       await supabase.from("messages").insert({
                         couple_id: profile!.couple_id!,
                         sender_id: user.id,
                         content: msgContent,
                         type: "system",
                       });
-                      sendPushToPartner(profile!.couple_id!, user.id, "Nytt mötesdatum", msgContent, "message");
+                      sendPushToPartner(profile!.couple_id!, user.id, "Planerat mötesdatum", msgContent, "message");
                     }
                   }
                 }}
@@ -753,9 +752,9 @@ export default function WeeklyConversation() {
                 Spara tid
               </Button>
             </div>
-            {nextMeetingAt && (
+            {plannedNextMeetingAt && (
               <p className="text-xs text-muted-foreground mt-1">
-                {format(new Date(nextMeetingAt), "EEEE d MMMM 'kl' HH:mm", { locale: sv })}
+                {format(new Date(plannedNextMeetingAt), "EEEE d MMMM 'kl' HH:mm", { locale: sv })}
               </p>
             )}
           </div>
