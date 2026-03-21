@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, Brain, Users, Compass, Sparkles, Loader2 } from "lucide-react";
+import { Heart, Brain, Users, Compass, Sparkles, Loader2, Sun } from "lucide-react";
 import InfoButton from "@/components/InfoButton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -168,6 +168,42 @@ export default function Evaluate() {
         markedDates={markedDates}
       />
 
+      {/* Idag – behov & vilja */}
+      <Card className="rounded-[10px] border-none shadow-hamnen">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-lg font-serif">
+            <Sun className="w-5 h-5 text-primary" strokeWidth={1.5} />
+            Idag
+            <InfoButton title="Behov & Vilja" description="Att lära känna sina behov är ett av de viktigaste stegen mot ett påfyllt liv. Behov handlar om vad du faktiskt behöver för att må bra – vila, närhet, gränser. Vilja handlar om vad du längtar efter och drömmer om. När du blir tydlig med skillnaden kan du börja ta hand om dig själv på riktigt, kommunicera ärligt med din partner, och skapa ett liv som inspirerar dig. Det är ett stort steg – och det börjar med medvetenhet." />
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Input
+            placeholder="Vad behöver jag idag? (max 120 tecken)"
+            maxLength={120}
+            value={needToday}
+            onChange={(e) => setNeedToday(e.target.value)}
+            className="rounded-lg border-border/30 bg-secondary/30 text-sm"
+          />
+          <Input
+            placeholder="Vad vill jag idag? (max 120 tecken)"
+            maxLength={120}
+            value={wantToday}
+            onChange={(e) => setWantToday(e.target.value)}
+            className="rounded-lg border-border/30 bg-secondary/30 text-sm"
+          />
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleSubmit}
+            disabled={loading}
+            className="rounded-[10px] w-full"
+          >
+            {loading ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Sparar...</> : "Spara"}
+          </Button>
+        </CardContent>
+      </Card>
+
       {AREAS.map((area) => {
         const Icon = area.icon;
         return (
@@ -205,29 +241,6 @@ export default function Evaluate() {
           </Card>
         );
       })}
-
-      {/* Need & Want */}
-      <Card className="rounded-[10px] border-none shadow-hamnen">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-serif">Idag</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Input
-            placeholder="Vad behöver jag idag? (max 120 tecken)"
-            maxLength={120}
-            value={needToday}
-            onChange={(e) => setNeedToday(e.target.value)}
-            className="rounded-lg border-border/30 bg-secondary/30 text-sm"
-          />
-          <Input
-            placeholder="Vad vill jag idag? (max 120 tecken)"
-            maxLength={120}
-            value={wantToday}
-            onChange={(e) => setWantToday(e.target.value)}
-            className="rounded-lg border-border/30 bg-secondary/30 text-sm"
-          />
-        </CardContent>
-      </Card>
 
       <Button onClick={handleSubmit} disabled={loading} className="w-full rounded-[12px]" size="lg">
         {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sparar...</> : hasExisting ? "Uppdatera utvärdering" : "Spara utvärdering"}
