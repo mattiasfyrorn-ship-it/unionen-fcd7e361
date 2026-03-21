@@ -60,6 +60,7 @@ export default function WeeklyConversation() {
   const [intention, setIntention] = useState("");
   const [checkoutFeeling, setCheckoutFeeling] = useState("");
   const [partnerLearning, setPartnerLearning] = useState("");
+  const [loveAction, setLoveAction] = useState("");
 
   const [partnerEntry, setPartnerEntry] = useState<any>(null);
   const [meetingStarted, setMeetingStarted] = useState(false);
@@ -140,6 +141,7 @@ export default function WeeklyConversation() {
         setIntention((myEntry as any).intention || "");
         setCheckoutFeeling((myEntry as any).checkout_feeling || "");
         setPartnerLearning((myEntry as any).partner_learning || "");
+        setLoveAction((myEntry as any).love_action || "");
         setMeetingConfirmed((myEntry as any).meeting_confirmed || false);
       }
 
@@ -230,6 +232,7 @@ export default function WeeklyConversation() {
       intention: intention || null,
       checkout_feeling: checkoutFeeling || null,
       partner_learning: partnerLearning || null,
+      love_action: loveAction || null,
     };
 
     let error;
@@ -286,6 +289,13 @@ export default function WeeklyConversation() {
         (partnerEntry?.logistics as Logistics)?.who,
         (partnerEntry?.logistics as Logistics)?.needs,
       ].filter(Boolean) as string[],
+    },
+    {
+      key: "love_action",
+      title: "Vad kan jag göra för att du ska känna dig älskad?",
+      icon: <Heart className="w-5 h-5 text-primary" />,
+      myContent: loveAction ? [loveAction] : [],
+      partnerContent: (partnerEntry as any)?.love_action ? [(partnerEntry as any).love_action] : [],
     },
     {
       key: "intention",
@@ -478,6 +488,25 @@ export default function WeeklyConversation() {
           State of the Union – förbered och genomför ert veckosamtal
           <InfoButton title="Veckosamtal" description="Veckosamtalet (State of the Union) är ett strukturerat möte där ni sammanfattar veckan, delar uppskattningar, tar upp frågor och sätter riktning framåt. Forskning visar att par som regelbundet checkar in med varandra förebygger att små irritationer blir stora konflikter." />
         </p>
+        {nextMeetingAt && (
+          <div className="mt-2 flex items-center gap-2 text-sm">
+            <CalendarDays className="w-4 h-4 text-primary" />
+            <span className="text-foreground">
+              Nästa samtal: <span className="font-medium">{format(new Date(nextMeetingAt), "EEEE d MMMM 'kl' HH:mm", { locale: sv })}</span>
+            </span>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-xs h-6 px-2"
+              onClick={() => {
+                const el = document.getElementById("next-meeting-field");
+                if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+              }}
+            >
+              Ändra
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Start meeting button */}
@@ -594,6 +623,28 @@ export default function WeeklyConversation() {
         </CardContent>
       </Card>
 
+      {/* Love action */}
+      <Card className="rounded-[10px] border-none shadow-hamnen">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Heart className="w-5 h-5 text-accent" />
+            Vad kan jag göra nästa vecka för att du ska känna dig älskad?
+            <InfoButton title="Känn dig älskad" description="Avsluta samtalet genom att dela en sak din partner kan göra för att du ska känna er mer sammankopplade kommande vecka. Var specifik och positiv, till exempel: 'En sak som skulle hjälpa mig att känna mig mer älskad kommande vecka är om vi spenderade lite tid med att mysa i sängen på lördagsmorgonen.'" />
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">Dela en specifik, positiv sak din partner kan göra för att ni ska känna er mer sammankopplade kommande vecka</p>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            placeholder="En sak som skulle hjälpa mig att känna mig mer älskad..."
+            value={loveAction}
+            onChange={(e) => setLoveAction(e.target.value)}
+            className="bg-muted/50 border-border resize-none text-sm"
+            rows={2}
+            disabled={ready}
+          />
+        </CardContent>
+      </Card>
+
       {/* Logistics */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
@@ -609,7 +660,7 @@ export default function WeeklyConversation() {
           <Input placeholder="Speciella behov att ta hänsyn till" value={logistics.needs || ""} onChange={(e) => setLogistics(prev => ({ ...prev, needs: e.target.value }))} className="bg-muted/50 border-border text-sm" disabled={ready} />
 
           {/* Next SOTU meeting */}
-          <div className="pt-2 border-t border-border/30">
+          <div id="next-meeting-field" className="pt-2 border-t border-border/30">
             <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
               <Clock className="w-3.5 h-3.5" /> Nästa State of the Union
             </p>
@@ -734,6 +785,7 @@ export default function WeeklyConversation() {
                       )}
                       {entry.takeaway && <p><strong>Takeaway:</strong> {entry.takeaway}</p>}
                       {(entry as any).intention && <p><strong>Intention:</strong> {(entry as any).intention}</p>}
+                      {(entry as any).love_action && <p><strong>Känn dig älskad:</strong> {(entry as any).love_action}</p>}
                       {(entry as any).partner_learning && <p><strong>Lärdom om partner:</strong> {(entry as any).partner_learning}</p>}
                       {(entry as any).checkout_feeling && <p><strong>Känsla:</strong> {(entry as any).checkout_feeling}</p>}
                       {(entry as any).meeting_notes && Object.entries((entry as any).meeting_notes as MeetingNotes).filter(([, v]) => v).length > 0 && (

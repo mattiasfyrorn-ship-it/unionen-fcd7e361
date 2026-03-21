@@ -1,0 +1,1 @@
+ALTER TABLE public.weekly_entries ADD COLUMN love_action text;
