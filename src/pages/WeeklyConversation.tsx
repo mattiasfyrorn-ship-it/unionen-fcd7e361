@@ -71,6 +71,8 @@ export default function WeeklyConversation() {
   const [expandedArchive, setExpandedArchive] = useState<string | null>(null);
   const [archiveEntries, setArchiveEntries] = useState<Record<string, any[]>>({});
   const [nextMeetingAt, setNextMeetingAt] = useState<string>("");
+  const [plannedNextMeetingAt, setPlannedNextMeetingAt] = useState<string>("");
+  const [editingHeaderDate, setEditingHeaderDate] = useState(false);
   const hasCoupleId = !!profile?.couple_id;
 
   useEffect(() => {
