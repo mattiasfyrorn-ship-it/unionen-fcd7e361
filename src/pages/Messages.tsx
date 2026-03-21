@@ -142,6 +142,7 @@ export default function Messages() {
         {messages.map((msg) => {
           const isMine = msg.sender_id === user?.id;
           const isRepairQuick = msg.type === "repair_quick";
+          const isRepairFull = msg.type === "repair";
           const isSystem = msg.type === "system";
 
           return (
