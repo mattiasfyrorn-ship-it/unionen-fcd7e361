@@ -456,43 +456,7 @@ export default function WeeklyConversation() {
         </Button>
       )}
 
-      {/* Archive */}
-      {archive.length > 0 && (
-        <Collapsible>
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1">
-              <CalendarDays className="w-4 h-4" /> Tidigare veckosamtal ({archive.length})
-              <ChevronDown className="w-3 h-3" />
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-2 mt-2">
-            {archive.map((conv) => (
-              <Card key={conv.id} className="bg-muted/30 border-border/30">
-                <CardHeader className="pb-1 pt-3 px-4 cursor-pointer" onClick={() => loadArchiveEntries(conv.id)}>
-                  <CardTitle className="text-sm flex items-center justify-between">
-                    <span>Vecka {conv.week_start}</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${expandedArchive === conv.id ? "rotate-180" : ""}`} />
-                  </CardTitle>
-                </CardHeader>
-                {expandedArchive === conv.id && archiveEntries[conv.id] && (
-                  <CardContent className="space-y-2 text-xs text-muted-foreground">
-                    {archiveEntries[conv.id].map((entry) => (
-                      <div key={entry.id} className="space-y-1 border-t border-border/30 pt-2">
-                        <p className="font-medium text-foreground">{entry.user_id === user?.id ? "Du" : "Partner"}</p>
-                        {entry.appreciations?.length > 0 && <p><strong>Uppskattningar:</strong> {entry.appreciations.join(", ")}</p>}
-                        {entry.wins?.length > 0 && <p><strong>Bra:</strong> {entry.wins.join(", ")}</p>}
-                        {entry.takeaway && <p><strong>Takeaway:</strong> {entry.takeaway}</p>}
-                        {(entry as any).intention && <p><strong>Intention:</strong> {(entry as any).intention}</p>}
-                        {(entry as any).checkout_feeling && <p><strong>Känsla:</strong> {(entry as any).checkout_feeling}</p>}
-                      </div>
-                    ))}
-                  </CardContent>
-                )}
-              </Card>
-            ))}
-          </CollapsibleContent>
-        </Collapsible>
-      )}
+
 
       {/* Status */}
       <div className="flex items-center gap-3 text-sm">
