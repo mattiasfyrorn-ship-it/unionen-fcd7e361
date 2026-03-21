@@ -50,7 +50,7 @@ export default function Messages() {
         .eq("couple_id", profile.couple_id!)
         .neq("sender_id", user.id)
         .eq("read", false)
-        .then(() => {});
+        .then(() => { clearAppBadge(); });
     }
 
     // Realtime subscription

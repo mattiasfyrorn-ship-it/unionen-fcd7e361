@@ -25,7 +25,11 @@ self.addEventListener('push', (event) => {
     };
 
     event.waitUntil(
-      self.registration.showNotification(data.title || 'Hamnen', options)
+      self.registration.showNotification(data.title || 'Hamnen', options).then(() => {
+        if (self.navigator && self.navigator.setAppBadge) {
+          self.navigator.setAppBadge(1);
+        }
+      })
     );
   } catch (e) {
     const text = event.data.text();
