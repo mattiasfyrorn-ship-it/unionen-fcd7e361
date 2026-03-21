@@ -491,25 +491,69 @@ export default function WeeklyConversation() {
           State of the Union – förbered och genomför ert veckosamtal
           <InfoButton title="Veckosamtal" description="Veckosamtalet (State of the Union) är ett strukturerat möte där ni sammanfattar veckan, delar uppskattningar, tar upp frågor och sätter riktning framåt. Forskning visar att par som regelbundet checkar in med varandra förebygger att små irritationer blir stora konflikter." />
         </p>
-        {nextMeetingAt && (
-          <div className="mt-2 flex items-center gap-2 text-sm">
+        <div className="mt-2 flex flex-col gap-2">
+          <div className="flex items-center gap-2 text-sm">
             <CalendarDays className="w-4 h-4 text-primary" />
-            <span className="text-foreground">
-              Nästa samtal: <span className="font-medium">{format(new Date(nextMeetingAt), "EEEE d MMMM 'kl' HH:mm", { locale: sv })}</span>
-            </span>
+            {nextMeetingAt ? (
+              <span className="text-foreground">
+                Nästa samtal: <span className="font-medium">{format(new Date(nextMeetingAt), "EEEE d MMMM 'kl' HH:mm", { locale: sv })}</span>
+              </span>
+            ) : (
+              <span className="text-muted-foreground">Inget samtal planerat</span>
+            )}
             <Button
               size="sm"
               variant="ghost"
               className="text-xs h-6 px-2"
-              onClick={() => {
-                const el = document.getElementById("next-meeting-field");
-                if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-              }}
+              onClick={() => setEditingHeaderDate(!editingHeaderDate)}
             >
-              Ändra
+              {nextMeetingAt ? "Ändra" : "Sätt tid"}
             </Button>
           </div>
-        )}
+          {editingHeaderDate && (
+            <div className="flex gap-2 items-center ml-6">
+              <Input
+                type="datetime-local"
+                value={nextMeetingAt ? (nextMeetingAt.includes("T") ? nextMeetingAt.slice(0, 16) : nextMeetingAt) : ""}
+                onChange={(e) => setNextMeetingAt(e.target.value)}
+                className="bg-muted/50 border-border text-sm w-auto"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!nextMeetingAt}
+                onClick={async () => {
+                  if (!conversationId) return;
+                  const isoDate = new Date(nextMeetingAt).toISOString();
+                  const { error } = await supabase
+                    .from("weekly_conversations")
+                    .update({ next_meeting_at: isoDate } as any)
+                    .eq("id", conversationId);
+                  if (error) {
+                    toast({ title: "Fel", description: error.message, variant: "destructive" });
+                  } else {
+                    setEditingHeaderDate(false);
+                    toast({ title: "Sparat! 📅" });
+                    if (hasCoupleId && user) {
+                      const formatted = format(new Date(nextMeetingAt), "EEEE d MMMM 'kl' HH:mm", { locale: sv });
+                      const msgContent = `Jag har ändrat datum för nästa State of the Union-samtal till ${formatted}`;
+                      await supabase.from("messages").insert({
+                        couple_id: profile!.couple_id!,
+                        sender_id: user.id,
+                        content: msgContent,
+                        type: "system",
+                      });
+                      sendPushToPartner(profile!.couple_id!, user.id, "Nytt mötesdatum", msgContent, "message");
+                    }
+                  }
+                }}
+                className="text-xs"
+              >
+                Spara
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Start meeting button */}
