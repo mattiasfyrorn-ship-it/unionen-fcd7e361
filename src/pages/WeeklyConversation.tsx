@@ -660,7 +660,7 @@ export default function WeeklyConversation() {
           <Input placeholder="Speciella behov att ta hänsyn till" value={logistics.needs || ""} onChange={(e) => setLogistics(prev => ({ ...prev, needs: e.target.value }))} className="bg-muted/50 border-border text-sm" disabled={ready} />
 
           {/* Next SOTU meeting */}
-          <div className="pt-2 border-t border-border/30">
+          <div id="next-meeting-field" className="pt-2 border-t border-border/30">
             <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
               <Clock className="w-3.5 h-3.5" /> Nästa State of the Union
             </p>
