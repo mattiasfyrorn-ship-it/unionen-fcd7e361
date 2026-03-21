@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from "react-r
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import { refreshPushSubscription } from "@/lib/pushNotifications";
+import { updateAppBadge } from "@/lib/appBadge";
+import { supabase } from "@/integrations/supabase/client";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Evaluate from "./pages/Evaluate";
