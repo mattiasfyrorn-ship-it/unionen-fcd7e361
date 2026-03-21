@@ -164,6 +164,12 @@ export default function Messages() {
                     <span className="text-xs text-primary font-medium">Reparationsförsök</span>
                   </div>
                 )}
+                {isRepairFull && (
+                  <div className="flex items-center gap-1 mb-1">
+                    <Heart className="w-3 h-3 text-primary" />
+                    <span className="text-xs text-primary font-medium">Jag vill reparera</span>
+                  </div>
+                )}
                 <p>{msg.content}</p>
                 {isRepairQuick && !isMine && (
                   <div className="flex gap-2 mt-2 flex-wrap">
