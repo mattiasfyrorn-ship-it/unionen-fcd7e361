@@ -99,6 +99,46 @@ export default function Evaluate() {
   useEffect(() => { loadForDay(); }, [loadForDay]);
   useEffect(() => { loadMarkedDates(); }, [loadMarkedDates]);
 
+  // Load reflections
+  const loadReflections = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("reflections")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    if (data) setReflections(data);
+  }, [user]);
+
+  useEffect(() => { loadReflections(); }, [loadReflections]);
+
+  const handleSaveReflection = async () => {
+    if (!user || !profile || !reflectionText.trim()) return;
+    setReflectionSaving(true);
+    const { error } = await supabase.from("reflections").insert({
+      user_id: user.id,
+      couple_id: profile.couple_id || null,
+      content: reflectionText.trim(),
+    } as any);
+    if (error) {
+      toast({ title: "Fel", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Sparat!", description: "Din reflektion är sparad." });
+      setReflectionText("");
+      loadReflections();
+    }
+    setReflectionSaving(false);
+  };
+
+  const handleDeleteReflection = async (id: string) => {
+    const { error } = await supabase.from("reflections").delete().eq("id", id);
+    if (error) {
+      toast({ title: "Fel", description: error.message, variant: "destructive" });
+    } else {
+      loadReflections();
+    }
+  };
+
   useEffect(() => {
     if (!user) return;
     const fetchGraph = async () => {
