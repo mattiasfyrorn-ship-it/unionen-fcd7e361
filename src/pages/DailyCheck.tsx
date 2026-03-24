@@ -218,8 +218,8 @@ export default function DailyCheck() {
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base font-serif">
             <Map className="w-5 h-5 text-primary" strokeWidth={1.5} />
-            Love Map
-            <InfoButton title="Love Map" description="Love Maps handlar om att aktivt lära känna din partners inre värld – drömmar, rädslor, minnen och vardagstankar. Par som kontinuerligt uppdaterar sin karta över partnern har starkare relationer. Ställ frågan och lyssna nyfiket." />
+            Upptäck varandra
+            <InfoButton title="Upptäck varandra" description={"Att upptäcka varandra handlar om att aktivt lära känna din partners inre värld – deras drömmar, rädslor, minnen och vardagstankar.\n\nMånga tänker att vi \"lär känna\" varandra i början av en relation.\n\nMen i verkligheten förändras vi hela tiden.\n\nEn levande relation bygger på att du fortsätter upptäcka vem din partner är här och nu.\n\nNär ni slutar vara nyfikna på varandra börjar relationen långsamt stelna.\n\nSamtalen blir praktiska. Närheten minskar.\n\nGottman kallar det Love Maps och par som kontinuerligt uppdaterar sina Love Maps, har starkare band, mer förståelse och större motståndskraft i svåra stunder.\n\nStäll en fråga. Lyssna utan att avbryta.\n\nLåt svaret få överraska dig.\n\nDet är i den nyfikenheten relationen hålls levande."} />
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
