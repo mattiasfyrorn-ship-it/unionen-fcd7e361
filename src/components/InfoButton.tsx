@@ -32,7 +32,23 @@ export default function InfoButton({ title, description }: InfoButtonProps) {
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+            <div className="text-sm text-muted-foreground leading-relaxed space-y-2">
+              {description.split("\n\n").map((block, i) => {
+                const bullets = block.split("\n").filter(l => l.trim().startsWith("•"));
+                if (bullets.length > 0) {
+                  const intro = block.split("\n").filter(l => !l.trim().startsWith("•"));
+                  return (
+                    <div key={i}>
+                      {intro.filter(Boolean).map((line, j) => <p key={j}>{line.trim()}</p>)}
+                      <ul className="list-disc pl-5 space-y-0.5 mt-1">
+                        {bullets.map((b, j) => <li key={j}>{b.replace(/^•\s*/, "").trim()}</li>)}
+                      </ul>
+                    </div>
+                  );
+                }
+                return <p key={i}>{block.trim()}</p>;
+              })}
+            </div>
           </div>
         </div>
       )}
