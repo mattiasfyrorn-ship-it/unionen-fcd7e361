@@ -414,8 +414,14 @@ export default function Evaluate() {
           {/* Tidigare reflektioner */}
           {reflections.length > 0 && (
             <div className="pt-4 space-y-2">
-              <h4 className="text-sm font-medium text-muted-foreground">Tidigare reflektioner</h4>
-              {reflections.map((r) => {
+              <button
+                onClick={() => setShowReflections(!showReflections)}
+                className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors w-full"
+              >
+                {showReflections ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                Tidigare reflektioner ({reflections.length})
+              </button>
+              {showReflections && reflections.map((r) => {
                 const isExpanded = expandedReflection === r.id;
                 const isLong = r.content.length > 150;
                 return (
