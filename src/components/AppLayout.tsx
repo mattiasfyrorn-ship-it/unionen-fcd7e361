@@ -21,7 +21,7 @@ const DESKTOP_NAV = [
   { to: "/weekly", label: "Veckosamtal", icon: CalendarCheck },
   { to: "/repair", label: "Reparation", icon: Shield },
   { to: "/messages", label: "Meddelanden", icon: MessageCircle },
-  { to: "/pairing", label: "Partner", icon: Link2 },
+  
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
