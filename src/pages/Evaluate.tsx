@@ -41,6 +41,7 @@ export default function Evaluate() {
   const [hasExisting, setHasExisting] = useState(false);
   const [markedDates, setMarkedDates] = useState<string[]>([]);
   const [graphRange, setGraphRange] = useState("week");
+  const [showReflections, setShowReflections] = useState(false);
   const [graphData, setGraphData] = useState<{ week: string; total: number }[]>([]);
   const [insightsText, setInsightsText] = useState<string | null>(null);
   const [insightsMessage, setInsightsMessage] = useState<string | null>(null);
