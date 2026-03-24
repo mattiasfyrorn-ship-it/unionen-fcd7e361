@@ -276,19 +276,7 @@ export default function DailyCheck() {
           <CardTitle className="flex items-center gap-2 text-base font-serif">
             <ArrowRightLeft className="w-5 h-5 text-primary" strokeWidth={1.5} />
             Att vända sig mot varandra
-            <InfoButton title="Att vända sig mot varandra" description="Vänd dig emot handlar inte om att vara perfekt. Det handlar om att du aktivt tar kontakt med din partner och tränar på att vara öppen till partners initiativ.
-
-Det handlar om att bli medveten om dina val i små ögonblick.
-
-Varje gång du:
-• tar kontakt
-• svarar med öppenhet
-• eller stannar kvar trots motstånd
-…så bygger du trygghet i relationen.
-
-Och varje gång du märker att du drar dig undan har du fått syn på en utvecklingsmöjlighet. Det är där utvecklingen börjar.
-
-Varje initiativ och gensvar räknas." />
+            <InfoButton title="Att vända sig mot varandra" description={"Vänd dig emot handlar inte om att vara perfekt. Det handlar om att du aktivt tar kontakt med din partner och tränar på att vara öppen till partners initiativ.\n\nDet handlar om att bli medveten om dina val i små ögonblick.\n\nVarje gång du:\n• tar kontakt\n• svarar med öppenhet\n• eller stannar kvar trots motstånd\n…så bygger du trygghet i relationen.\n\nOch varje gång du märker att du drar dig undan har du fått syn på en utvecklingsmöjlighet. Det är där utvecklingen börjar.\n\nVarje initiativ och gensvar räknas."} />
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
