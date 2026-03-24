@@ -46,6 +46,12 @@ export default function Evaluate() {
   const [insightsMessage, setInsightsMessage] = useState<string | null>(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
 
+  // Reflection state
+  const [reflectionText, setReflectionText] = useState("");
+  const [reflectionSaving, setReflectionSaving] = useState(false);
+  const [reflections, setReflections] = useState<any[]>([]);
+  const [expandedReflection, setExpandedReflection] = useState<string | null>(null);
+
   const checkDate = format(selectedDate, "yyyy-MM-dd");
   const weekStart = getWeekStartFromDate(selectedDate);
 
