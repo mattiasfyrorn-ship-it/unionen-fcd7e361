@@ -542,6 +542,38 @@ export type Database = {
         }
         Relationships: []
       }
+      reflections: {
+        Row: {
+          content: string
+          couple_id: string | null
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          couple_id?: string | null
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          couple_id?: string | null
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reflections_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       repair_responses: {
         Row: {
           created_at: string
