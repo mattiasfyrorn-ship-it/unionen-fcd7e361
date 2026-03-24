@@ -371,6 +371,19 @@ export default function Evaluate() {
               {insightsText}
             </div>
           )}
+          {(insightsText || insightsMessage) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setInsightsText(null); setInsightsMessage(null); }}
+              className="text-xs text-muted-foreground"
+            >
+              Generera nya insikter
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Reflektera */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
