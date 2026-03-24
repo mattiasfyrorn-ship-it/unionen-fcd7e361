@@ -371,15 +371,67 @@ export default function Evaluate() {
               {insightsText}
             </div>
           )}
-          {(insightsText || insightsMessage) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => { setInsightsText(null); setInsightsMessage(null); }}
-              className="text-xs text-muted-foreground"
-            >
-              Generera nya insikter
-            </Button>
+      {/* Reflektera */}
+      <Card className="rounded-[10px] border-none shadow-hamnen">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-lg font-serif">
+            <PenLine className="w-5 h-5 text-primary" strokeWidth={1.5} />
+            Reflektera och samla insikter
+            <InfoButton title="Reflektera" description="Skriv fritt om dina tankar, känslor och observationer. Dina reflektioner analyseras över tid för att synliggöra mönster och trender – både om dig själv och om din relation." />
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Textarea
+            placeholder="Skriv din reflektion här..."
+            value={reflectionText}
+            onChange={(e) => setReflectionText(e.target.value)}
+            className="rounded-lg border-border/30 bg-secondary/30 resize-none min-h-[120px]"
+          />
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleSaveReflection}
+            disabled={reflectionSaving || !reflectionText.trim()}
+            className="rounded-[10px] w-full"
+          >
+            {reflectionSaving ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Sparar...</> : "Spara reflektion"}
+          </Button>
+
+          {/* Tidigare reflektioner */}
+          {reflections.length > 0 && (
+            <div className="pt-4 space-y-2">
+              <h4 className="text-sm font-medium text-muted-foreground">Tidigare reflektioner</h4>
+              {reflections.map((r) => {
+                const isExpanded = expandedReflection === r.id;
+                const isLong = r.content.length > 150;
+                return (
+                  <div key={r.id} className="bg-secondary/30 rounded-lg p-3 space-y-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(r.created_at), "d MMM yyyy, HH:mm")}
+                      </span>
+                      <button
+                        onClick={() => handleDeleteReflection(r.id)}
+                        className="text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">
+                      {isLong && !isExpanded ? r.content.slice(0, 150) + "..." : r.content}
+                    </p>
+                    {isLong && (
+                      <button
+                        onClick={() => setExpandedReflection(isExpanded ? null : r.id)}
+                        className="text-xs text-primary flex items-center gap-1 hover:underline"
+                      >
+                        {isExpanded ? <><ChevronUp className="w-3 h-3" /> Visa mindre</> : <><ChevronDown className="w-3 h-3" /> Läs hela</>}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           )}
         </CardContent>
       </Card>
