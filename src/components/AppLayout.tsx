@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Sparkles, MessageCircle, Link2, LogOut, User, CalendarCheck, Sun, Shield } from "lucide-react";
+import { BarChart3, Sparkles, MessageCircle, LogOut, User, CalendarCheck, Sun, Shield } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import hamnenLogo from "@/assets/hamnen-logo.png";
 
@@ -21,7 +21,7 @@ const DESKTOP_NAV = [
   { to: "/weekly", label: "Veckosamtal", icon: CalendarCheck },
   { to: "/repair", label: "Reparation", icon: Shield },
   { to: "/messages", label: "Meddelanden", icon: MessageCircle },
-  { to: "/pairing", label: "Partner", icon: Link2 },
+  
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
