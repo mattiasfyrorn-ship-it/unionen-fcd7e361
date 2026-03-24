@@ -270,13 +270,25 @@ export default function DailyCheck() {
         </CardContent>
       </Card>
 
-      {/* Card 3: Turn Toward */}
+      {/* Card 3: Att vända sig mot varandra */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base font-serif">
             <ArrowRightLeft className="w-5 h-5 text-primary" strokeWidth={1.5} />
-            Turn Toward
-            <InfoButton title="Turn Toward" description="'Turn Toward' betyder att du aktivt besvarar din partners försök att nå dig. Par som vänder sig mot varandras försök 86% av tiden har starka relationer. Varje litet gensvar räknas." />
+            Att vända sig mot varandra
+            <InfoButton title="Att vända sig mot varandra" description="Vänd dig emot handlar inte om att vara perfekt. Det handlar om att du aktivt tar kontakt med din partner och tränar på att vara öppen till partners initiativ.
+
+Det handlar om att bli medveten om dina val i små ögonblick.
+
+Varje gång du:
+• tar kontakt
+• svarar med öppenhet
+• eller stannar kvar trots motstånd
+…så bygger du trygghet i relationen.
+
+Och varje gång du märker att du drar dig undan har du fått syn på en utvecklingsmöjlighet. Det är där utvecklingen börjar.
+
+Varje initiativ och gensvar räknas." />
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -286,29 +298,29 @@ export default function DailyCheck() {
                 prev.includes(val) ? prev.filter(v => v !== val) : [...prev, val]
               );
             };
-            const score = turnTowardOptions.filter(v => v === "initiated" || v === "received_positively").length;
             return (
-              <>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Checkbox checked={turnTowardOptions.includes("initiated")} onCheckedChange={() => toggleOption("initiated")} id="tt-init" />
-                    <Label htmlFor="tt-init" className="text-sm">Tog initiativ</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox checked={turnTowardOptions.includes("received_positively")} onCheckedChange={() => toggleOption("received_positively")} id="tt-recv" />
-                    <Label htmlFor="tt-recv" className="text-sm">Tog emot initiativ positivt</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox checked={turnTowardOptions.includes("missed")} onCheckedChange={() => toggleOption("missed")} id="tt-miss" />
-                    <Label htmlFor="tt-miss" className="text-sm">Missade möjlighet</Label>
-                  </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Checkbox checked={turnTowardOptions.includes("initiated")} onCheckedChange={() => toggleOption("initiated")} id="tt-init" />
+                  <Label htmlFor="tt-init" className="text-sm">Jag tog initiativ till kontakt med min partner</Label>
                 </div>
-                <p className="text-xs text-muted-foreground">Poäng: {score}/2</p>
-              </>
+                <div className="flex items-center gap-2">
+                  <Checkbox checked={turnTowardOptions.includes("received_positively")} onCheckedChange={() => toggleOption("received_positively")} id="tt-recv" />
+                  <Label htmlFor="tt-recv" className="text-sm">Jag tog emot min partners initiativ med öppenhet</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox checked={turnTowardOptions.includes("stayed")} onCheckedChange={() => toggleOption("stayed")} id="tt-stay" />
+                  <Label htmlFor="tt-stay" className="text-sm">Jag valde att vända mig mot min partner även när en del av mig ville dra mig undan</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox checked={turnTowardOptions.includes("missed")} onCheckedChange={() => toggleOption("missed")} id="tt-miss" />
+                  <Label htmlFor="tt-miss" className="text-sm">Jag missade en möjlighet att vända mig mot min partner</Label>
+                </div>
+              </div>
             );
           })()}
           <Input
-            placeholder="Exempel (1 mening)"
+            placeholder="När & hur vände du dig mot eller drog du dig undan?"
             value={turnTowardExample}
             onChange={(e) => setTurnTowardExample(e.target.value)}
             className="rounded-lg border-border/30 bg-secondary/30 text-sm"
