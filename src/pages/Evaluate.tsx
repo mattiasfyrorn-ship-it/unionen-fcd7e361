@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, Brain, Users, Compass, Sparkles, Loader2, Sun, Lightbulb } from "lucide-react";
+import { Heart, Brain, Users, Compass, Sparkles, Loader2, Sun, Lightbulb, PenLine, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import InfoButton from "@/components/InfoButton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -45,6 +45,12 @@ export default function Evaluate() {
   const [insightsText, setInsightsText] = useState<string | null>(null);
   const [insightsMessage, setInsightsMessage] = useState<string | null>(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
+
+  // Reflection state
+  const [reflectionText, setReflectionText] = useState("");
+  const [reflectionSaving, setReflectionSaving] = useState(false);
+  const [reflections, setReflections] = useState<any[]>([]);
+  const [expandedReflection, setExpandedReflection] = useState<string | null>(null);
 
   const checkDate = format(selectedDate, "yyyy-MM-dd");
   const weekStart = getWeekStartFromDate(selectedDate);
@@ -92,6 +98,46 @@ export default function Evaluate() {
 
   useEffect(() => { loadForDay(); }, [loadForDay]);
   useEffect(() => { loadMarkedDates(); }, [loadMarkedDates]);
+
+  // Load reflections
+  const loadReflections = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("reflections")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    if (data) setReflections(data);
+  }, [user]);
+
+  useEffect(() => { loadReflections(); }, [loadReflections]);
+
+  const handleSaveReflection = async () => {
+    if (!user || !profile || !reflectionText.trim()) return;
+    setReflectionSaving(true);
+    const { error } = await supabase.from("reflections").insert({
+      user_id: user.id,
+      couple_id: profile.couple_id || null,
+      content: reflectionText.trim(),
+    } as any);
+    if (error) {
+      toast({ title: "Fel", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Sparat!", description: "Din reflektion är sparad." });
+      setReflectionText("");
+      loadReflections();
+    }
+    setReflectionSaving(false);
+  };
+
+  const handleDeleteReflection = async (id: string) => {
+    const { error } = await supabase.from("reflections").delete().eq("id", id);
+    if (error) {
+      toast({ title: "Fel", description: error.message, variant: "destructive" });
+    } else {
+      loadReflections();
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -334,6 +380,71 @@ export default function Evaluate() {
             >
               Generera nya insikter
             </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Reflektera */}
+      <Card className="rounded-[10px] border-none shadow-hamnen">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-lg font-serif">
+            <PenLine className="w-5 h-5 text-primary" strokeWidth={1.5} />
+            Reflektera och samla insikter
+            <InfoButton title="Reflektera" description="Skriv fritt om dina tankar, känslor och observationer. Dina reflektioner analyseras över tid för att synliggöra mönster och trender – både om dig själv och om din relation." />
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Textarea
+            placeholder="Skriv din reflektion här..."
+            value={reflectionText}
+            onChange={(e) => setReflectionText(e.target.value)}
+            className="rounded-lg border-border/30 bg-secondary/30 resize-none min-h-[120px]"
+          />
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleSaveReflection}
+            disabled={reflectionSaving || !reflectionText.trim()}
+            className="rounded-[10px] w-full"
+          >
+            {reflectionSaving ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Sparar...</> : "Spara reflektion"}
+          </Button>
+
+          {/* Tidigare reflektioner */}
+          {reflections.length > 0 && (
+            <div className="pt-4 space-y-2">
+              <h4 className="text-sm font-medium text-muted-foreground">Tidigare reflektioner</h4>
+              {reflections.map((r) => {
+                const isExpanded = expandedReflection === r.id;
+                const isLong = r.content.length > 150;
+                return (
+                  <div key={r.id} className="bg-secondary/30 rounded-lg p-3 space-y-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(r.created_at), "d MMM yyyy, HH:mm")}
+                      </span>
+                      <button
+                        onClick={() => handleDeleteReflection(r.id)}
+                        className="text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">
+                      {isLong && !isExpanded ? r.content.slice(0, 150) + "..." : r.content}
+                    </p>
+                    {isLong && (
+                      <button
+                        onClick={() => setExpandedReflection(isExpanded ? null : r.id)}
+                        className="text-xs text-primary flex items-center gap-1 hover:underline"
+                      >
+                        {isExpanded ? <><ChevronUp className="w-3 h-3" /> Visa mindre</> : <><ChevronDown className="w-3 h-3" /> Läs hela</>}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           )}
         </CardContent>
       </Card>
