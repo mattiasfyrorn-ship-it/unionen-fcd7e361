@@ -1,31 +1,45 @@
 
 
-## Plan: Klientbaserad daglig påminnelse + förbättrad felloggning
+## Plan: Ändra cron till var 15:e minut + fixa tidsfiltrering
 
-### Vad görs
+### Problem
+1. Cron-jobbet körs bara på hel timme (`0 * * * *`) — om en användare sätter påminnelse till 10:30 kommer den först vid 11:00.
+2. Tidsfiltret i edge-funktionen matchar bara inom en hel timme (`HH:00:00` till `HH:59:59`), vilket inte fungerar för 15-minutersintervall.
 
-**1. Klientbaserad daglig påminnelse i PushInitializer** (`src/App.tsx`)
+### Ändringar
 
-Ny `useEffect` som vid varje app-öppning:
-- Hämtar användarens `notification_preferences` (daily_reminder_enabled, daily_reminder_time)
-- Om påminnelse är aktiverad OCH klockan har passerat den inställda tiden idag:
-  - Kollar om `daily_checks` redan finns för idag → om ja, skippa
-  - Kollar `localStorage`-flagga `daily_reminder_shown_<datum>` → om redan visad, skippa
-  - Visar lokal notis via `registration.showNotification()` med titel "Relationskontot" och url `'/'`
-  - Sätter localStorage-flagga så den bara visas en gång per dag
+**1. Uppdatera cron-schemat till var 15:e minut**
+Kör SQL direkt (ej migration) för att ändra schemat:
+```sql
+SELECT cron.unschedule('daily-reminder-hourly');
 
-Detta fungerar som primär mekanism istället för den opålitliga pg_net-cron.
+SELECT cron.schedule(
+  'daily-reminder-every-15min',
+  '*/15 * * * *',
+  $$
+  SELECT net.http_post(
+    url:='https://ucgarzkamhrcihmcfsul.supabase.co/functions/v1/daily-reminder',
+    headers:='{"Content-Type": "application/json", "Authorization": "Bearer <anon_key>"}'::jsonb,
+    body:='{}'::jsonb
+  ) AS request_id;
+  $$
+);
+```
 
-**2. Förbättrad felloggning i sendPushToPartner** (`src/lib/pushNotifications.ts`)
+**2. Uppdatera tidsfiltret i edge-funktionen** (`supabase/functions/daily-reminder/index.ts`)
 
-- Logga `data` och `error` från `supabase.functions.invoke`
-- Visa `toast` vid fel så användaren ser om pushen misslyckades
+Ändra filtret så att det matchar ett 15-minutersfönster istället för en hel timme:
+- Beräkna aktuell tid i svensk tidszon (timme + minut)
+- Runda ner till närmaste 15-minutersblock (t.ex. 10:37 → 10:30)
+- Filtrera `daily_reminder_time` inom det 15-minutersfönstret (t.ex. 10:30:00 – 10:44:59)
+
+**3. Lägg till deduplicering** — kontrollera om användaren redan har gjort dagens check (`daily_checks`-tabellen) innan push skickas, så man inte får påminnelse i onödan.
 
 ### Tekniska detaljer
 
 **Filer som ändras:**
-- `src/App.tsx` — Ny useEffect i PushInitializer med lokal notis-logik
-- `src/lib/pushNotifications.ts` — Uppdatera `sendPushToPartner` med detaljerad loggning + toast vid fel
+- `supabase/functions/daily-reminder/index.ts` — nytt 15-min tidsfilter + deduplicering mot daily_checks
 
-**Inga databasändringar behövs.**
+**SQL (körs direkt, ej migration):**
+- Ta bort gammalt cron-jobb, skapa nytt med `*/15 * * * *`
 
