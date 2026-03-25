@@ -45,24 +45,35 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get current hour in Swedish time (CET/CEST)
+    // Get current time in Swedish timezone, rounded to 15-min window
     const now = new Date();
     const svTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Stockholm' }));
-    const currentHour = svTime.getHours().toString().padStart(2, '0') + ':00';
+    const hour = svTime.getHours();
+    const minute = svTime.getMinutes();
+    const windowStart = Math.floor(minute / 15) * 15;
+    const windowEnd = windowStart + 14;
 
-    // Find users with daily reminder enabled at this hour
+    const timeFrom = hour.toString().padStart(2, '0') + ':' + windowStart.toString().padStart(2, '0') + ':00';
+    const timeTo = hour.toString().padStart(2, '0') + ':' + windowEnd.toString().padStart(2, '0') + ':59';
+    const today = svTime.toISOString().split('T')[0];
+
+    console.log(`Checking window ${timeFrom} - ${timeTo}, date: ${today}`);
+
+    // Find users with daily reminder enabled in this 15-min window
     const { data: prefs } = await supabase
       .from('notification_preferences')
       .select('user_id')
       .eq('daily_reminder_enabled', true)
-      .gte('daily_reminder_time', currentHour + ':00')
-      .lt('daily_reminder_time', currentHour.replace(/:00$/, ':59') + ':59');
+      .gte('daily_reminder_time', timeFrom)
+      .lte('daily_reminder_time', timeTo);
 
     if (!prefs || prefs.length === 0) {
-      return new Response(JSON.stringify({ sent: 0, reason: 'no_users_at_this_hour' }), {
+      return new Response(JSON.stringify({ sent: 0, reason: 'no_users_in_window', window: `${timeFrom}-${timeTo}` }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    console.log(`Found ${prefs.length} users in window`);
 
     const payload = JSON.stringify({
       title: 'Relationskontot',
@@ -73,8 +84,22 @@ serve(async (req) => {
     });
 
     let totalSent = 0;
+    let skippedAlreadyDone = 0;
 
     for (const pref of prefs) {
+      // Deduplication: skip if user already completed today's check
+      const { data: existingCheck } = await supabase
+        .from('daily_checks')
+        .select('id')
+        .eq('user_id', pref.user_id)
+        .eq('check_date', today)
+        .limit(1);
+
+      if (existingCheck && existingCheck.length > 0) {
+        skippedAlreadyDone++;
+        continue;
+      }
+
       const { data: subs } = await supabase
         .from('push_subscriptions')
         .select('subscription')
@@ -86,6 +111,7 @@ serve(async (req) => {
         try {
           await webpush.sendNotification(sub.subscription, payload);
           totalSent++;
+          console.log(`Push sent to user ${pref.user_id}`);
         } catch (e: any) {
           console.error('Push error:', e.statusCode, e.body);
           if (e.statusCode === 404 || e.statusCode === 410) {
@@ -94,6 +120,8 @@ serve(async (req) => {
         }
       }
     }
+
+    console.log(`Done: sent=${totalSent}, skipped=${skippedAlreadyDone}`);
 
     return new Response(JSON.stringify({ sent: totalSent }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
