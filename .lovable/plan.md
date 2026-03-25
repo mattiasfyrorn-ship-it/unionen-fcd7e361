@@ -1,45 +1,56 @@
 
 
-## Plan: Ändra cron till var 15:e minut + fixa tidsfiltrering
+## Plan: Dagbaserad 90-dagarsresa (ersätter milstolpssystemet)
 
-### Problem
-1. Cron-jobbet körs bara på hel timme (`0 * * * *`) — om en användare sätter påminnelse till 10:30 kommer den först vid 11:00.
-2. Tidsfiltret i edge-funktionen matchar bara inom en hel timme (`HH:00:00` till `HH:59:59`), vilket inte fungerar för 15-minutersintervall.
+### Sammanfattning
+Byter ut det nuvarande milstolpe-baserade onboardingsystemet mot en dagbaserad 90-dagarsresa där användaren får ett nytt uppdrag varje dag. Varje dag har titel, kort beskrivning, fördjupningstext (visas i dialog) och en direktlänk till rätt funktion.
+
+### Hur vi bestämmer vilken dag användaren är på
+Använder `couples.created_at` (eller `profiles.created_at` om solo) som dag 1. Beräknar sedan `dayNumber = differens i dagar + 1`, capped till 90.
 
 ### Ändringar
 
-**1. Uppdatera cron-schemat till var 15:e minut**
-Kör SQL direkt (ej migration) för att ändra schemat:
-```sql
-SELECT cron.unschedule('daily-reminder-hourly');
+**1. Ny fil: `src/lib/journeyDays.ts`**
+- Exporterar en array med 90 dagars innehåll: `{ day, title, description, deepDive, requiresBoth, ctaLabel, ctaPath }`
+- Dag 1-30 fylls med innehållet du angett ovan
+- Dag 31-90 fylls med platshållarinnehåll (kan fyllas på senare)
+- CTA-vägar mappas till befintliga routes:
+  - Bjud in partner → `/pairing`
+  - Upptäck varandra / Ge uppskattning / Vänd dig mot / Närvaro / Konto → `/daily`
+  - Reflektion / Energi → `/evaluate`
+  - Samtal / Planera → `/weekly`
+  - Påverkan → `/daily`
+  - Valfri → `/daily`
 
-SELECT cron.schedule(
-  'daily-reminder-every-15min',
-  '*/15 * * * *',
-  $$
-  SELECT net.http_post(
-    url:='https://ucgarzkamhrcihmcfsul.supabase.co/functions/v1/daily-reminder',
-    headers:='{"Content-Type": "application/json", "Authorization": "Bearer <anon_key>"}'::jsonb,
-    body:='{}'::jsonb
-  ) AS request_id;
-  $$
-);
-```
+**2. Ny hook: `src/hooks/useJourneyDay.ts`**
+- Ersätter `useOnboarding` som datakälla för bannern
+- Hämtar `couples.created_at` via profil/couple
+- Beräknar aktuell dag (1-90)
+- Hämtar öppna reparationer (repairs med status `in_progress` för paret)
+- Returnerar: `{ loading, dayNumber, totalDays: 90, todayStep, hasOpenRepairs, openRepairCount }`
 
-**2. Uppdatera tidsfiltret i edge-funktionen** (`supabase/functions/daily-reminder/index.ts`)
+**3. Uppdatera `src/components/OnboardingBanner.tsx`**
+- Använder `useJourneyDay` istället för `useOnboarding`
+- Visar dagens uppdrag med titel + kort beskrivning
+- "Fördjupning"-knapp som öppnar en `Dialog` med fördjupningstexten
+- Direktlänk (CTA-knapp) till rätt sida
+- Progressbar visar dag X av 90
+- Om öppna reparationer finns: visar reparationsbanner på samma plats (som idag med override)
 
-Ändra filtret så att det matchar ett 15-minutersfönster istället för en hel timme:
-- Beräkna aktuell tid i svensk tidszon (timme + minut)
-- Runda ner till närmaste 15-minutersblock (t.ex. 10:37 → 10:30)
-- Filtrera `daily_reminder_time` inom det 15-minutersfönstret (t.ex. 10:30:00 – 10:44:59)
+**4. Ta bort gamla filer** (kan behållas men avkopplas)
+- `src/lib/onboardingSteps.ts` — inte längre importerad av bannern
+- `src/hooks/useOnboarding.ts` — ersätts av `useJourneyDay`
 
-**3. Lägg till deduplicering** — kontrollera om användaren redan har gjort dagens check (`daily_checks`-tabellen) innan push skickas, så man inte får påminnelse i onödan.
+### Databasändringar
+Inga. Dag beräknas från befintlig `couples.created_at`. Inga nya tabeller behövs.
 
-### Tekniska detaljer
+### Dag 1 speciallogik
+- Om partnern inte är kopplad: visa "Bjud in din partner" i uppdraget
+- Om partnern redan är kopplad: hoppa över inbjudningsdelen, visa resten (notiser etc.)
 
-**Filer som ändras:**
-- `supabase/functions/daily-reminder/index.ts` — nytt 15-min tidsfilter + deduplicering mot daily_checks
-
-**SQL (körs direkt, ej migration):**
-- Ta bort gammalt cron-jobb, skapa nytt med `*/15 * * * *`
+### Filer som skapas/ändras
+- `src/lib/journeyDays.ts` — **ny**, all dagsdata
+- `src/hooks/useJourneyDay.ts` — **ny**, hook
+- `src/components/OnboardingBanner.tsx` — **omskriven**, ny layout med dialog
+- `src/hooks/useOnboarding.ts` — **tas bort eller avkopplas**
 
