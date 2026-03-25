@@ -71,7 +71,7 @@ export default function OnboardingBanner() {
           <div className="flex items-center gap-2">
             <Compass className="w-5 h-5 text-primary" />
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-              Dag {dayNumber} av {totalDays} – Bygg er hamn
+              Nästa steg för att bygga er hamn
             </p>
           </div>
 
