@@ -123,7 +123,7 @@ serve(async (req) => {
 
     console.log(`Done: sent=${totalSent}, skipped=${skippedAlreadyDone}`);
 
-    return new Response(JSON.stringify({ sent: totalSent }), {
+    return new Response(JSON.stringify({ sent: totalSent, skipped: skippedAlreadyDone, window: `${timeFrom}-${timeTo}` }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
