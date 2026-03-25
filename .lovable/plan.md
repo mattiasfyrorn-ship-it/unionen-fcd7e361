@@ -1,8 +1,13 @@
 
 
-## Plan: Ta bort Partner-länken från desktop-navigeringen
+## Plan: Ändra daglig påminnelse-URL till Översikt
+
+### Problem
+Dagliga påminnelsenotiser skickar användaren till `/daily` (Relationskontot). Användaren vill istället hamna på `/` (Översikt) så de ser det dagliga uppdraget.
 
 ### Ändring
 
-**`src/components/AppLayout.tsx`** — Ta bort objektet `{ to: "/pairing", label: "Partner", icon: Link2 }` från `DESKTOP_NAV`-arrayen. Partnerkoppling nås redan via kontosidan. Ta även bort `Link2`-importen om den inte längre används.
+**`supabase/functions/daily-reminder/index.ts`** — Ändra `url: '/daily'` till `url: '/'` i push-payloaden (rad ~69).
+
+En enda rad, en fil. Inga andra ändringar behövs — Service Worker läser redan `data.url` och navigerar dit.
 
