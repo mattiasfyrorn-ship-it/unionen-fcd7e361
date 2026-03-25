@@ -47,8 +47,13 @@ export function useJourneyDay(): JourneyDayState {
       }
 
       if (!startDate) {
-        // Fallback to profile created_at
-        startDate = new Date(profile?.created_at || new Date());
+        // Fallback: fetch profile created_at from DB
+        const { data: profileRow } = await supabase
+          .from("profiles")
+          .select("created_at")
+          .eq("user_id", user.id)
+          .single();
+        startDate = new Date(profileRow?.created_at || new Date());
       }
 
       const dayNumber = Math.min(
