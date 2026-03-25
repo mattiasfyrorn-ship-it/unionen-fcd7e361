@@ -69,7 +69,7 @@ serve(async (req) => {
       body: 'Dags att fylla i Relationskontot! ❤️',
       icon: '/icon-192.png',
       badge: '/icon-192.png',
-      data: { type: 'daily_reminder', url: '/daily' },
+      data: { type: 'daily_reminder', url: '/' },
     });
 
     let totalSent = 0;
