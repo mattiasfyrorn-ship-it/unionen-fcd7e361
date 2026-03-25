@@ -32,6 +32,67 @@ function PushInitializer() {
     }
   }, [user?.id]);
 
+  // Client-side daily reminder fallback
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const checkDailyReminder = async () => {
+      try {
+        // Check notification permission
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+        if (!('serviceWorker' in navigator)) return;
+
+        // Fetch user's notification preferences
+        const { data: prefs } = await supabase
+          .from('notification_preferences')
+          .select('daily_reminder_enabled, daily_reminder_time')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (!prefs?.daily_reminder_enabled) return;
+
+        const now = new Date();
+        const today = now.toISOString().slice(0, 10);
+
+        // Check localStorage flag
+        const flagKey = `daily_reminder_shown_${today}`;
+        if (localStorage.getItem(flagKey)) return;
+
+        // Check if reminder time has passed
+        const [hours, minutes] = (prefs.daily_reminder_time || '08:00').split(':').map(Number);
+        const reminderTime = new Date(now);
+        reminderTime.setHours(hours, minutes, 0, 0);
+        if (now < reminderTime) return;
+
+        // Check if daily check already done today
+        const { count } = await supabase
+          .from('daily_checks')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('check_date', today);
+
+        if ((count ?? 0) > 0) return;
+
+        // Show local notification
+        const registration = await navigator.serviceWorker.ready;
+        await registration.showNotification('Dags för dagens uppdrag 💛', {
+          body: 'Öppna Hamnen och gör dagens relationskonto-check.',
+          icon: '/icon-192.png',
+          badge: '/icon-192.png',
+          data: { url: '/' },
+          requireInteraction: true,
+        } as NotificationOptions);
+
+        localStorage.setItem(flagKey, '1');
+        console.log('[Push] Client-side daily reminder shown');
+      } catch (err) {
+        console.error('[Push] Client-side daily reminder error:', err);
+      }
+    };
+
+    checkDailyReminder();
+  }, [user?.id]);
+
   // Badge counter for unread messages
   useEffect(() => {
     if (!user?.id || !profile?.couple_id) return;

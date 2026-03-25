@@ -203,7 +203,7 @@ export async function sendPushToPartner(
   type: 'message' | 'repair'
 ): Promise<void> {
   try {
-    await supabase.functions.invoke('send-push-notification', {
+    const { data, error } = await supabase.functions.invoke('send-push-notification', {
       body: {
         action: 'send',
         couple_id: coupleId,
@@ -213,8 +213,22 @@ export async function sendPushToPartner(
         type,
       },
     });
+
+    if (error) {
+      console.error('[Push] Edge function error:', error);
+      const { toast } = await import('@/hooks/use-toast');
+      toast({ title: 'Push-notis kunde inte skickas', description: 'Försök igen senare.', variant: 'destructive' });
+      return;
+    }
+
+    console.log('[Push] Send result:', data);
+    if (data?.sent === 0 && data?.reason) {
+      console.warn('[Push] Not delivered, reason:', data.reason);
+    }
   } catch (err) {
     console.error('[Push] Failed to send push notification:', err);
+    const { toast } = await import('@/hooks/use-toast');
+    toast({ title: 'Push-notis kunde inte skickas', description: 'Ett oväntat fel uppstod.', variant: 'destructive' });
   }
 }
 
