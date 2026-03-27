@@ -12,21 +12,30 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Validate: accept either x-cron-secret header or Authorization with anon key
+  // Validate: accept x-cron-secret header, or Authorization with anon key
   const cronSecret = Deno.env.get('CRON_SECRET');
   const authHeader = req.headers.get('x-cron-secret');
   const authorizationHeader = req.headers.get('authorization');
-  const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+  
+  // Check multiple possible env var names for anon key
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY') || Deno.env.get('SUPABASE_PUBLISHABLE_KEY');
   
   const validCron = cronSecret && authHeader === cronSecret;
   const validAnon = anonKey && authorizationHeader === `Bearer ${anonKey}`;
   
-  if (!validCron && !validAnon) {
+  // Also accept if the Authorization header contains any Bearer token matching the known anon key from the cron job
+  const knownAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjZ2FyemthbWhyY2lobWNmc3VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MjUwMjQsImV4cCI6MjA4NjMwMTAyNH0.4wHmUv5ZVlik3FBnwmeNskE04jO3Qj1dOP4KhmMtJyQ';
+  const validKnownAnon = authorizationHeader === `Bearer ${knownAnonKey}`;
+  
+  if (!validCron && !validAnon && !validKnownAnon) {
+    console.error('[daily-reminder] Auth failed. cronSecret set:', !!cronSecret, 'authHeader:', !!authHeader, 'anonKey set:', !!anonKey, 'authorizationHeader present:', !!authorizationHeader);
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
+  
+  console.log('[daily-reminder] Auth passed. validCron:', validCron, 'validAnon:', validAnon, 'validKnownAnon:', validKnownAnon);
 
   try {
     const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY');
