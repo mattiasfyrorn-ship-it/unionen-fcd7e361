@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { getJourneyDay, type JourneyDay } from "@/lib/journeyDays";
-import { differenceInCalendarDays } from "date-fns";
 
 interface JourneyDayState {
   loading: boolean;
@@ -12,6 +11,8 @@ interface JourneyDayState {
   hasOpenRepairs: boolean;
   openRepairCount: number;
   isPaired: boolean;
+  completeCurrentDay: () => Promise<void>;
+  currentDayCompleted: boolean;
 }
 
 export function useJourneyDay(): JourneyDayState {
@@ -24,72 +25,84 @@ export function useJourneyDay(): JourneyDayState {
     hasOpenRepairs: false,
     openRepairCount: 0,
     isPaired: false,
+    completeCurrentDay: async () => {},
+    currentDayCompleted: false,
   });
+
+  const compute = useCallback(async () => {
+    if (!user) return;
+    const coupleId = profile?.couple_id || null;
+    const isPaired = !!coupleId;
+
+    // Get max completed day from journey_completions
+    const { data: completions } = await supabase
+      .from("journey_completions" as any)
+      .select("day_number")
+      .eq("user_id", user.id)
+      .order("day_number", { ascending: false })
+      .limit(1);
+
+    const maxCompleted = (completions as any)?.[0]?.day_number || 0;
+    const dayNumber = Math.min(90, maxCompleted + 1);
+    const currentDayCompleted = false; // current day is always the next uncompleted one
+
+    const todayStep = getJourneyDay(dayNumber);
+
+    // Check open repairs
+    let openRepairCount = 0;
+    if (coupleId) {
+      const { count } = await supabase
+        .from("repairs")
+        .select("id", { count: "exact", head: true })
+        .eq("couple_id", coupleId)
+        .eq("status", "in_progress");
+      openRepairCount = count || 0;
+    }
+
+    setState((prev) => ({
+      ...prev,
+      loading: false,
+      dayNumber,
+      totalDays: 90,
+      todayStep,
+      hasOpenRepairs: openRepairCount > 0,
+      openRepairCount,
+      isPaired,
+      currentDayCompleted,
+    }));
+  }, [user?.id, profile?.couple_id]);
+
+  const completeCurrentDay = useCallback(async () => {
+    if (!user) return;
+    const coupleId = profile?.couple_id || null;
+
+    // Get current day number
+    const { data: completions } = await supabase
+      .from("journey_completions" as any)
+      .select("day_number")
+      .eq("user_id", user.id)
+      .order("day_number", { ascending: false })
+      .limit(1);
+
+    const maxCompleted = (completions as any)?.[0]?.day_number || 0;
+    const currentDay = Math.min(90, maxCompleted + 1);
+
+    if (currentDay > 90) return;
+
+    await (supabase.from("journey_completions" as any) as any).insert({
+      user_id: user.id,
+      couple_id: coupleId,
+      day_number: currentDay,
+    });
+
+    // Recompute state
+    await compute();
+  }, [user?.id, profile?.couple_id, compute]);
 
   useEffect(() => {
     if (!user) return;
-    let cancelled = false;
-
-    const compute = async () => {
-      const coupleId = profile?.couple_id || null;
-      const isPaired = !!coupleId;
-
-      // Determine start date
-      let startDate: Date | null = null;
-
-      if (coupleId) {
-        const { data: couple } = await supabase
-          .from("couples")
-          .select("created_at")
-          .eq("id", coupleId)
-          .single();
-        if (couple) startDate = new Date(couple.created_at);
-      }
-
-      if (!startDate) {
-        // Fallback: fetch profile created_at from DB
-        const { data: profileRow } = await supabase
-          .from("profiles")
-          .select("created_at")
-          .eq("user_id", user.id)
-          .single();
-        startDate = new Date(profileRow?.created_at || new Date());
-      }
-
-      const dayNumber = Math.min(
-        90,
-        Math.max(1, differenceInCalendarDays(new Date(), startDate) + 1)
-      );
-
-      const todayStep = getJourneyDay(dayNumber);
-
-      // Check open repairs
-      let openRepairCount = 0;
-      if (coupleId) {
-        const { count } = await supabase
-          .from("repairs")
-          .select("id", { count: "exact", head: true })
-          .eq("couple_id", coupleId)
-          .eq("status", "in_progress");
-        openRepairCount = count || 0;
-      }
-
-      if (!cancelled) {
-        setState({
-          loading: false,
-          dayNumber,
-          totalDays: 90,
-          todayStep,
-          hasOpenRepairs: openRepairCount > 0,
-          openRepairCount,
-          isPaired,
-        });
-      }
-    };
-
     compute();
-    return () => { cancelled = true; };
-  }, [user?.id, profile?.couple_id]);
+  }, [user?.id, profile?.couple_id, compute]);
 
-  return state;
+  return { ...state, completeCurrentDay };
 }

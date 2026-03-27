@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
-import { Compass, Shield, BookOpen } from "lucide-react";
+import { Compass, Shield, BookOpen, CheckCircle2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function OnboardingBanner() {
   const {
@@ -23,9 +24,12 @@ export default function OnboardingBanner() {
     hasOpenRepairs,
     openRepairCount,
     isPaired,
+    completeCurrentDay,
   } = useJourneyDay();
 
   const [deepDiveOpen, setDeepDiveOpen] = useState(false);
+  const [completing, setCompleting] = useState(false);
+  const { toast } = useToast();
 
   if (loading) return null;
 
@@ -61,7 +65,21 @@ export default function OnboardingBanner() {
   const ctaPath =
     todayStep.day === 1 && isPaired ? "/account" : todayStep.ctaPath;
 
-  const progressPct = Math.round((dayNumber / totalDays) * 100);
+  const progressPct = Math.round(((dayNumber - 1) / totalDays) * 100);
+
+  const handleComplete = async () => {
+    setCompleting(true);
+    try {
+      await completeCurrentDay();
+      toast({
+        title: "Bra jobbat!",
+        description: `Dag ${dayNumber} är avklarad. Vidare till nästa steg!`,
+      });
+    } catch {
+      toast({ title: "Något gick fel", variant: "destructive" });
+    }
+    setCompleting(false);
+  };
 
   return (
     <>
@@ -86,7 +104,7 @@ export default function OnboardingBanner() {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button asChild size="sm" className="rounded-[12px]">
               <Link to={ctaPath}>{ctaLabel}</Link>
             </Button>
@@ -101,6 +119,16 @@ export default function OnboardingBanner() {
                 Fördjupning
               </Button>
             )}
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-[12px] gap-1.5"
+              onClick={handleComplete}
+              disabled={completing}
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              {completing ? "Sparar..." : "Klar"}
+            </Button>
           </div>
 
           {/* Progress bar */}
