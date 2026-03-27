@@ -171,6 +171,38 @@ export type Database = {
         }
         Relationships: []
       }
+      journey_completions: {
+        Row: {
+          completed_at: string
+          couple_id: string | null
+          day_number: number
+          id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          couple_id?: string | null
+          day_number: number
+          id?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          couple_id?: string | null
+          day_number?: number
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_completions_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       love_map_questions: {
         Row: {
           category: string | null
