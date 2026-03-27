@@ -56,12 +56,10 @@ export function useJourneyDay(): JourneyDayState {
         startDate = new Date(profileRow?.created_at || new Date());
       }
 
-      // DEBUG: Force day 7 for testing
-      const dayNumber = 7;
-      // const dayNumber = Math.min(
-      //   90,
-      //   Math.max(1, differenceInCalendarDays(new Date(), startDate) + 1)
-      // );
+      const dayNumber = Math.min(
+        90,
+        Math.max(1, differenceInCalendarDays(new Date(), startDate) + 1)
+      );
 
       const todayStep = getJourneyDay(dayNumber);
 
