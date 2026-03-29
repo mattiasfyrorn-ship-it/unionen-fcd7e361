@@ -1,19 +1,19 @@
 import { useAuth } from "@/hooks/useAuth";
 import OnboardingBanner from "@/components/OnboardingBanner";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Heart, ThumbsUp, ArrowRightLeft, Sparkles,
   TrendingUp, TrendingDown, CloudSun,
-  ChevronDown, Target, Lightbulb, Shield
+  ChevronDown, Target, Lightbulb, Shield, Check, ChevronRight, Archive
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import InfoButton from "@/components/InfoButton";
