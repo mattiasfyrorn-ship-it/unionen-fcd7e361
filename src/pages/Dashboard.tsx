@@ -496,7 +496,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Quarterly goals – Vår riktning (moved up) */}
+      {/* Quarterly goals – Vår riktning (gemensamma) */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Kvartalsmål</p>
@@ -507,33 +507,67 @@ export default function Dashboard() {
           <p className="text-xs text-muted-foreground">Q{Math.floor(new Date().getMonth() / 3) + 1} {new Date().getFullYear()}</p>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Checkbox checked={relationshipDone} onCheckedChange={(v) => setRelationshipDone(!!v)} />
-            <Input placeholder="Relationsmål" value={relationshipGoal} onChange={(e) => setRelationshipGoal(e.target.value)} className="rounded-lg border-border/30 bg-secondary/30 text-sm flex-1" />
-          </div>
-          <div className="flex items-center gap-2">
-            <Checkbox checked={experienceDone} onCheckedChange={(v) => setExperienceDone(!!v)} />
-            <Input placeholder="Upplevelsemål" value={experienceGoal} onChange={(e) => setExperienceGoal(e.target.value)} className="rounded-lg border-border/30 bg-secondary/30 text-sm flex-1" />
-          </div>
-          <div className="flex items-center gap-2">
-            <Checkbox checked={practicalDone} onCheckedChange={(v) => setPracticalDone(!!v)} />
-            <Input placeholder="Praktiskt mål" value={practicalGoal} onChange={(e) => setPracticalGoal(e.target.value)} className="rounded-lg border-border/30 bg-secondary/30 text-sm flex-1" />
-          </div>
-          <Button size="sm" variant="outline" onClick={saveGoals}>Spara mål</Button>
-          {pastGoals.length > 0 && (
+          {coupleGoals.map((goal) => {
+            const label = goal.goal_type === "relationship" ? "Relationsmål" : goal.goal_type === "experience" ? "Upplevelsemål" : "Praktiskt mål";
+            const isExpanded = expandedGoal === goal.goal_type;
+            return (
+              <div key={goal.goal_type} className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setExpandedGoal(isExpanded ? null : goal.goal_type)}
+                    className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <ChevronRight className={`w-4 h-4 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                  </button>
+                  <Input
+                    placeholder={label}
+                    value={goal.title}
+                    onChange={(e) => updateGoalField(goal.goal_type, "title", e.target.value)}
+                    onBlur={() => goal.title && saveCoupleGoal(goal)}
+                    className="rounded-lg border-border/30 bg-secondary/30 text-sm flex-1"
+                  />
+                </div>
+                {isExpanded && (
+                  <div className="ml-6 space-y-2">
+                    <Textarea
+                      placeholder="Löpande anteckningar..."
+                      value={goal.notes}
+                      onChange={(e) => updateGoalField(goal.goal_type, "notes", e.target.value)}
+                      onBlur={() => saveCoupleGoal(goal)}
+                      className="text-sm min-h-[60px] bg-secondary/20"
+                    />
+                    {goal.title && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs gap-1 text-primary border-primary/30"
+                        onClick={() => completeGoal(goal)}
+                      >
+                        <Check className="w-3 h-3" /> Mål uppnått
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {archivedGoals.length > 0 && (
             <Collapsible>
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1 mt-2">
-                  Tidigare kvartal ({pastGoals.length}) <ChevronDown className="w-3 h-3" />
+                  <Archive className="w-3 h-3" /> Arkiv ({archivedGoals.length}) <ChevronDown className="w-3 h-3" />
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-2 mt-2">
-                {pastGoals.map((g) => (
+                {archivedGoals.map((g) => (
                   <div key={g.id} className="text-xs text-muted-foreground border-t border-border/30 pt-2">
-                    <p className="font-medium text-foreground">{g.quarter_start}</p>
-                    {g.relationship_goal && <p>{g.relationship_done ? "✅" : "◻️"} {g.relationship_goal}</p>}
-                    {g.experience_goal && <p>{g.experience_done ? "✅" : "◻️"} {g.experience_goal}</p>}
-                    {g.practical_goal && <p>{g.practical_done ? "✅" : "◻️"} {g.practical_goal}</p>}
+                    <p className="font-medium text-foreground">
+                      ✅ {g.title}
+                      <span className="ml-2 text-muted-foreground font-normal">
+                        {g.completed_at ? new Date(g.completed_at).toLocaleDateString("sv-SE") : ""}
+                      </span>
+                    </p>
+                    {g.notes && <p className="mt-1 text-muted-foreground">{g.notes}</p>}
                   </div>
                 ))}
               </CollapsibleContent>
