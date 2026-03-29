@@ -41,15 +41,20 @@ export default function Dashboard() {
   const [partnerName, setPartnerName] = useState("");
   const [shareDev, setShareDev] = useState(false);
 
-  // Quarterly goals
-  const [goalsId, setGoalsId] = useState<string | null>(null);
-  const [relationshipGoal, setRelationshipGoal] = useState("");
-  const [experienceGoal, setExperienceGoal] = useState("");
-  const [practicalGoal, setPracticalGoal] = useState("");
-  const [relationshipDone, setRelationshipDone] = useState(false);
-  const [experienceDone, setExperienceDone] = useState(false);
-  const [practicalDone, setPracticalDone] = useState(false);
-  const [pastGoals, setPastGoals] = useState<any[]>([]);
+  // Couple goals (shared)
+  interface CoupleGoal {
+    id?: string;
+    couple_id: string;
+    quarter_start: string;
+    goal_type: string;
+    title: string;
+    notes: string;
+    completed: boolean;
+    completed_at: string | null;
+  }
+  const [coupleGoals, setCoupleGoals] = useState<CoupleGoal[]>([]);
+  const [archivedGoals, setArchivedGoals] = useState<CoupleGoal[]>([]);
+  const [expandedGoal, setExpandedGoal] = useState<string | null>(null);
 
   // Graph data
   const [kontoGraph, setKontoGraph] = useState<KontoPoint[]>([]);
