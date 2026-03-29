@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      couple_goals: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          couple_id: string
+          created_at: string
+          goal_type: string
+          id: string
+          notes: string | null
+          quarter_start: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          couple_id: string
+          created_at?: string
+          goal_type: string
+          id?: string
+          notes?: string | null
+          quarter_start: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          couple_id?: string
+          created_at?: string
+          goal_type?: string
+          id?: string
+          notes?: string | null
+          quarter_start?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       couples: {
         Row: {
           created_at: string

@@ -1,19 +1,19 @@
 import { useAuth } from "@/hooks/useAuth";
 import OnboardingBanner from "@/components/OnboardingBanner";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Heart, ThumbsUp, ArrowRightLeft, Sparkles,
   TrendingUp, TrendingDown, CloudSun,
-  ChevronDown, Target, Lightbulb, Shield
+  ChevronDown, Target, Lightbulb, Shield, Check, ChevronRight, Archive
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import InfoButton from "@/components/InfoButton";
@@ -41,15 +41,20 @@ export default function Dashboard() {
   const [partnerName, setPartnerName] = useState("");
   const [shareDev, setShareDev] = useState(false);
 
-  // Quarterly goals
-  const [goalsId, setGoalsId] = useState<string | null>(null);
-  const [relationshipGoal, setRelationshipGoal] = useState("");
-  const [experienceGoal, setExperienceGoal] = useState("");
-  const [practicalGoal, setPracticalGoal] = useState("");
-  const [relationshipDone, setRelationshipDone] = useState(false);
-  const [experienceDone, setExperienceDone] = useState(false);
-  const [practicalDone, setPracticalDone] = useState(false);
-  const [pastGoals, setPastGoals] = useState<any[]>([]);
+  // Couple goals (shared)
+  interface CoupleGoal {
+    id?: string;
+    couple_id: string;
+    quarter_start: string;
+    goal_type: string;
+    title: string;
+    notes: string;
+    completed: boolean;
+    completed_at: string | null;
+  }
+  const [coupleGoals, setCoupleGoals] = useState<CoupleGoal[]>([]);
+  const [archivedGoals, setArchivedGoals] = useState<CoupleGoal[]>([]);
+  const [expandedGoal, setExpandedGoal] = useState<string | null>(null);
 
   // Graph data
   const [kontoGraph, setKontoGraph] = useState<KontoPoint[]>([]);
@@ -92,33 +97,37 @@ export default function Dashboard() {
     }
     setShareDev((profile as any)?.share_development || false);
 
-    // Quarterly goals
-    const qs = getQuarterStart();
-    const { data: qg } = await supabase
-      .from("quarterly_goals")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("quarter_start", qs)
-      .maybeSingle();
+    // Couple goals (shared via couple_id)
+    if (profile?.couple_id) {
+      const qs = getQuarterStart();
+      const coupleGoalsTable = () => supabase.from("couple_goals" as any) as any;
 
-    if (qg) {
-      setGoalsId(qg.id);
-      setRelationshipGoal(qg.relationship_goal || "");
-      setExperienceGoal(qg.experience_goal || "");
-      setPracticalGoal(qg.practical_goal || "");
-      setRelationshipDone(qg.relationship_done || false);
-      setExperienceDone(qg.experience_done || false);
-      setPracticalDone(qg.practical_done || false);
+      // Active goals for current quarter
+      const { data: activeGoals } = await coupleGoalsTable()
+        .select("*")
+        .eq("couple_id", profile.couple_id)
+        .eq("quarter_start", qs)
+        .eq("completed", false)
+        .order("goal_type");
+
+      // Ensure all 3 types exist
+      const types = ["relationship", "experience", "practical"];
+      const existing = (activeGoals || []) as CoupleGoal[];
+      const full = types.map(t => existing.find((g: any) => g.goal_type === t) || {
+        couple_id: profile.couple_id!, quarter_start: qs, goal_type: t,
+        title: "", notes: "", completed: false, completed_at: null
+      });
+      setCoupleGoals(full as CoupleGoal[]);
+
+      // Archived (completed) goals
+      const { data: archived } = await coupleGoalsTable()
+        .select("*")
+        .eq("couple_id", profile.couple_id)
+        .eq("completed", true)
+        .order("completed_at", { ascending: false })
+        .limit(20);
+      setArchivedGoals((archived || []) as CoupleGoal[]);
     }
-
-    const { data: pg } = await supabase
-      .from("quarterly_goals")
-      .select("*")
-      .eq("user_id", user.id)
-      .neq("quarter_start", qs)
-      .order("quarter_start", { ascending: false })
-      .limit(8);
-    if (pg) setPastGoals(pg);
 
     // Build konto summary (always use 90 days for calculation stability)
     await buildKontoSummary();
@@ -396,26 +405,42 @@ export default function Dashboard() {
     }
   };
 
-  const saveGoals = async () => {
-    if (!user || !profile?.couple_id) return;
-    const qs = getQuarterStart();
-    const payload: any = {
-      user_id: user.id,
+  const saveCoupleGoal = async (goal: CoupleGoal) => {
+    if (!profile?.couple_id) return;
+    const coupleGoalsTable = () => supabase.from("couple_goals" as any) as any;
+    const payload = {
       couple_id: profile.couple_id,
-      quarter_start: qs,
-      relationship_goal: relationshipGoal || null,
-      experience_goal: experienceGoal || null,
-      practical_goal: practicalGoal || null,
-      relationship_done: relationshipDone,
-      experience_done: experienceDone,
-      practical_done: practicalDone,
+      quarter_start: goal.quarter_start,
+      goal_type: goal.goal_type,
+      title: goal.title,
+      notes: goal.notes,
+      completed: goal.completed,
+      completed_at: goal.completed_at,
     };
-    if (goalsId) {
-      await supabase.from("quarterly_goals").update(payload).eq("id", goalsId);
+    if (goal.id) {
+      await coupleGoalsTable().update(payload).eq("id", goal.id);
     } else {
-      const { data } = await supabase.from("quarterly_goals").insert(payload).select().single();
-      if (data) setGoalsId(data.id);
+      const { data } = await coupleGoalsTable().insert(payload).select().single();
+      if (data) {
+        setCoupleGoals(prev => prev.map(g =>
+          g.goal_type === goal.goal_type && g.quarter_start === goal.quarter_start
+            ? { ...g, id: (data as any).id } : g
+        ));
+      }
     }
+  };
+
+  const updateGoalField = (goalType: string, field: "title" | "notes", value: string) => {
+    setCoupleGoals(prev => prev.map(g =>
+      g.goal_type === goalType ? { ...g, [field]: value } : g
+    ));
+  };
+
+  const completeGoal = async (goal: CoupleGoal) => {
+    const updated = { ...goal, completed: true, completed_at: new Date().toISOString() };
+    await saveCoupleGoal(updated);
+    setCoupleGoals(prev => prev.filter(g => g.goal_type !== goal.goal_type));
+    setArchivedGoals(prev => [updated, ...prev]);
   };
 
   const renderBoldText = (text: string) => {
@@ -471,7 +496,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Quarterly goals – Vår riktning (moved up) */}
+      {/* Quarterly goals – Vår riktning (gemensamma) */}
       <Card className="rounded-[10px] border-none shadow-hamnen">
         <CardHeader className="pb-2">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Kvartalsmål</p>
@@ -482,33 +507,67 @@ export default function Dashboard() {
           <p className="text-xs text-muted-foreground">Q{Math.floor(new Date().getMonth() / 3) + 1} {new Date().getFullYear()}</p>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Checkbox checked={relationshipDone} onCheckedChange={(v) => setRelationshipDone(!!v)} />
-            <Input placeholder="Relationsmål" value={relationshipGoal} onChange={(e) => setRelationshipGoal(e.target.value)} className="rounded-lg border-border/30 bg-secondary/30 text-sm flex-1" />
-          </div>
-          <div className="flex items-center gap-2">
-            <Checkbox checked={experienceDone} onCheckedChange={(v) => setExperienceDone(!!v)} />
-            <Input placeholder="Upplevelsemål" value={experienceGoal} onChange={(e) => setExperienceGoal(e.target.value)} className="rounded-lg border-border/30 bg-secondary/30 text-sm flex-1" />
-          </div>
-          <div className="flex items-center gap-2">
-            <Checkbox checked={practicalDone} onCheckedChange={(v) => setPracticalDone(!!v)} />
-            <Input placeholder="Praktiskt mål" value={practicalGoal} onChange={(e) => setPracticalGoal(e.target.value)} className="rounded-lg border-border/30 bg-secondary/30 text-sm flex-1" />
-          </div>
-          <Button size="sm" variant="outline" onClick={saveGoals}>Spara mål</Button>
-          {pastGoals.length > 0 && (
+          {coupleGoals.map((goal) => {
+            const label = goal.goal_type === "relationship" ? "Relationsmål" : goal.goal_type === "experience" ? "Upplevelsemål" : "Praktiskt mål";
+            const isExpanded = expandedGoal === goal.goal_type;
+            return (
+              <div key={goal.goal_type} className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setExpandedGoal(isExpanded ? null : goal.goal_type)}
+                    className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <ChevronRight className={`w-4 h-4 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                  </button>
+                  <Input
+                    placeholder={label}
+                    value={goal.title}
+                    onChange={(e) => updateGoalField(goal.goal_type, "title", e.target.value)}
+                    onBlur={() => goal.title && saveCoupleGoal(goal)}
+                    className="rounded-lg border-border/30 bg-secondary/30 text-sm flex-1"
+                  />
+                </div>
+                {isExpanded && (
+                  <div className="ml-6 space-y-2">
+                    <Textarea
+                      placeholder="Löpande anteckningar..."
+                      value={goal.notes}
+                      onChange={(e) => updateGoalField(goal.goal_type, "notes", e.target.value)}
+                      onBlur={() => saveCoupleGoal(goal)}
+                      className="text-sm min-h-[60px] bg-secondary/20"
+                    />
+                    {goal.title && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs gap-1 text-primary border-primary/30"
+                        onClick={() => completeGoal(goal)}
+                      >
+                        <Check className="w-3 h-3" /> Mål uppnått
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {archivedGoals.length > 0 && (
             <Collapsible>
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1 mt-2">
-                  Tidigare kvartal ({pastGoals.length}) <ChevronDown className="w-3 h-3" />
+                  <Archive className="w-3 h-3" /> Arkiv ({archivedGoals.length}) <ChevronDown className="w-3 h-3" />
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-2 mt-2">
-                {pastGoals.map((g) => (
+                {archivedGoals.map((g) => (
                   <div key={g.id} className="text-xs text-muted-foreground border-t border-border/30 pt-2">
-                    <p className="font-medium text-foreground">{g.quarter_start}</p>
-                    {g.relationship_goal && <p>{g.relationship_done ? "✅" : "◻️"} {g.relationship_goal}</p>}
-                    {g.experience_goal && <p>{g.experience_done ? "✅" : "◻️"} {g.experience_goal}</p>}
-                    {g.practical_goal && <p>{g.practical_done ? "✅" : "◻️"} {g.practical_goal}</p>}
+                    <p className="font-medium text-foreground">
+                      ✅ {g.title}
+                      <span className="ml-2 text-muted-foreground font-normal">
+                        {g.completed_at ? new Date(g.completed_at).toLocaleDateString("sv-SE") : ""}
+                      </span>
+                    </p>
+                    {g.notes && <p className="mt-1 text-muted-foreground">{g.notes}</p>}
                   </div>
                 ))}
               </CollapsibleContent>

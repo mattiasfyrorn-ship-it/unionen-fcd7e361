@@ -340,35 +340,25 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     number: 11,
     title: "Fyll i Relationsmål för kvartalet",
-    description: "Båda fyller i och sparar era kvartalsmål.",
-    requires_both: true,
+    description: "Fyll i och spara era gemensamma kvartalsmål.",
+    requires_both: false,
     ctaPath: "/",
     ctaLabel: "Gå till Översikt",
     completionCopy: {
       both_done: "Ni har nu en gemensam riktning. Det skapar lugn.",
-      user_done_partner_not: "Du har satt dina mål. Väntar på din partners.",
-      partner_done_user_not: "Din partner har satt sina mål – fyll i dina!",
+      user_done_partner_not: "Ni har satt era gemensamma mål. Bra jobbat!",
+      partner_done_user_not: "Er partner har satt mål – kolla in dem!",
     },
     checkCompletion: async (userId, coupleId) => {
-      const { data: myGoals } = await supabase
-        .from("quarterly_goals")
-        .select("relationship_goal, experience_goal, practical_goal")
-        .eq("user_id", userId)
-        .limit(1)
-        .maybeSingle();
-      const userDone = !!(myGoals?.relationship_goal && myGoals?.experience_goal && myGoals?.practical_goal);
-      let partnerDone = false;
-      const partnerId = await getPartnerUserId(coupleId, userId);
-      if (partnerId) {
-        const { data: pg } = await supabase
-          .from("quarterly_goals")
-          .select("relationship_goal, experience_goal, practical_goal")
-          .eq("user_id", partnerId)
-          .limit(1)
-          .maybeSingle();
-        partnerDone = !!(pg?.relationship_goal && pg?.experience_goal && pg?.practical_goal);
-      }
-      return { userDone, partnerDone };
+      if (!coupleId) return { userDone: false, partnerDone: false };
+      const coupleGoalsTable = () => supabase.from("couple_goals" as any) as any;
+      const { data } = await coupleGoalsTable()
+        .select("title")
+        .eq("couple_id", coupleId)
+        .not("title", "eq", "")
+        .limit(3);
+      const filledCount = (data || []).length;
+      return { userDone: filledCount >= 3, partnerDone: filledCount >= 3 };
     },
   },
   {
