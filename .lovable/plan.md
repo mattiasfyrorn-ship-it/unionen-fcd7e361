@@ -1,56 +1,70 @@
 
 
-## Plan: Dagbaserad 90-dagarsresa (ersätter milstolpssystemet)
+## Plan: Gemensamma kvartalsmål med anteckningar och arkiv
 
-### Sammanfattning
-Byter ut det nuvarande milstolpe-baserade onboardingsystemet mot en dagbaserad 90-dagarsresa där användaren får ett nytt uppdrag varje dag. Varje dag har titel, kort beskrivning, fördjupningstext (visas i dialog) och en direktlänk till rätt funktion.
+### Nuläge
+Idag sparar varje person sina egna kvartalsmål (`quarterly_goals` filtreras på `user_id`). Partner ser inte varandras mål. Det finns inga anteckningsfält eller arkivfunktion för slutförda mål.
 
-### Hur vi bestämmer vilken dag användaren är på
-Använder `couples.created_at` (eller `profiles.created_at` om solo) som dag 1. Beräknar sedan `dayNumber = differens i dagar + 1`, capped till 90.
+### Ny design
+Ett par delar EN rad per måltyp per kvartal, kopplat till `couple_id`. När en person skriver sparas det för båda. Varje mål kan expanderas för löpande anteckningar och markeras som slutfört, varpå det flyttas till ett arkiv.
 
-### Ändringar
+---
 
-**1. Ny fil: `src/lib/journeyDays.ts`**
-- Exporterar en array med 90 dagars innehåll: `{ day, title, description, deepDive, requiresBoth, ctaLabel, ctaPath }`
-- Dag 1-30 fylls med innehållet du angett ovan
-- Dag 31-90 fylls med platshållarinnehåll (kan fyllas på senare)
-- CTA-vägar mappas till befintliga routes:
-  - Bjud in partner → `/pairing`
-  - Upptäck varandra / Ge uppskattning / Vänd dig mot / Närvaro / Konto → `/daily`
-  - Reflektion / Energi → `/evaluate`
-  - Samtal / Planera → `/weekly`
-  - Påverkan → `/daily`
-  - Valfri → `/daily`
+### Steg 1 — Databasändring
 
-**2. Ny hook: `src/hooks/useJourneyDay.ts`**
-- Ersätter `useOnboarding` som datakälla för bannern
-- Hämtar `couples.created_at` via profil/couple
-- Beräknar aktuell dag (1-90)
-- Hämtar öppna reparationer (repairs med status `in_progress` för paret)
-- Returnerar: `{ loading, dayNumber, totalDays: 90, todayStep, hasOpenRepairs, openRepairCount }`
+Skapa ny tabell `couple_goals` (istället för att ändra `quarterly_goals`, som kan behållas för bakåtkompatibilitet):
 
-**3. Uppdatera `src/components/OnboardingBanner.tsx`**
-- Använder `useJourneyDay` istället för `useOnboarding`
-- Visar dagens uppdrag med titel + kort beskrivning
-- "Fördjupning"-knapp som öppnar en `Dialog` med fördjupningstexten
-- Direktlänk (CTA-knapp) till rätt sida
-- Progressbar visar dag X av 90
-- Om öppna reparationer finns: visar reparationsbanner på samma plats (som idag med override)
+```sql
+CREATE TABLE couple_goals (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  couple_id uuid NOT NULL,
+  quarter_start date NOT NULL,
+  goal_type text NOT NULL,        -- 'relationship', 'experience', 'practical'
+  title text NOT NULL DEFAULT '',
+  notes text DEFAULT '',
+  completed boolean NOT NULL DEFAULT false,
+  completed_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (couple_id, quarter_start, goal_type)
+);
 
-**4. Ta bort gamla filer** (kan behållas men avkopplas)
-- `src/lib/onboardingSteps.ts` — inte längre importerad av bannern
-- `src/hooks/useOnboarding.ts` — ersätts av `useJourneyDay`
+ALTER TABLE couple_goals ENABLE ROW LEVEL SECURITY;
 
-### Databasändringar
-Inga. Dag beräknas från befintlig `couples.created_at`. Inga nya tabeller behövs.
+-- RLS: läs/skriv via couple_id
+CREATE POLICY "Read couple goals" ON couple_goals FOR SELECT
+  USING (couple_id = get_my_couple_id());
+CREATE POLICY "Insert couple goals" ON couple_goals FOR INSERT
+  WITH CHECK (couple_id = get_my_couple_id());
+CREATE POLICY "Update couple goals" ON couple_goals FOR UPDATE
+  USING (couple_id = get_my_couple_id());
+CREATE POLICY "Delete couple goals" ON couple_goals FOR DELETE
+  USING (couple_id = get_my_couple_id());
+```
 
-### Dag 1 speciallogik
-- Om partnern inte är kopplad: visa "Bjud in din partner" i uppdraget
-- Om partnern redan är kopplad: hoppa över inbjudningsdelen, visa resten (notiser etc.)
+### Steg 2 — Uppdatera Dashboard.tsx
 
-### Filer som skapas/ändras
-- `src/lib/journeyDays.ts` — **ny**, all dagsdata
-- `src/hooks/useJourneyDay.ts` — **ny**, hook
-- `src/components/OnboardingBanner.tsx` — **omskriven**, ny layout med dialog
-- `src/hooks/useOnboarding.ts` — **tas bort eller avkopplas**
+**Hämtning**: Byt från `quarterly_goals` med `user_id`-filter till `couple_goals` med `couple_id`-filter. Hämta 3 rader (en per goal_type) för aktuellt kvartal.
+
+**Sparning**: Vid varje ändring (titel, anteckning, checkbox) → upsert mot `couple_goals` baserat på `(couple_id, quarter_start, goal_type)`.
+
+**UI per mål**:
+- Klickbar rad som expanderar ett `Textarea` för löpande anteckningar
+- Knapp "Mål uppnått" som sätter `completed = true` och `completed_at = now()`
+- Slutförda mål flyttas automatiskt ned till ett "Arkiv"-avsnitt (Collapsible) längst ned i kortet
+- Arkivet visar slutförda mål grupperade per kvartal med datum
+
+**Arkiv**: Hämta alla `couple_goals` med `completed = true` för aktuellt couple_id, sorterade efter `completed_at DESC`.
+
+### Steg 3 — Uppdatera onboardingSteps.ts
+
+Ändra checkCompletion för "Vår riktning"-steget att kolla `couple_goals` istället för `quarterly_goals`.
+
+---
+
+### Tekniska detaljer
+- Tabellen `couple_goals` ägs av paret (couple_id), inte individen — båda kan läsa och skriva
+- Unique constraint säkerställer max ett mål per typ per kvartal per par
+- `updated_at` trigger för automatisk uppdatering vid ändringar
+- Befintliga `quarterly_goals` lämnas orörda (ingen migration av gammal data)
 
