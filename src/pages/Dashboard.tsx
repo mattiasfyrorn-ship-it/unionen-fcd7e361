@@ -97,33 +97,37 @@ export default function Dashboard() {
     }
     setShareDev((profile as any)?.share_development || false);
 
-    // Quarterly goals
-    const qs = getQuarterStart();
-    const { data: qg } = await supabase
-      .from("quarterly_goals")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("quarter_start", qs)
-      .maybeSingle();
+    // Couple goals (shared via couple_id)
+    if (profile?.couple_id) {
+      const qs = getQuarterStart();
+      const coupleGoalsTable = () => supabase.from("couple_goals" as any) as any;
 
-    if (qg) {
-      setGoalsId(qg.id);
-      setRelationshipGoal(qg.relationship_goal || "");
-      setExperienceGoal(qg.experience_goal || "");
-      setPracticalGoal(qg.practical_goal || "");
-      setRelationshipDone(qg.relationship_done || false);
-      setExperienceDone(qg.experience_done || false);
-      setPracticalDone(qg.practical_done || false);
+      // Active goals for current quarter
+      const { data: activeGoals } = await coupleGoalsTable()
+        .select("*")
+        .eq("couple_id", profile.couple_id)
+        .eq("quarter_start", qs)
+        .eq("completed", false)
+        .order("goal_type");
+
+      // Ensure all 3 types exist
+      const types = ["relationship", "experience", "practical"];
+      const existing = (activeGoals || []) as CoupleGoal[];
+      const full = types.map(t => existing.find((g: any) => g.goal_type === t) || {
+        couple_id: profile.couple_id!, quarter_start: qs, goal_type: t,
+        title: "", notes: "", completed: false, completed_at: null
+      });
+      setCoupleGoals(full as CoupleGoal[]);
+
+      // Archived (completed) goals
+      const { data: archived } = await coupleGoalsTable()
+        .select("*")
+        .eq("couple_id", profile.couple_id)
+        .eq("completed", true)
+        .order("completed_at", { ascending: false })
+        .limit(20);
+      setArchivedGoals((archived || []) as CoupleGoal[]);
     }
-
-    const { data: pg } = await supabase
-      .from("quarterly_goals")
-      .select("*")
-      .eq("user_id", user.id)
-      .neq("quarter_start", qs)
-      .order("quarter_start", { ascending: false })
-      .limit(8);
-    if (pg) setPastGoals(pg);
 
     // Build konto summary (always use 90 days for calculation stability)
     await buildKontoSummary();
@@ -401,26 +405,42 @@ export default function Dashboard() {
     }
   };
 
-  const saveGoals = async () => {
-    if (!user || !profile?.couple_id) return;
-    const qs = getQuarterStart();
-    const payload: any = {
-      user_id: user.id,
+  const saveCoupleGoal = async (goal: CoupleGoal) => {
+    if (!profile?.couple_id) return;
+    const coupleGoalsTable = () => supabase.from("couple_goals" as any) as any;
+    const payload = {
       couple_id: profile.couple_id,
-      quarter_start: qs,
-      relationship_goal: relationshipGoal || null,
-      experience_goal: experienceGoal || null,
-      practical_goal: practicalGoal || null,
-      relationship_done: relationshipDone,
-      experience_done: experienceDone,
-      practical_done: practicalDone,
+      quarter_start: goal.quarter_start,
+      goal_type: goal.goal_type,
+      title: goal.title,
+      notes: goal.notes,
+      completed: goal.completed,
+      completed_at: goal.completed_at,
     };
-    if (goalsId) {
-      await supabase.from("quarterly_goals").update(payload).eq("id", goalsId);
+    if (goal.id) {
+      await coupleGoalsTable().update(payload).eq("id", goal.id);
     } else {
-      const { data } = await supabase.from("quarterly_goals").insert(payload).select().single();
-      if (data) setGoalsId(data.id);
+      const { data } = await coupleGoalsTable().insert(payload).select().single();
+      if (data) {
+        setCoupleGoals(prev => prev.map(g =>
+          g.goal_type === goal.goal_type && g.quarter_start === goal.quarter_start
+            ? { ...g, id: (data as any).id } : g
+        ));
+      }
     }
+  };
+
+  const updateGoalField = (goalType: string, field: "title" | "notes", value: string) => {
+    setCoupleGoals(prev => prev.map(g =>
+      g.goal_type === goalType ? { ...g, [field]: value } : g
+    ));
+  };
+
+  const completeGoal = async (goal: CoupleGoal) => {
+    const updated = { ...goal, completed: true, completed_at: new Date().toISOString() };
+    await saveCoupleGoal(updated);
+    setCoupleGoals(prev => prev.filter(g => g.goal_type !== goal.goal_type));
+    setArchivedGoals(prev => [updated, ...prev]);
   };
 
   const renderBoldText = (text: string) => {
